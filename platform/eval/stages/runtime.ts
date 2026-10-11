@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { CALL_RECORDING_CONSENT_VERSION } from '../../src/server/call/consent';
+import { ensureConsents } from '../../src/server/consent/service';
 import { syncClaimCatalog } from '../../src/server/claims/catalog-sync';
 import { prisma } from '../../src/server/db';
 import { getLlm } from '../../src/server/llm/client';
@@ -101,6 +102,8 @@ export async function createCandidate(id: string, opts: { grade: 'junior' | 'mid
   await prisma.user.create({ data: { id: `u-${id}`, role: 'candidate', name: `Персона ${id}`, candidateId: id } });
   await prisma.candidateProfile.create({ data: { candidateId: id, claimedGrade: opts.grade } });
   await prisma.consent.create({ data: { userId: `u-${id}`, version: CALL_RECORDING_CONSENT_VERSION } });
+  // Г3 (ADR 0005): без согласия на ИИ-оценку startCall отвечает 409 — персоны его дают, как кандидат в кабинете.
+  await ensureConsents(`u-${id}`, ['ai_assessment', 'call_recording']);
 }
 
 export function runTag(): string {

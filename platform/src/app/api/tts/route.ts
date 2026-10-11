@@ -35,6 +35,7 @@ export const POST = withErrors(async (req: Request) => {
   const key = session.userId ?? session.candidateId ?? 'anon';
   if (!ttsRateLimit(key, text.length)) throw errors.rateLimited('Слишком часто — озвучка передохнёт минуту');
   const env = getEnv();
+  const started = Date.now();
   const audio = await synthesizeYandex(text, {
     apiKey: env.YANDEX_API_KEY as string,
     folderId: env.YANDEX_FOLDER_ID,
@@ -44,5 +45,7 @@ export const POST = withErrors(async (req: Request) => {
     format: env.TTS_FORMAT,
     signal: req.signal,
   });
-  return new Response(audio, { headers: { 'content-type': TTS_CONTENT_TYPE[env.TTS_FORMAT], 'cache-control': 'no-store' } });
+  // Замер синтеза (лейн call-speed): SpeechKit v1 отдаёт файл целиком, первый байт = конец синтеза.
+  const ttsMs = Date.now() - started;
+  return new Response(audio, { headers: { 'content-type': TTS_CONTENT_TYPE[env.TTS_FORMAT], 'cache-control': 'no-store', 'server-timing': `tts;dur=${ttsMs}` } });
 });

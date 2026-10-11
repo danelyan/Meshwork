@@ -67,6 +67,11 @@ export const envSchema = z
     UPLOAD_DIR: z.string().min(1).default('./data/uploads'),
     /** lane call: лимит квалификационных созвонов кандидата за 24 часа; 0 — без лимита (так на стенде). */
     CALL_DAILY_LIMIT: z.coerce.number().int().min(0).default(5),
+    /**
+     * lane call-speed: вопрос интервьюера созвона стримится и уходит клиенту по предложениям (SSE utterance_delta),
+     * озвучка первого предложения стартует до конца генерации. Только openai-chat со стримом; yandex/stub — как раньше.
+     */
+    CALL_STREAMING: z.stringbool().default(true),
     /** lane consent (ADR 0005): сколько дней хранится аудио созвона; потом файлы и audioPath удаляются (транскрипт и оценки остаются). */
     CALL_RECORDING_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
     /** Веб-поиск агента (инструмент web_search, Yandex Search API v2): auto — при YANDEX_API_KEY + YANDEX_FOLDER_ID, off — выключен. */
@@ -98,19 +103,6 @@ export const envSchema = z
      * false — индекс считается и пишется в попытку, но категорию не задерживает (ADR-0002, дополнение 11.10).
      */
     TEST_INTEGRITY: z.stringbool().default(true),
-    /**
-     * lane jury: что делает high при включённом TEST_INTEGRITY. silent (по умолчанию, решение владельца 11.10) -
-     * индекс считается и виден работодателю, кандидату ничего не раскрывается и категория не задерживается;
-     * confirm - high задерживает категорию до подтверждающего теста (ADR-0002).
-     */
-    TEST_INTEGRITY_ACTION: z.enum(['silent', 'confirm']).default('silent'),
-    /**
-     * lane jury: слой «только для жюри» - живые счётчики сигналов, сдвиг ловушки и разбор индекса на итоге.
-     * Как DEMO_LOGIN: на стенде true, на проде false. Проверяется на сервере, данные без флага не отдаются.
-     */
-    JURY_INSIGHTS: z.stringbool().default(false),
-    /** true — в подборке и банке при high (без подтверждения тестом или созвоном) категория из теста не учитывается (вариант 2a, 11.10). */
-    TEST_INTEGRITY_RANKING: z.stringbool().default(true),
     /** lane runner: адрес сервиса автопроверки проектов (compose: http://runner:8090). Не задан — проверка проектов недоступна. */
     RUNNER_URL: optionalString.pipe(z.url().optional()),
     /**

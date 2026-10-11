@@ -39,5 +39,8 @@ export const POST = withErrors(async (req: Request, { params }: Ctx) => {
     pcm.set(c, off);
     off += c.byteLength;
   }
-  return Response.json(await addAudio(candidateId, id, pcm), { status: 201 });
+  const obs: { sttMs?: number } = {};
+  const result = await addAudio(candidateId, id, pcm, obs);
+  // Замер STT (лейн call-speed): Server-Timing, без текста.
+  return Response.json(result, { status: 201, headers: obs.sttMs !== undefined ? { 'server-timing': `stt;dur=${obs.sttMs}` } : {} });
 });

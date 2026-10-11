@@ -9,12 +9,13 @@ import type { LlmProvider } from '../llm/types';
 import { type CallPrincipal, publicVerdict, resolveCallAccess, type ResolvedAccess } from './access';
 import { assertSegment, concatRecording, listSegments, recognizeSegment, saveSegment, callAudioDir } from './audio';
 import { publishCall } from './bus';
-import { CALL_RECORDING_CONSENT_VERSION, hasCallConsent } from './consent';
+import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from './consent';
+import { removeSegment } from '../consent/recordings';
+import { assertAiAssessmentConsent } from '../consent/service';
 import { CALL_DISCLAIMER, callDriver, questionTurns, type CallDriver, type DriverSession } from './drivers';
 import { assertCooldownPassed } from './readiness';
 import { CALL_LIMITS, CLOSING_LINE, closingWithRecap } from './plan';
 import { INTERRUPTED_MARK, UNHEARD_MARK, heardPrefix } from '../../lib/sentences';
-import { listVideoSegments, readVideoSegment, saveVideoSegment, type VideoSegment } from './video';
 import type { InterruptBody } from './schemas';
 import { REVIEW_QUESTIONS, reviewState } from './test-review';
 import { MAX_UTTERANCE_CHARS, type StartCallBody } from './schemas';
@@ -165,7 +166,6 @@ export async function buildView(row: Row, acc: ResolvedAccess): Promise<CallView
     transcript: acc.access === 'full' ? transcript : null,
     verdict: verdict ? (acc.access === 'full' ? verdict : publicVerdict(verdict)) : null,
     hasRecording: acc.recording && (await listSegments(row.id)).length > 0,
-    videoSegments: acc.recording ? await listVideoSegments(row.id) : [],
     progress: {
       answered,
       minQuestions: driver.limits.minQuestions,
@@ -195,7 +195,10 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
   const driver = callDriver(body.kind);
   const projectSubmissionId = body.projectSubmissionId ?? null;
   if (body.kind === 'qualifying' && projectSubmissionId) throw errors.badRequest('projectSubmissionId — только для защиты проекта');
-  if (!(await hasCallConsent(candidateId))) {
+  // Г3 (ADR 0005): созвон и защиту оценивает ИИ — без согласия на ИИ-оценку не начинаем.
+  await assertAiAssessmentConsent(candidateId);
+  // Г2: согласия на запись не было — спросить; отозвано — созвон идёт текстом без записи голоса (addAudio закрыт).
+  if ((await callRecordingMode(candidateId)) === 'ask') {
     throw new AppError('call_consent_required', 'Перед первым созвоном нужно согласие на запись', 409, { version: CALL_RECORDING_CONSENT_VERSION });
   }
   await driver.assertCanStart?.(candidateId, projectSubmissionId);
@@ -242,14 +245,31 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
 // ---------------------------------------------------------------------------
 // Реплика кандидата → следующий вопрос
 // ---------------------------------------------------------------------------
+/**
+ * Замер хода (лейн call-speed, 11.10): сколько думала модель и когда было готово первое предложение. Без текста
+ * кандидата. Уходит в лог и в заголовок Server-Timing ответа /turn (route.ts), eval/call/latency.ts читает его.
+ */
+export interface TurnTiming {
+  /** Генерация реплики ИИ целиком (вопрос, этап разбора или итог), мс. */
+  llmMs: number;
+  /** От начала генерации до первого предложения, отданного клиенту (utterance_delta), мс; нет — не стримилось. */
+  firstSentenceMs: number | null;
+  /** Сколько предложений ушло потоком. */
+  sentences: number;
+  /** Вопрос генерировался в потоковом режиме (CALL_STREAMING). */
+  streaming: boolean;
+}
+
 export async function submitTurn(
   candidateId: string,
   sessionId: string,
   input: { text?: string; audioRef?: string },
   llm: LlmProvider,
+  obs?: { timing?: TurnTiming },
 ): Promise<TurnResult> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её
   const text = (input.text ?? '').replace(/\r\n/g, '\n').trim();
   // Сегмент должен существовать. Текст уже распознан в /audio или браузером — второй раз STT не зовём.
   if (input.audioRef) await assertSegment(sessionId, input.audioRef);
@@ -282,6 +302,8 @@ export async function submitTurn(
   let aiText: string;
   let meta: TranscriptEntry['meta'];
   let done = false;
+  const genStarted = Date.now();
+  const timing: TurnTiming = { llmMs: 0, firstSentenceMs: null, sentences: 0, streaming: false };
   const interim = interimOf(saved.row);
   const probe = interim ? nextProbe(interim, transcript) : null;
   const hardMax = driver.limits.hardMaxQuestions ?? driver.limits.maxQuestions;
@@ -341,6 +363,9 @@ export async function submitTurn(
     }
   }
 
+  timing.llmMs = Date.now() - genStarted;
+  if (obs) obs.timing = timing;
+  console.info('[call] turn timing', JSON.stringify({ sessionId, kind: row.kind, ...timing }));
   const aiEntry = await prisma.$transaction(async (tx) => {
     const cur = await lockCall(tx, sessionId);
     const t = transcriptOf(cur);
@@ -406,6 +431,8 @@ export async function finishCall(candidateId: string, sessionId: string, llm: Ll
     await running.catch(() => undefined);
     return buildView(await loadOwn(candidateId, sessionId), CANDIDATE_ACCESS);
   }
+  await loadOwn(candidateId, sessionId); // чужой созвон — 404 раньше, чем 409 о согласии
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её: оценщик не запускается
   const p = finishCallOnce(candidateId, sessionId, llm);
   finishing.set(sessionId, p);
   try {
@@ -556,14 +583,30 @@ export async function latestQualifyingVerdict(candidateId: string): Promise<Call
 // ---------------------------------------------------------------------------
 // Аудио
 // ---------------------------------------------------------------------------
-export async function addAudio(candidateId: string, sessionId: string, pcm: Uint8Array): Promise<{ audioRef: string; text: string | null }> {
+export async function addAudio(candidateId: string, sessionId: string, pcm: Uint8Array, obs?: { sttMs?: number }): Promise<{ audioRef: string; text: string | null }> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
-  const audioRef = await saveSegment(sessionId, pcm);
+  // Без действующего согласия на запись (Г2) голос не сохраняем: созвон идёт текстом (ADR 0005).
+  if ((await callRecordingMode(candidateId)) !== 'audio') {
+    throw new AppError('call_recording_off', 'Запись голоса отключена в «Моих согласиях» - ответь текстом', 409);
+  }
+  const recordingOn = async () => (await callRecordingMode(candidateId)) === 'audio';
+  const audioRef = await saveSegment(sessionId, pcm, recordingOn);
   if (!row.audioPath) await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: callAudioDir(sessionId).rel } });
+  // Гонка с отзывом Г2: отзыв ставит revokedAt, затем удаляет файлы. Если он пришёлся между проверкой и записью —
+  // убираем свой сегмент сами и снимаем audioPath (порядок «записать → audioPath → перепроверить» закрывает окно).
+  if (!(await recordingOn())) {
+    await removeSegment(sessionId, audioRef);
+    await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: null } });
+    throw new AppError('call_recording_off', 'Запись голоса отключена в «Моих согласиях» - ответь текстом', 409);
+  }
   let text: string | null = null;
+  const sttStarted = Date.now();
   try {
     text = await recognizeSegment(pcm);
+    // Замер STT (лейн call-speed): длительность и размер сегмента, без текста.
+    if (obs) obs.sttMs = Date.now() - sttStarted;
+    console.info('[call] stt timing', JSON.stringify({ sessionId, sttMs: Date.now() - sttStarted, bytes: pcm.byteLength }));
   } catch (err) {
     // Аудио сохранено; текст пришлёт клиент или кандидат наберёт.
     console.warn('[call] stt failed:', err instanceof Error ? err.message : err);
@@ -571,26 +614,8 @@ export async function addAudio(candidateId: string, sessionId: string, pcm: Uint
   return { audioRef, text };
 }
 
-/** Сегмент видео с камеры (комната звонка): сохраняется файлом созвона, в БД — ничего. */
-export async function addVideo(candidateId: string, sessionId: string, bytes: Uint8Array, startMs: number): Promise<VideoSegment> {
-  const row = await loadOwn(candidateId, sessionId);
-  if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
-  const seg = await saveVideoSegment(sessionId, bytes, startMs);
-  if (!row.audioPath) await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: callAudioDir(sessionId).rel } });
-  return seg;
-}
-
-/** Сегмент видео: кандидату — всегда, работодателю — после принятого приглашения (как аудио). */
-export async function getVideo(who: CallPrincipal, sessionId: string, segment: string): Promise<Buffer> {
-  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true } });
-  if (!row) throw errors.notFound('Созвон не найден');
-  const access = await resolveCallAccess(who, row);
-  if (!access.recording) throw errors.forbidden('Запись созвона откроется после того, как кандидат примет приглашение');
-  return readVideoSegment(sessionId, segment);
-}
-
 export async function getRecording(who: CallPrincipal, sessionId: string, segment?: string): Promise<Buffer> {
-  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true } });
+  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, status: true } });
   if (!row) throw errors.notFound('Созвон не найден');
   const access = await resolveCallAccess(who, row);
   if (!access.recording) throw errors.forbidden('Запись созвона откроется после того, как кандидат примет приглашение');

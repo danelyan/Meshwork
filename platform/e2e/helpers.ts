@@ -7,5 +7,5 @@ import { expect, type Page } from '@playwright/test';
 export async function signInAsDemoCandidate(page: Page) {
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  await dialog.getByRole('group', { name: 'Специалисты' }).getByRole('button', { name: 'Войти как Юлия Власова' }).click();
+  await dialog.getByRole('button', { name: 'Войти как Юлия Власова' }).click();
 }

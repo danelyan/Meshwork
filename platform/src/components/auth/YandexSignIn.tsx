@@ -13,11 +13,11 @@ import { ConsentCheck } from './ConsentCheck';
  * «Войти через ФСП ID» (/api/fsp-id/login) — только кандидату: ФСП ID есть у спортсменов; провайдер всегда
  * доступен (симулятор по env или встроенный мок). «Войти через Яндекс ID» (/api/auth/yandex) — если настроен.
  */
-type SignInProps = { enabled: boolean; next: string | null; fsp?: boolean; agreed?: boolean };
+type SignInProps = { enabled: boolean; next: string | null; fsp?: boolean; agreed?: boolean; hideWhenOff?: boolean };
 
 export function YandexSignIn(props: SignInProps) {
   if (props.agreed === undefined) return <StandaloneSignIn {...props} />;
-  const { enabled, next, fsp = false, agreed } = props;
+  const { enabled, next, fsp = false, agreed, hideWhenOff = false } = props;
   const qs = new URLSearchParams({ consent: CONSENT_VERSION, ...(next ? { next } : {}) });
   const active = enabled && agreed;
   return (
@@ -30,7 +30,7 @@ export function YandexSignIn(props: SignInProps) {
           Войти через ФСП ID
         </a>
       )}
-      <a
+      {(enabled || !hideWhenOff) && <a
         href={active ? `/api/auth/yandex?${qs.toString()}` : undefined}
         className={`${ui.btn} ${ui.primary} ${styles.yandex}`}
         aria-disabled={active ? undefined : 'true'}
@@ -41,7 +41,7 @@ export function YandexSignIn(props: SignInProps) {
           <path d="M13.3 6.5h-1.1c-1.9 0-2.9 1-2.9 2.4 0 1.6.7 2.4 2.1 3.3l1.2.8-3.3 4.9H7.4l3-4.4C8.7 12.3 7.7 11.1 7.7 9c0-2.6 1.8-4.4 5.2-4.4h3.4v12.8h-2.9V6.5z" fill="#fff" />
         </svg>
         Войти через Яндекс ID
-      </a>
+      </a>}
     </>
   );
 }

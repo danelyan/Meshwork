@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type DemoPersona, demoEmployerLogin, demoFreshLogin, demoLogin, getDemoAccounts } from '@/lib/api';
 import { safeNext } from '@/server/auth/redirect';
@@ -139,5 +139,93 @@ export function PersonaChip({ persona, state, agreed }: { persona: DemoPersona; 
       <span>{persona.name}</span>
       <span className={styles.chipBadge}>{state.pending === persona.id ? 'Вхожу…' : persona.badge}</span>
     </button>
+  );
+}
+
+const DEFAULT_STAGE = 3;
+
+/**
+ * Компактный выбор персоны для окна входа: вкладки «Специалисты / Компании»; у специалистов линия этапов
+ * (кружки-кнопки, ←/→ переключают) и одна карточка выбранного этапа. По умолчанию этап 3 (созвон).
+ */
+export function PersonaStepper({ state, agreed }: { state: PersonasState; agreed: boolean }) {
+  const specialists = specialistsOf(state.personas);
+  const companies = companiesOf(state.personas);
+  const [tab, setTab] = useState<'people' | 'companies'>('people');
+  const [picked, setPicked] = useState<string | null>(null);
+  const dots = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const current = specialists.find((p) => p.id === picked) ?? specialists.find((p) => p.stage === DEFAULT_STAGE) ?? specialists[0];
+  const index = current ? specialists.indexOf(current) : -1;
+  const showCompanies = tab === 'companies' && companies.length > 0;
+
+  const move = (to: number) => {
+    const target = specialists[to];
+    if (!target) return;
+    setPicked(target.id);
+    dots.current[to]?.focus();
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); move(Math.min(index + 1, specialists.length - 1)); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); move(Math.max(index - 1, 0)); }
+  };
+  const blocked = current?.kind === 'fresh' && !agreed;
+
+  return (
+    <div className={styles.stepper}>
+      {state.error && (
+        <Notice tone="error">
+          {state.error} <Button onClick={state.reload}>Повторить загрузку профилей</Button>
+        </Notice>
+      )}
+      {state.personas === null && !state.error && <p role="status" className={styles.hint}>Загружаю профили…</p>}
+      {companies.length > 0 && specialists.length > 0 && (
+        <div role="tablist" aria-label="Тип демо-профиля" className={styles.tabs}>
+          <button type="button" role="tab" id="persona-tab-people" aria-selected={!showCompanies} aria-controls="persona-panel" className={styles.tab} onClick={() => setTab('people')}>Специалисты</button>
+          <button type="button" role="tab" id="persona-tab-companies" aria-selected={showCompanies} aria-controls="persona-panel" className={styles.tab} onClick={() => setTab('companies')}>Компании</button>
+        </div>
+      )}
+      <div id="persona-panel" role={companies.length > 0 && specialists.length > 0 ? 'tabpanel' : undefined} aria-labelledby={showCompanies ? 'persona-tab-companies' : 'persona-tab-people'} className={styles.panel}>
+        {showCompanies ? (
+          <ul className={styles.list}>
+            {companies.map((p) => <PersonaRow key={p.id} persona={p} state={state} />)}
+          </ul>
+        ) : current && (
+          <>
+            <ol className={styles.track} aria-label="Этапы пути специалиста" onKeyDown={onKeyDown}>
+              {specialists.map((p, i) => (
+                <li key={p.id} className={styles.trackItem}>
+                  <button
+                    type="button"
+                    ref={(el) => { dots.current[i] = el; }}
+                    className={styles.dot}
+                    aria-label={`Этап ${p.stage}: ${p.badge}`}
+                    aria-current={p.id === current.id ? 'step' : undefined}
+                    onClick={() => setPicked(p.id)}
+                  >{p.stage}</button>
+                </li>
+              ))}
+            </ol>
+            <p className={styles.ends} aria-hidden="true"><span>{specialists[0]!.badge}</span><span>{specialists[specialists.length - 1]!.badge}</span></p>
+            <div className={styles.card} aria-live="polite">
+              <p className={styles.cardHead}>
+                <span className={styles.name}>{current.stage} · {current.name}</span>
+                <span className={styles.badge}>{current.badge}</span>
+              </p>
+              <p className={styles.sees}>{current.sees}</p>
+              <button
+                type="button"
+                className={styles.enter}
+                aria-label={current.kind === 'fresh' ? current.name : `Войти как ${current.name}`}
+                aria-describedby={blocked ? 'persona-why' : undefined}
+                disabled={state.pending !== null || blocked}
+                onClick={() => state.enter(current)}
+              >{state.pending === current.id ? 'Вхожу…' : 'Войти →'}</button>
+              {blocked && <span id="persona-why" className={styles.why}>Отметь согласие на обработку данных выше</span>}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Kicker, Notice } from '@/components/ui';
-import { PersonaGroups, useDemoPersonas } from '@/components/demo/DemoPersonas';
+import { Button, Notice } from '@/components/ui';
+import { PersonaStepper, useDemoPersonas } from '@/components/demo/DemoPersonas';
 import { safeNext } from '@/server/auth/redirect';
 import { ConsentCheck } from './ConsentCheck';
 import { EmailAuth } from './EmailAuth';
@@ -22,6 +22,7 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
     : initialError.startsWith('fsp_') ? 'ФСП ID не подтвердил вход. Попробуй ещё раз.'
     : 'Не удалось завершить вход. Попробуй ещё раз.' : null);
   const [agreed, setAgreed] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(initialError !== null);
   const destination = safeNext(next);
   const personas = useDemoPersonas({ next: destination, agreed, navigate, enabled: demoEnabled });
   // Куда вернуть после входа: ссылку кабинета работодателя - только работодателю, остальное - только кандидату (в useDemoPersonas).
@@ -29,28 +30,35 @@ export function AuthEntryFlow({ yandexEnabled, demoEnabled, next, onClose, navig
   // Роль при входе не спрашиваем (владелец 11.10: «зачем для входа выбирать роль? роль это при регистрации ведь только»):
   // почта и Яндекс узнают аккаунт, а новому аккаунту роль задаёт первый вопрос знакомства в чате («Ты здесь как кто?»).
   return <div>
-    <header className={styles.header}>
-      <Kicker>ФСП Карьера · вход</Kicker>
-      <Button className={styles.close} aria-label="Закрыть окно входа" onClick={onClose}>×</Button>
-    </header>
     <div className={styles.body}>
-      <h2 id="auth-entry-title" className={styles.title}>Вход</h2>
-      <p className={styles.lead}>Новый аккаунт? Кто ты - специалист или компания - спросит ИИ-помощник первым вопросом.</p>
+      <header className={styles.header}>
+        <div className={styles.headText}>
+          <h2 id="auth-entry-title" className={styles.title}>Вход</h2>
+          <p className={styles.lead}>Новый аккаунт? Кто ты - специалист или компания - спросит ИИ-помощник первым вопросом.</p>
+        </div>
+        <Button className={styles.close} aria-label="Закрыть окно входа" onClick={onClose}>×</Button>
+      </header>
       {error && <Notice tone="error">{error}</Notice>}
       <ConsentCheck checked={agreed} onChange={setAgreed} />
       <div className={styles.methods}>
         <section className={styles.method} aria-label="Вход на платформу">
           <h3>Войти на платформу</h3>
-          <EmailAuth next={destination} navigate={navigate} agreed={agreed} />
+          <div className={styles.sso}>
+            <YandexSignIn enabled={yandexEnabled} next={destination} fsp agreed={agreed} hideWhenOff />
+          </div>
+          <p className={styles.hint} title="ФСП ID - вход спортсмена ФСП: аккаунт специалиста. Реестр ФСП на стенде - симулятор с синтетическими участниками. Пароль Яндекса платформе не передаётся.">ФСП ID - достижения сразу в профиле</p>
           <p className={styles.or}>или</p>
-          <YandexSignIn enabled={yandexEnabled} next={destination} fsp agreed={agreed} />
-          {!yandexEnabled && <p id="yandex-off" className={styles.hint}>Вход через Яндекс не настроен на этом стенде.</p>}
-          <p className={styles.hint}>ФСП ID - вход спортсмена ФСП: аккаунт специалиста, достижения сразу попадут в профиль. Реестр ФСП на стенде - симулятор с синтетическими участниками.</p>
+          <button type="button" className={styles.accordion} aria-expanded={emailOpen} aria-controls="auth-email" onClick={() => setEmailOpen(!emailOpen)}>
+            Войти по почте <span aria-hidden="true" className={styles.chev}>⌄</span>
+          </button>
+          <div id="auth-email" hidden={!emailOpen}>
+            <EmailAuth next={destination} navigate={navigate} agreed={agreed} />
+          </div>
         </section>
         {demoEnabled && <section className={`${styles.method} ${styles.demo}`} aria-label="Демо-профиль">
           <h3>Демо-профиль</h3>
-          <p className={styles.hint}>Вымышленные данные, вход без пароля. Профили идут по этапам пути соискателя; для компании - с вакансиями и с приглашениями.</p>
-          <PersonaGroups state={personas} agreed={agreed} />
+          <p className={styles.hint}>Вымышленные данные, вход без пароля. Этапы пути соискателя; компании - с вакансиями и приглашениями.</p>
+          <PersonaStepper state={personas} agreed={agreed} />
         </section>}
       </div>
       {personas.pending && <p role="status" className={styles.hint}>Входим…</p>}

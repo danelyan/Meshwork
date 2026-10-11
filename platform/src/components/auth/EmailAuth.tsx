@@ -2,7 +2,7 @@
 
 import { type FormEvent, useState } from 'react';
 
-import { Button, Chip, Field, Notice } from '@/components/ui';
+import { Button, Field, Notice } from '@/components/ui';
 import {
   AuthFormError,
   type CodeSent,
@@ -21,13 +21,8 @@ type Mode = 'login' | 'register' | 'forgot';
 /** form — ввод почты/пароля; verify — код подтверждения почты; reset — код сброса + новый пароль. */
 type Stage = 'form' | 'verify' | 'reset';
 
-const MODES: [Mode, string][] = [
-  ['login', 'Войти'],
-  ['register', 'Регистрация'],
-];
-
 /**
- * Вход и регистрация по почте (R-D-04): вкладки «Войти» / «Регистрация», ссылка сброса пароля
+ * Вход и регистрация по почте (R-D-04): переключение «Регистрация» / «Уже есть аккаунт», ссылка сброса пароля
  * и шаг ввода 6-значного кода из письма. При локальной разработке сервер возвращает код
  * подтверждения (`devCode`) — он показывается здесь; на стенде кода в ответе нет, только письмо.
  */
@@ -106,15 +101,11 @@ export function EmailAuth({ next, navigate, agreed }: { next: string | null; nav
       ? /^\d{6}$/.test(code) && (stage === 'verify' || password.length >= 8)
       : mode === 'forgot' || (mode === 'register' ? password.length >= 8 && agreed : password.length > 0));
   const submitLabel = stage === 'verify' ? 'Подтвердить почту' : stage === 'reset' ? 'Сменить пароль и войти'
-    : mode === 'login' ? 'Войти по почте' : mode === 'register' ? 'Получить код' : 'Прислать код';
+    : mode === 'login' ? 'Войти' : mode === 'register' ? 'Получить код' : 'Прислать код';
 
   return (
     <form className={styles.emailForm} onSubmit={submit} noValidate aria-label="Вход по почте">
-      {mode === 'forgot' ? <h4 className={styles.resetTitle}>Восстановление пароля</h4> : <div className={styles.modes} role="group" aria-label="Способ">
-        {MODES.map(([m, label]) => (
-          <Chip key={m} pressed={mode === m} onClick={() => switchMode(m)} disabled={pending}>{label}</Chip>
-        ))}
-      </div>}
+      {mode === 'forgot' && <h4 className={styles.resetTitle}>Восстановление пароля</h4>}
       {error && <Notice tone="error">{error}</Notice>}
       {info && <Notice>{info}</Notice>}
       {devCode && (
@@ -140,8 +131,14 @@ export function EmailAuth({ next, navigate, agreed }: { next: string | null; nav
         </Field>
       )}
       <Button type="submit" variant="cta" loading={pending} disabled={!canSubmit}>{submitLabel}</Button>
-      {mode === 'login' && stage === 'form' && <button type="button" className={styles.textAction} disabled={pending} onClick={() => switchMode('forgot')}>Забыли пароль?</button>}
-      {mode === 'forgot' && <button type="button" className={styles.textAction} disabled={pending} onClick={() => switchMode('login')}>Вернуться ко входу</button>}
+      {stage === 'form' && (
+        <div className={styles.emailLinks}>
+          {mode === 'login' && <button type="button" className={styles.textAction} disabled={pending} onClick={() => switchMode('register')}>Регистрация</button>}
+          {mode === 'register' && <button type="button" className={styles.textAction} disabled={pending} onClick={() => switchMode('login')}>Уже есть аккаунт</button>}
+          {mode === 'login' && <button type="button" className={styles.textAction} disabled={pending} onClick={() => switchMode('forgot')}>Забыли пароль?</button>}
+          {mode === 'forgot' && <button type="button" className={styles.textAction} disabled={pending} onClick={() => switchMode('login')}>Вернуться ко входу</button>}
+        </div>
+      )}
       {codeStage && (
         <div className={styles.codeActions}>
           <Button size="sm" disabled={pending} onClick={() => void run(async () => codeSent(stage === 'verify' ? await resendEmailCode({ email: email.trim() }) : await forgotPassword({ email: email.trim() }), stage))}>

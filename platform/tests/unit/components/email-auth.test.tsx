@@ -37,7 +37,7 @@ describe('EmailAuth', () => {
     render(<EmailAuth next={null} navigate={vi.fn()} agreed={false} />);
     fireEvent.change(screen.getByLabelText('Почта'), { target: { value: 'a@example.test' } });
     fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'x' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Войти по почте' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
     expect((await screen.findByRole('alert')).textContent).toBe('Неверная почта или пароль');
   });
 
@@ -50,9 +50,7 @@ describe('EmailAuth', () => {
     vi.stubGlobal('fetch', fetchMock);
     const navigate = vi.fn();
     render(<EmailAuth next="/profile" navigate={navigate} agreed={false} />);
-    const modes = screen.getByRole('group', { name: 'Способ' });
-    expect(modes.querySelectorAll('button')).toHaveLength(2);
-    expect(modes.contains(screen.getByRole('button', { name: 'Забыли пароль?' }))).toBe(false);
+    expect(screen.getByRole('button', { name: 'Регистрация' })).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Почта'), { target: { value: 'reset@example.test' } });
     fireEvent.click(screen.getByRole('button', { name: 'Забыли пароль?' }));
     expect(screen.queryByLabelText('Пароль')).toBeNull();
@@ -78,7 +76,7 @@ describe('EmailAuth', () => {
     render(<EmailAuth next={null} navigate={vi.fn()} agreed={false} />);
     fireEvent.click(screen.getByRole('button', { name: 'Забыли пароль?' }));
     fireEvent.click(screen.getByRole('button', { name: 'Вернуться ко входу' }));
-    expect(screen.getByRole('button', { name: 'Войти по почте' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Войти' })).toBeTruthy();
     expect(screen.queryByLabelText('Новый пароль')).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
   });

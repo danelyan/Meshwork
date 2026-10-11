@@ -23,6 +23,7 @@ afterEach(cleanup);
 function flow(next:string|null=null, demoEnabled=true) {
   render(<AuthEntryFlow yandexEnabled={false} demoEnabled={demoEnabled} next={next} onClose={vi.fn()} navigate={navigate} />);
 }
+const openEmail=()=>fireEvent.click(screen.getByRole('button',{name:/Войти по почте/}));
 
 it('opens over the existing page and closes with focus and scroll restored',()=>{
   render(<AuthEntry yandexEnabled={false} demoEnabled><a href="/auth">Приступим</a><p>Главная</p></AuthEntry>);
@@ -47,6 +48,8 @@ it('preserves modified clicks and external auth links',()=>{
 it('opens sign-in at once, without a role step, and logs a ready candidate back to the page',async()=>{
   flow('/profile');
   expect(screen.queryByText('Кто вы?')).toBeNull();
+  expect(screen.queryByRole('form',{name:'Вход по почте'})).toBeNull();
+  openEmail();
   expect(screen.getByRole('form',{name:'Вход по почте'})).toBeTruthy();
   fireEvent.click(await screen.findByRole('button',{name:'Войти как Анна'}));
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/profile'));
@@ -54,13 +57,17 @@ it('opens sign-in at once, without a role step, and logs a ready candidate back 
   expect(demoEmployerLogin).not.toHaveBeenCalled();
 });
 
-it('lists personas with stage badge and one-line description; a company goes to its assistant, not to a candidate link',async()=>{
+it('shows one persona card for the default stage 3; stage buttons and arrows switch it; a company tab logs in without a candidate link',async()=>{
   flow('/profile');
-  const people=await screen.findByRole('group',{name:'Специалисты'});
-  const companies=screen.getByRole('group',{name:'Компании'});
-  expect(people.textContent).toContain('Анна');
-  expect(people.textContent).toContain('Профиль из резюме');
-  expect(companies.textContent).toContain('Компания');
+  const dot3=await screen.findByRole('button',{name:'Этап 3: Профиль из резюме'});
+  expect(dot3.getAttribute('aria-current')).toBe('step');
+  expect(screen.getByRole('button',{name:'Этап 1: Пусто'}).getAttribute('aria-current')).toBeNull();
+  expect(screen.getByRole('button',{name:'Войти как Анна'}).closest('div')!.textContent).toContain('3 · Анна');
+  fireEvent.keyDown(dot3,{key:'ArrowLeft'});
+  expect(screen.getByRole('button',{name:'Этап 1: Пусто'}).getAttribute('aria-current')).toBe('step');
+  fireEvent.click(screen.getByRole('button',{name:'Этап 3: Профиль из резюме'}));
+  fireEvent.click(screen.getByRole('tab',{name:'Компании'}));
+  expect(screen.queryByRole('button',{name:'Войти как Анна'})).toBeNull();
   fireEvent.click(screen.getByRole('button',{name:'Войти как Компания'}));
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/employer'));
   expect(demoEmployerLogin).toHaveBeenCalledWith('boss');
@@ -68,7 +75,8 @@ it('lists personas with stage badge and one-line description; a company goes to 
 
 it('creates a new demo profile only after consent; the role is asked in the AI chat',async()=>{
   flow();
-  const enter=await screen.findByRole('button',{name:'Новый пользователь'});
+  fireEvent.click(await screen.findByRole('button',{name:'Этап 1: Пусто'}));
+  const enter=screen.getByRole('button',{name:'Новый пользователь'});
   expect((enter as HTMLButtonElement).disabled).toBe(true);
   fireEvent.click(screen.getByRole('checkbox',{name:/Согласен/}));
   expect((enter as HTMLButtonElement).disabled).toBe(false);
@@ -77,22 +85,30 @@ it('creates a new demo profile only after consent; the role is asked in the AI c
   expect(demoFreshLogin).toHaveBeenCalledWith(CONSENT_VERSION);
 });
 
+it('hides the Yandex button when it is not configured; FSP ID stays, disabled without consent',()=>{
+  flow(null,false);
+  expect(screen.queryByText('Войти через Яндекс ID')).toBeNull();
+  expect(screen.getByText('Войти через ФСП ID').closest('a')?.getAttribute('href')).toBeNull();
+});
+
 it('respects the demo flag and disables unconfigured real login',()=>{
   flow(null,false);
-  expect(screen.queryByRole('group',{name:'Специалисты'})).toBeNull();
+  expect(screen.queryByRole('button',{name:/^Этап/})).toBeNull();
   expect(getDemoAccounts).not.toHaveBeenCalled();
-  expect(screen.getByText('Войти через Яндекс ID').closest('a')?.getAttribute('href')).toBeNull();
+  expect(screen.getByText('Войти через ФСП ID').closest('a')?.getAttribute('href')).toBeNull();
 });
 
 it('shares one consent checkbox across registration, both SSO buttons and fresh demo', async () => {
   render(<AuthEntryFlow yandexEnabled demoEnabled next="/profile" onClose={vi.fn()} navigate={navigate} />);
   await screen.findByRole('button', { name: 'Войти как Анна' });
+  openEmail();
   fireEvent.click(screen.getByRole('button', { name: 'Регистрация' }));
   fireEvent.change(screen.getByLabelText('Почта'), { target: { value: 'shared@example.test' } });
   fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'shared-password' } });
   const checkboxes = screen.getAllByRole('checkbox', { name: 'Согласен(на) на обработку персональных данных' });
   expect(checkboxes).toHaveLength(1);
   const register = screen.getByRole('button', { name: 'Получить код' }) as HTMLButtonElement;
+  fireEvent.click(screen.getByRole('button', { name: 'Этап 1: Пусто' }));
   const fresh = screen.getByRole('button', { name: 'Новый пользователь' }) as HTMLButtonElement;
   const yandex = screen.getByText('Войти через Яндекс ID').closest('a')!;
   const fsp = screen.getByText('Войти через ФСП ID').closest('a')!;
@@ -121,9 +137,11 @@ it('retries failed demo loading without blocking email login',async()=>{
   vi.mocked(getDemoAccounts).mockRejectedValueOnce(new Error('Сеть недоступна'));
   flow();
   expect((await screen.findByRole('alert')).textContent).toContain('Сеть недоступна');
+  openEmail();
   expect(screen.getByRole('form',{name:'Вход по почте'})).toBeTruthy();
   fireEvent.click(screen.getByRole('button',{name:'Повторить загрузку профилей'}));
-  fireEvent.click(await screen.findByRole('button',{name:'Войти как Компания'}));
+  fireEvent.click(await screen.findByRole('tab',{name:'Компании'}));
+  fireEvent.click(screen.getByRole('button',{name:'Войти как Компания'}));
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('/employer'));
   expect(getDemoAccounts).toHaveBeenCalledTimes(2);
 });
@@ -133,5 +151,5 @@ it('keeps fresh profile creation available when the server sends no personas',as
   flow();
   expect(await screen.findByRole('button',{name:'Новый пользователь'})).toBeTruthy();
   expect(screen.queryByText('Загружаю профили…')).toBeNull();
-  expect(screen.queryByRole('group',{name:'Компании'})).toBeNull();
+  expect(screen.queryByRole('tab',{name:'Компании'})).toBeNull();
 });

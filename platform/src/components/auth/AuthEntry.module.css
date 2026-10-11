@@ -1,22 +1,20 @@
 .dialog { width: min(900px, calc(100vw - 40px)); max-height: calc(100svh - 40px); padding: 0; border: 1px solid var(--glass-border); background: var(--glow), var(--landing-white); color: var(--ink); box-shadow: var(--auth-shadow); overflow-y: auto; overscroll-behavior: contain; animation: entryIn .26s cubic-bezier(.22, 1, .36, 1) both; }
 .dialog::backdrop { background: var(--auth-backdrop); backdrop-filter: blur(10px); }
-.header { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 24px; padding: 28px 40px; border-bottom: 1px solid var(--line); background: var(--glass); backdrop-filter: var(--blur); }
-/* вход одним экраном: подпись слева, крестик справа */
-.header > :first-child { flex: 1; }
-.close { min-width: 40px; min-height: 48px; padding: 0; border: 1px solid var(--border-input); background: var(--surface-input); font-size: 28px; }
-.body { padding: 36px 40px; display: flex; flex-direction: column; gap: 24px; }
-.title { font-size: clamp(30px, 4vw, 48px); letter-spacing: -.04em; }
-.lead { color: var(--muted); font-size: var(--fs-lg); }
+.header { display: flex; align-items: flex-start; gap: 16px; }
+.headText { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.close { flex: none; min-width: 36px; min-height: 36px; padding: 0; border: 1px solid var(--border-input); background: var(--surface-input); font-size: 24px; line-height: 1; }
+.body { padding: 20px 28px 24px; display: flex; flex-direction: column; gap: 14px; }
+.title { margin: 0; font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.03em; }
+.lead { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
 .hint { font: var(--fs-xs) var(--mono); color: var(--muted); }
-.methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; }
+.methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
 .method { display: grid; align-content: start; gap: 14px; min-width: 0; }
 /* демо-профили: колонка справа от способов входа */
 .demo { min-width: 0; }
 @media (min-width: 761px) { .methods:has(.demo) { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 32px; } }
 @media (max-width: 640px) {
   .dialog { width: calc(100vw - 24px); max-height: calc(100svh - 24px); }
-  .header { padding: 20px; gap: 12px; }
-  .body { padding: 24px 20px; gap: 20px; }
+  .body { padding: 16px; gap: 14px; }
   .methods { grid-template-columns: 1fr; }
 }
 /* lane email-auth: вход и регистрация по почте (EmailAuth) */
@@ -34,3 +32,15 @@
 .textAction:hover:not(:disabled) { color: var(--ink); }
 .textAction:disabled { opacity: .5; cursor: default; }
 .resetTitle { margin: 0; font-size: var(--fs-md); font-weight: 600; }
+
+/* вход одним экраном: SSO в ряд, почта в аккордеоне */
+.sso { display: flex; gap: 8px; }
+.sso > a { flex: 1; min-width: 0; min-height: 44px; margin: 0; padding: 0 10px; gap: 8px; font-size: var(--fs-sm); text-align: center; line-height: 1.2; }
+.sso > a svg { width: 18px; height: 18px; }
+.method h3 { margin: 0; }
+.method .hint { margin: 0; }
+.accordion { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 4px 0; border: 0; background: none; font: 600 var(--fs-sm) inherit; font-family: inherit; color: var(--ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.accordion[aria-expanded='true'] .chev { transform: rotate(180deg); }
+.chev { display: inline-block; transition: transform .16s var(--ease); }
+.emailLinks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }

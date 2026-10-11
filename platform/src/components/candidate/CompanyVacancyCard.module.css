@@ -1,0 +1,13 @@
+.card { display: grid; gap: 14px; }
+.head { display: grid; gap: 8px; }
+.head h2 { font-size: var(--fs-xl); margin: 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.block { display: grid; gap: 6px; }
+.block h3 { font-size: var(--fs-md); margin: 0; }
+.block p { margin: 0; }
+.fit { display: grid; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+.fit strong { font-size: var(--fs-lg); }
+.proven li::marker, .lack li::marker { content: ''; }
+.lack { color: var(--muted); }
+.actions { display: grid; gap: 8px; justify-items: start; }
+.mapLink { font-size: var(--fs-sm); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }

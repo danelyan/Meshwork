@@ -39,8 +39,16 @@ export const PAGE_ACCESS = {
   // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе — жюри без регистрации.
   '/validation': 'public',
   '/evaluate': 'public',
+  // Лаборатория вариантов заданий: генерация из реестра по seed, без данных пользователей.
+  '/mechanics': 'public',
+  // Симулятор адаптивного теста для жюри: виртуальный кандидат, без БД.
+  '/simulator': 'public',
+  // «Как устроена проверка» для жюри: схема теста, информация банка, симуляция, формула подбора; без БД.
+  '/method': 'public',
   // Флаг DEMO_LOGIN проверяет сама страница (выключен → 404).
   '/demo': 'public',
+  // Режим эксперта: тест на грейд без регистрации, грейд не присваивается. Флаг DEMO_LOGIN — в странице (выключен → 404).
+  '/expert': 'public',
   // Прежние адреса: только редирект на /consultant, данных нет.
   '/onboarding': 'public',
   '/employer/assistant': 'public',
@@ -126,11 +134,16 @@ export const API_ACCESS = {
   '/api/auth/role/switch': 'account',
   '/api/auth/onboarding/complete': 'account',
   '/api/onboarding': 'account',
-  // Журнал редакций ответов опроса (C05): только свой, только кандидат.
-  '/api/onboarding/history': 'candidate',
   // Флаг DEMO_LOGIN проверяет обработчик (выключен → 404).
   '/api/demo/login': 'public',
   '/api/demo/resume': 'candidate',
+  // Режим эксперта (server/expert): вход — своя кука fsp_expert (requireExpert в обработчике), не сессия cid;
+  // флаг DEMO_LOGIN, лимиты создания — там же.
+  '/api/expert/start': 'public',
+  '/api/expert/attempt/[id]': 'public',
+  '/api/expert/attempt/[id]/answer': 'public',
+  '/api/expert/attempt/[id]/finish': 'public',
+  '/api/expert/attempt/[id]/signal': 'public',
   '/api/profile': 'candidate',
   '/api/profile/details': 'candidate',
   '/api/profile/resume-fields': 'candidate',
@@ -160,6 +173,7 @@ export const API_ACCESS = {
   '/api/invitations/[id]/live-defense/cancel': 'candidate',
   '/api/recommendations': 'candidate',
   '/api/consultant/messages': 'candidate',
+  '/api/consultant/messages/stop': 'candidate',
   '/api/consultant/conversations': 'candidate',
   '/api/consultant/conversations/[id]': 'candidate',
   '/api/consultant/settings': 'candidate',
@@ -230,6 +244,7 @@ export const API_ACCESS = {
   '/api/openapi': 'public',
   // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
   '/api/evaluate': { POST: 'public' },
+  '/api/simulator': { POST: 'public' },
   '/api/dev/delete-account': 'dev',
   // Ответ оператора на возражения против оценки (ст. 16, ADR 0005).
   '/api/dev/objections': 'dev',

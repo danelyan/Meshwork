@@ -45,7 +45,8 @@ async function seed() {
     await prisma.user.create({ data: { id: `u-${id}`, name: id, role: 'candidate', candidateId: id } });
   }
   for (const x of ['a', 'b', 'c']) {
-    await prisma.company.create({ data: { id: `co-${x}`, name: NAMES[x]!, isDemo: false } });
+    // E05: без контакта компании (или почты отправителя) приглашение не уходит — фикстура задаёт контакт
+    await prisma.company.create({ data: { id: `co-${x}`, name: NAMES[x]!, isDemo: false, contact: `hr-${x}@example.test` } });
     await prisma.user.create({ data: { id: `u-${x}`, name: `HR ${x}`, role: 'employer' } });
     await prisma.employerProfile.create({ data: { id: `p-${x}`, userId: `u-${x}`, companyId: `co-${x}` } });
     await prisma.vacancy.create({ data: { id: `vac-${x}`, companyId: `co-${x}`, title: `Backend ${x}`, specialization: 'backend', grade: 'junior', salaryFrom: 150000, salaryTo: 180000, needs: [] } });

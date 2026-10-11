@@ -16,6 +16,7 @@ export {
   getCandidateContact,
   setCandidateContact,
   invitationsSentToday,
+  companyInviteContactFor,
 } from './invitations';
 export type { EmployerInvitationView, CandidateInvitationView } from './invitations';
 export { loadEmployerContext } from './context';

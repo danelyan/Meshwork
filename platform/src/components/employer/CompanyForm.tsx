@@ -77,7 +77,7 @@ export function CompanyForm({ company }: { company: CompanyBody }) {
             <input className={ui.input} value={form.inn} maxLength={12} inputMode="numeric" onChange={set('inn')} />
           </Field>
         </div>
-        <Field label="Контакт" hint="Почта или Telegram: виден кандидату в приглашении ещё до ответа." error={fields.contact}>
+        <Field label="Контакт" hint="Почта или Telegram: виден кандидату в приглашении ещё до ответа. Без контакта компании (или почты вашего аккаунта) приглашения не отправляются." error={fields.contact}>
           <input className={ui.input} value={form.contact} maxLength={120} placeholder="name@mail.ru или @username" onChange={set('contact')} />
         </Field>
         {error && <Notice tone="error">{error}</Notice>}

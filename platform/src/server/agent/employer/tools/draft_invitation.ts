@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
-import { invitationsSentToday, loadEmployerContext } from '@/server/employer';
+import { companyInviteContactFor, invitationsSentToday, loadEmployerContext } from '@/server/employer';
 import { categoryLabel } from '@/server/employer/ranking';
 import { pseudonym } from '@/server/employer/privacy';
 import { DAILY_INVITATION_LIMIT } from '@/server/employer/weights';
@@ -28,7 +28,7 @@ const Output = z
     salaryTo: z.number().int().nullable(),
     message: z.string(),
     limit: z.object({ sent: z.number().int(), limit: z.number().int(), left: z.number().int() }),
-    blocked: z.enum(['daily_limit', 'open_invitation']).nullable(),
+    blocked: z.enum(['daily_limit', 'open_invitation', 'no_company_contact']).nullable(),
     sent: z.literal(false),
   })
   .strict();
@@ -43,7 +43,7 @@ const fmtRub = (n: number) => `${n.toLocaleString('ru-RU').replace(/ /g, ' ')} 
 export const draftInvitation: EmployerTool = {
   name: 'draft_invitation',
   description:
-    'Подготовить черновик приглашения кандидату: вилка зарплаты от–до и текст предложения. Ничего не отправляет — черновик появляется в ленте формой, отправляет работодатель кнопкой. Сообщает, сколько приглашений осталось на сутки и можно ли пригласить (лимит, открытое приглашение).',
+    'Подготовить черновик приглашения кандидату: вилка зарплаты от–до и текст предложения. Ничего не отправляет — черновик появляется в ленте формой, отправляет работодатель кнопкой. Сообщает, сколько приглашений осталось на сутки и можно ли пригласить (лимит, открытое приглашение, нет способа связи компании).',
   input: Input,
   output: Output,
   async handler(ctx, input: z.infer<typeof Input>) {
@@ -56,10 +56,11 @@ export const draftInvitation: EmployerTool = {
       if (input.vacancyId) throw err;
     }
     if (vacancy?.archived) throw errors.notFound('Потребность закрыта');
-    const [emp, sent, open] = await Promise.all([
+    const [emp, sent, open, inviteContact] = await Promise.all([
       loadEmployerContext(ctx.employerProfileId),
       invitationsSentToday(ctx.companyId),
       prisma.invitation.findFirst({ where: { companyId: ctx.companyId, candidateId: cand.id, status: { in: ['sent', 'viewed'] } }, select: { id: true } }),
+      companyInviteContactFor(ctx.employerProfileId),
     ]);
     const from = input.salaryFrom ?? vacancy?.salaryFrom ?? input.salaryTo ?? null;
     const toRaw = input.salaryTo ?? vacancy?.salaryTo ?? from;
@@ -88,7 +89,8 @@ export const draftInvitation: EmployerTool = {
       salaryTo: to,
       message,
       limit: { sent, limit: DAILY_INVITATION_LIMIT, left },
-      blocked: open ? 'open_invitation' : left === 0 ? 'daily_limit' : null,
+      // E05: без способа связи компании createInvitation ответит 409 — говорим об этом до формы.
+      blocked: inviteContact === null ? 'no_company_contact' : open ? 'open_invitation' : left === 0 ? 'daily_limit' : null,
     };
     ctx.emit({ type: 'invitation_draft', draft });
     return { ...draft, sent: false as const };

@@ -40,7 +40,7 @@ describe('профиль компании: /api/employer/company (БД)', () => 
 
     const res = await patch({ industry: 'Финтех', inn: '7707 083893', contact: 't.me/northflow' }, EMP);
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ name: before.name, description: 'Исходное', industry: 'Финтех', inn: '7707083893', contact: '@northflow' });
+    expect(await res.json()).toMatchObject({ name: before.name, description: 'Исходное', industry: 'Финтех', inn: '7707083893', contact: '@northflow', inviteContact: '@northflow' });
     expect(await prisma.company.findUnique({ where: { id: DEMO_EMPLOYER.companyId }, select: { inn: true, industry: true } })).toEqual({ inn: '7707083893', industry: 'Финтех' });
 
     const cleared = await patch({ description: '' }, EMP);

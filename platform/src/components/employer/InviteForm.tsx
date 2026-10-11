@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
@@ -11,6 +12,7 @@ import { Button, Field, Notice } from '../ui';
 import ui from '../ui.module.css';
 
 import styles from './Employer.module.css';
+import { useInviteContact } from './InviteContactContext';
 import { RedFlagNotice } from './RedFlagNotice';
 
 export interface InviteFormProps {
@@ -41,9 +43,16 @@ function InvitationDialog({ children, close, busy, name }: { children: ReactNode
   return <dialog ref={ref} className={styles.invitationDialog} aria-label={`Приглашение: ${name}`} onCancel={(event) => { event.preventDefault(); if (!busy) close(); }} onClick={(event) => { if (event.target === event.currentTarget && !busy) close(); }}><div className={styles.dialogHeading}><span className={styles.status}>Приглашение кандидату</span><Button size="sm" onClick={close} disabled={busy} aria-label="Закрыть приглашение">×</Button></div><h2>{name}</h2>{children}</dialog>;
 }
 
-/** Приглашение конкретному кандидату (R-E-05, ТЗ 2.2): описание и вилка «от–до» обязательны. */
+/** Текст у формы, когда у компании нет способа связи (E05): отправка закрыта, пока контакт не указан. */
+export const NO_COMPANY_CONTACT_NOTICE = 'Кандидат должен видеть, как с вами связаться. Укажите почту или Telegram компании';
+
+/**
+ * Приглашение конкретному кандидату (R-E-05, ТЗ 2.2): описание и вилка «от–до» обязательны. Без способа связи компании
+ * (InviteContactContext: null) кнопка отправки закрыта — сервер в этом случае всё равно ответит 409 company_contact_required.
+ */
 export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalaryFrom, defaultSalaryTo, initialMessage, defaultOpen }: InviteFormProps) {
   const router = useRouter();
+  const contactMissing = useInviteContact() === null;
   const [open, setOpen] = useState(Boolean(defaultOpen));
   const [message, setMessage] = useState(initialMessage ?? '');
   const [salaryFrom, setSalaryFrom] = useState(defaultSalaryFrom ? String(defaultSalaryFrom) : '');
@@ -107,9 +116,14 @@ export function InviteForm({ candidateId, candidateName, vacancyId, defaultSalar
         </Field>
       </div>
       <RedFlagNotice flags={flags} />
+      {contactMissing && (
+        <Notice tone="error">
+          {NO_COMPANY_CONTACT_NOTICE} на странице <Link href="/employer/company">«Компания»</Link>.
+        </Notice>
+      )}
       {error && <Notice tone="error">{error}</Notice>}
       <div className={styles.actions}>
-        <Button type="submit" variant="cta" size="sm" loading={busy}>
+        <Button type="submit" variant="cta" size="sm" loading={busy} disabled={contactMissing}>
           Отправить приглашение
         </Button>
         <Button size="sm" onClick={() => setOpen(false)} disabled={busy}>

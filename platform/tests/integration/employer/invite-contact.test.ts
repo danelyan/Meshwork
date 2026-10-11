@@ -2,7 +2,10 @@
 import { GET as listInvites, POST as invite } from '@/app/api/employer/invitations/route';
 import { POST as respond } from '@/app/api/invitations/[id]/route';
 import { GET as myInvites } from '@/app/api/invitations/route';
+import { GET as getCompany } from '@/app/api/employer/company/route';
 import { GET as getContact, POST as setContact } from '@/app/api/profile/contact/route';
+import { employerTools } from '@/server/agent/employer/tools';
+import type { EmployerToolContext } from '@/server/agent/employer/types';
 import { createInvitation } from '@/server/employer/invitations';
 import { signUserSession } from '@/server/session';
 
@@ -20,6 +23,8 @@ const PAY = DEMO_POOL[0]!;
 const JUN = DEMO_POOL[2]!;
 const PAY_VAC = 'demo-vac-be-m-1';
 const ctx = { companyId: DEMO_EMPLOYER.companyId, employerProfileId: DEMO_EMPLOYER.profileId };
+const tool = (name: string) => employerTools.find((t) => t.name === name)!;
+const agentCtx: EmployerToolContext = { ...ctx, conversationId: 'conv-contact', emit: () => {}, llm: {} as EmployerToolContext['llm'] };
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
 const post = (body: Record<string, unknown>) =>
@@ -82,15 +87,32 @@ describe('приглашение: вилка, контакт компании и
     expect(await trackedContacts(PAY.id)).toBeNull();
   });
 
-  it('способ связи компании: нет Company.contact — почта отправителя; служебной почты нет — null', async () => {
+  it('способ связи компании: нет Company.contact — почта отправителя; служебная почта и нет контакта — 409 company_contact_required (E05)', async () => {
     await prisma.company.update({ where: { id: ctx.companyId }, data: { contact: null } });
     await createInvitation(ctx, { candidateId: PAY.id, message: 'Платёжная команда', salaryFrom: 1, salaryTo: 1 });
     let mine = await (await myInvites(jsonRequest('/x', 'GET', undefined, candCookie(PAY.id)))).json();
     expect(mine.invitations[0].company.contact).toBe(DEMO_EMPLOYER.email);
+    // профиль компании сообщает тот же способ связи
+    expect((await (await getCompany(jsonRequest('/x', 'GET', undefined, EMP))).json()).inviteContact).toBe(DEMO_EMPLOYER.email);
 
+    // служебная почта отправителя и нет контакта компании: отправить нельзя — кандидату некуда ответить
+    await prisma.invitation.deleteMany();
     await prisma.user.update({ where: { id: DEMO_EMPLOYER.userId }, data: { email: 'user-x@users.invalid' } });
-    mine = await (await myInvites(jsonRequest('/x', 'GET', undefined, candCookie(PAY.id)))).json();
-    expect(mine.invitations[0].company.contact).toBeNull();
+    expect((await (await getCompany(jsonRequest('/x', 'GET', undefined, EMP))).json()).inviteContact).toBeNull();
+    const refused = await post({ candidateId: JUN.id, salaryFrom: 200000, salaryTo: 260000 });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: 'company_contact_required', details: { companyUrl: '/employer/company' } } });
+    expect(await prisma.invitation.count()).toBe(0);
+    // помощник работодателя говорит то же до формы
+    const draft = (await tool('draft_invitation').handler(agentCtx, { candidateId: JUN.id, vacancyId: PAY_VAC })) as { blocked: string | null };
+    expect(draft.blocked).toBe('no_company_contact');
+
+    // контакт компании указан — приглашение уходит, кандидат видит контакт компании
+    await prisma.company.update({ where: { id: ctx.companyId }, data: { contact: '@northstream_hr' } });
+    expect((await post({ candidateId: JUN.id, salaryFrom: 200000, salaryTo: 260000 })).status).toBe(201);
+    mine = await (await myInvites(jsonRequest('/x', 'GET', undefined, candCookie(JUN.id)))).json();
+    expect(mine.invitations[0].company.contact).toBe('@northstream_hr');
+    expect(((await tool('draft_invitation').handler(agentCtx, { candidateId: PAY.id, vacancyId: PAY_VAC })) as { blocked: string | null }).blocked).toBeNull();
   });
 
   it('контакт кандидата после accepted: указанный кандидатом; не указан — почта; служебная почта — null, не пустая строка', async () => {

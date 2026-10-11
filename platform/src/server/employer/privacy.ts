@@ -43,7 +43,11 @@ export interface CandidateCard {
   /** «Кандидат #A1B2C3» до принятия, имя после. */
   displayName: string;
   specialization: Specialization | null;
-  category: { specialization: Specialization; grade: Grade; label: string } | null;
+  /**
+   * Категория из теста. `withheld` — индекс честности high без подтверждения: в подборе и фильтрах категория не
+   * учитывается (ranking.ts applyIntegrity), label говорит об этом же, чтобы карточка не расходилась с объяснением.
+   */
+  category: { specialization: Specialization; grade: Grade; label: string; withheld?: true } | null;
   fsp: { state: FspState; hasAchievements: boolean };
   claims: PublicClaim[];
   /**
@@ -86,10 +90,15 @@ export interface CardSource {
   specialization: Specialization | null;
   fspState: FspState;
   category: { specialization: Specialization; grade: Grade } | null;
+  /** Категория не учитывается в подборе до подтверждения (integrityFlagged в matching.ts): карточка помечает это в label. */
+  categoryWithheld?: boolean;
   claims: PublicClaim[];
   /** CandidateProfile: стаж, роли, софт-скиллы (из резюме или от кандидата). */
   experience?: { experienceYears: number | null; roles: string[]; softSkills: string[] } | null;
 }
+
+/** Хвост label категории, которую подбор не учитывает до подтверждения (тот же смысл, что у explanation.category). */
+export const CATEGORY_WITHHELD_SUFFIX = '(не учитывается до подтверждения)';
 
 /** Стабильный псевдоним без раскрытия id: 6 символов sha256. */
 export function pseudonym(candidateId: string): string {
@@ -106,6 +115,15 @@ export function candidateContact(src: { contact: string | null; email: string })
   return src.contact?.trim() || contactEmail(src.email);
 }
 
+/**
+ * Способ связи компании в приглашении (ТЗ 2.2, E05): Company.contact, иначе почта отправителя, если она не
+ * служебная. null — связаться не через что: createInvitation такое приглашение не отправляет
+ * (company_contact_required), а у уже отправленных интерфейс кандидата пишет NO_COMPANY_CONTACT.
+ */
+export function companyInviteContact(src: { contact: string | null; senderEmail: string | null | undefined }): string | null {
+  return src.contact?.trim() || (src.senderEmail ? contactEmail(src.senderEmail) : null);
+}
+
 export function toCandidateCard(src: CardSource, contactsVisible: boolean): CandidateCard {
   // Копируем ровно публичные поля: лишнее поле источника (цитата, sourceRef) наружу не уйдёт, даже если его передали по ошибке.
   const claims = src.claims
@@ -118,7 +136,11 @@ export function toCandidateCard(src: CardSource, contactsVisible: boolean): Cand
     id: src.id,
     displayName: contactsVisible ? src.name : pseudonym(src.id),
     specialization: src.category?.specialization ?? src.specialization,
-    category: src.category ? { ...src.category, label: categoryLabel(src.category) } : null,
+    category: src.category
+      ? src.categoryWithheld
+        ? { ...src.category, label: `${categoryLabel(src.category)} ${CATEGORY_WITHHELD_SUFFIX}`, withheld: true }
+        : { ...src.category, label: categoryLabel(src.category) }
+      : null,
     fsp: { state: src.fspState, hasAchievements: src.fspState === 'linked' },
     claims,
     contacts: contactsVisible ? { name: src.name, contact: candidateContact(src) } : null,

@@ -57,8 +57,8 @@ export interface InvitationDraft {
   salaryTo: number | null;
   message: string;
   limit: { sent: number; limit: number; left: number };
-  /** Отправить нельзя: лимит или уже есть открытое приглашение. */
-  blocked: 'daily_limit' | 'open_invitation' | null;
+  /** Отправить нельзя: лимит, уже есть открытое приглашение или у компании нет способа связи (E05). */
+  blocked: 'daily_limit' | 'open_invitation' | 'no_company_contact' | null;
 }
 
 export interface NeedDraft {

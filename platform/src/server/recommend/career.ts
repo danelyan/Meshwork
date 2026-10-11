@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
+import { hiddenVacancyIds } from '../admin/moderation/red-flags';
 import { prisma } from '../db';
 import type { CatalogEntry } from '../claims/types';
 import { assertCandidate, loadCatalog, loadConfirmedIndex, parseNeeds, type EvidenceIndex } from './evidence';
@@ -30,7 +31,10 @@ export interface CareerVacanciesView { targets: CareerVacancy[]; truncated: bool
 /** Active catalogue, not only the recommendation top five. Saved rows survive changes of profile/score. */
 export async function careerVacancies(candidateId: string, savedIds?: string[]): Promise<CareerVacanciesView> {
   await assertCandidate(candidateId);
-  const where: Prisma.VacancyWhereInput = { archivedAt: null, ...(savedIds ? { id: { in: savedIds } } : {}) };
+  // lane admin (E-08, фаза 2): вакансии, скрытые модератором по красным флагам, кандидатам не показываются.
+  const hidden = await hiddenVacancyIds();
+  const ids = { ...(savedIds ? { in: savedIds } : {}), ...(hidden.length ? { notIn: hidden } : {}) };
+  const where: Prisma.VacancyWhereInput = { archivedAt: null, ...(Object.keys(ids).length ? { id: ids } : {}) };
   const [vacancies, catalog, index, categories] = await Promise.all([
     prisma.vacancy.findMany({ where, include: { company: { select: { name: true } }, projectTasks: { select: { id: true, visibility: true, specialization: true, grade: true } } }, orderBy: { id: 'asc' }, take: CAREER_PAGE_LIMIT + 1 }),
     loadCatalog(),

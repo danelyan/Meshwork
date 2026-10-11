@@ -1,5 +1,6 @@
 // Потребности компании (R-E-02). Хранятся в Vacancy: онбординг работодателя пишет
 // туда же первую потребность; этот модуль существующие поля не переопределяет.
+import { queueVacancyRedFlags } from '../admin/moderation/red-flags';
 import { loadCatalog, parseNeeds, type Need } from '../recommend/evidence';
 import { prisma } from '../db';
 import { errors } from '../errors';
@@ -121,6 +122,7 @@ function data(input: VacancyInput, needs: Need[]) {
 export async function createVacancy(companyId: string, input: VacancyInput): Promise<VacancyView> {
   const needs = await checkNeeds(input);
   const v = await prisma.vacancy.create({ data: { companyId, ...data(input, needs) }, select });
+  await queueVacancyRedFlags(v.id); // lane admin (E-08, фаза 2): красные флаги — в очередь модератора
   return toView(v);
 }
 
@@ -128,6 +130,7 @@ export async function updateVacancy(companyId: string, id: string, input: Vacanc
   await getVacancy(companyId, id);
   const needs = await checkNeeds(input);
   const v = await prisma.vacancy.update({ where: { id }, data: data(input, needs), select });
+  await queueVacancyRedFlags(v.id); // lane admin (E-08, фаза 2)
   return toView(v);
 }
 

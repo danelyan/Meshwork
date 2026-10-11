@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
 import { CompanyProfile } from '@/components/employer/CompanyProfile';
+import { CompanyVerification } from '@/components/employer/CompanyVerification';
+import { companyVerification } from '@/server/admin/moderation/verification';
 import { AccountErasure } from '@/components/auth/AccountErasure';
 import { ConsentsPanel } from '@/components/consent/ConsentsPanel';
 import styles from '@/components/employer/Employer.module.css';
@@ -20,6 +22,7 @@ export default async function EmployerCompanyPage() {
   const ctx = await loadEmployerContext(s.employerProfileId);
   const { name, description, industry, inn, contact } = await getCompany(ctx.companyId);
   const vacancy = (await listVacancies(ctx.companyId)).find((item) => !item.archived);
+  const verification = await companyVerification(ctx.companyId);
   return (
     <div className={styles.page}>
       <div className={styles.head}>
@@ -41,6 +44,7 @@ export default async function EmployerCompanyPage() {
           <p className={styles.meta}>Предпросмотр по активной вакансии. Личное сообщение и вилка уточняются перед отправкой.</p>
         </aside>
       </div>
+      <CompanyVerification state={verification} />
       <ConsentsPanel />
       <AccountErasure />
     </div>

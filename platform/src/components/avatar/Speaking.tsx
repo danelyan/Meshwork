@@ -124,13 +124,13 @@ export function StateChip({ className }: { className?: string }) {
   );
 }
 
-/** Переключатель звука: «без звука» пока озвучка идёт, «включить звук» пока нет. */
+/** Переключатель звука: «Без звука» пока озвучка идёт, «Озвучивать ответы» пока нет. */
 export function MuteToggle({ className }: { className?: string }) {
   const voice = useCompanionVoice();
   if (!voice || voice.available === false) return null;
   return (
     <button type="button" data-voice-toggle className={cx(styles.mute, className)} aria-pressed={voice.enabled} onClick={voice.toggle}>
-      {voice.enabled ? 'без звука' : 'включить звук'}
+      {voice.enabled ? 'Без звука' : 'Озвучивать ответы'}
     </button>
   );
 }

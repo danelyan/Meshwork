@@ -1,11 +1,11 @@
 {
   "version": "claims-catalog-draft-2026-10-09",
   "counts": {
-    "backend": 33,
-    "frontend": 28,
-    "ai": 21,
-    "engineering": 27,
-    "common": 11
+    "backend": 36,
+    "frontend": 31,
+    "ai": 24,
+    "engineering": 31,
+    "common": 13
   },
   "entries": [
     {
@@ -19,7 +19,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 3
+        "middle": 3,
+        "senior": 2
       },
       "proof": [
         "task:code-output",
@@ -52,7 +53,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:code-output",
@@ -87,7 +89,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:http-semantics",
@@ -116,7 +119,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "task:find-bug"
@@ -144,7 +148,8 @@
       "weight": 1,
       "weights": {
         "junior": 1,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "interview:defend"
@@ -166,10 +171,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 1,
+      "weight": 2,
       "weights": {
         "junior": null,
-        "middle": 1
+        "middle": 1,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -195,7 +201,8 @@
       "weight": 1,
       "weights": {
         "junior": 1,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "interview:defend"
@@ -224,7 +231,8 @@
       "weight": 2,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -252,7 +260,8 @@
       "weight": 1,
       "weights": {
         "junior": 1,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "interview:defend"
@@ -279,7 +288,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:schema-constraint",
@@ -294,7 +304,9 @@
       ],
       "limits": "производительность запросов",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "be.data-scale"
+      ]
     },
     {
       "id": "be.sql-indexes",
@@ -306,7 +318,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:index-choice",
@@ -336,7 +349,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:isolation-anomaly"
@@ -362,10 +376,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -393,7 +408,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:n-plus-one"
@@ -422,10 +438,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 1,
+      "weight": 2,
       "weights": {
         "junior": null,
-        "middle": 1
+        "middle": 1,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -452,7 +469,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:cache-consistency",
@@ -480,7 +498,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:payment-retry",
@@ -508,10 +527,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:retry-policy",
@@ -530,7 +550,8 @@
       "limits": "идемпотентность принимающей стороны",
       "stack": null,
       "adjacent": [
-        "be.idempotency"
+        "be.idempotency",
+        "be.reliability-design"
       ]
     },
     {
@@ -543,7 +564,8 @@
       "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:delivery-semantics",
@@ -577,7 +599,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:find-bug",
@@ -607,7 +630,8 @@
       "weight": 2,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -634,10 +658,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -653,7 +678,8 @@
       "stack": null,
       "adjacent": [
         "be.message-queue",
-        "be.transactions"
+        "be.transactions",
+        "be.system-design"
       ]
     },
     {
@@ -667,7 +693,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:find-bug",
@@ -700,7 +727,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:find-bug"
@@ -728,7 +756,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "task:find-bug"
@@ -752,10 +781,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 1,
+      "weight": 2,
       "weights": {
         "junior": null,
-        "middle": 1
+        "middle": 1,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -781,7 +811,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -809,7 +840,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:find-bug",
@@ -833,10 +865,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -850,7 +883,9 @@
       ],
       "limits": "опыт эксплуатации распределённой системы",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "be.system-design"
+      ]
     },
     {
       "id": "be.integration-tests",
@@ -863,7 +898,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -889,10 +925,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -909,7 +946,9 @@
       ],
       "limits": "дежурства и SLO",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "be.reliability-design"
+      ]
     },
     {
       "id": "be.performance",
@@ -918,10 +957,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -938,7 +978,9 @@
       ],
       "limits": "масштабирование инфраструктуры",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "be.data-scale"
+      ]
     },
     {
       "id": "be.linux-shell",
@@ -951,7 +993,8 @@
       "weight": 1,
       "weights": {
         "junior": 1,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "task:shell-output"
@@ -979,7 +1022,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "task:html-semantics"
@@ -1005,7 +1049,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:css-layout"
@@ -1032,7 +1077,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:css-specificity"
@@ -1058,7 +1104,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:css-layout",
@@ -1085,7 +1132,8 @@
       "weight": 2,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -1114,7 +1162,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "interview:defend"
@@ -1141,7 +1190,8 @@
       "weight": 1,
       "weights": {
         "junior": 1,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "interview:defend"
@@ -1168,7 +1218,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:a11y-bug",
@@ -1184,7 +1235,9 @@
       ],
       "limits": "формальное соответствие WCAG по аудиту",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "fe.design-system-governance"
+      ]
     },
     {
       "id": "fe.js-core",
@@ -1197,7 +1250,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:code-output"
@@ -1225,7 +1279,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:code-output"
@@ -1252,7 +1307,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "task:code-output"
@@ -1279,7 +1335,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:ts-typecheck"
@@ -1307,7 +1364,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:code-output",
@@ -1326,7 +1384,9 @@
       "stack": {
         "kind": "фреймворк"
       },
-      "adjacent": []
+      "adjacent": [
+        "fe.design-system-governance"
+      ]
     },
     {
       "id": "fe.render-lifecycle",
@@ -1339,7 +1399,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:render-count"
@@ -1368,7 +1429,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "interview:defend",
@@ -1401,7 +1463,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:find-bug",
@@ -1431,7 +1494,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "interview:defend"
@@ -1454,10 +1518,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -1481,10 +1546,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -1498,7 +1564,9 @@
       ],
       "limits": "проектирование бэкенда",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "fe.frontend-platform"
+      ]
     },
     {
       "id": "fe.api-client",
@@ -1511,7 +1579,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 3
+        "middle": 3,
+        "senior": 2
       },
       "proof": [
         "task:find-bug",
@@ -1536,10 +1605,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -1565,10 +1635,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 1,
+      "weight": 2,
       "weights": {
         "junior": null,
-        "middle": 1
+        "middle": 1,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -1596,7 +1667,8 @@
       "weight": 1,
       "weights": {
         "junior": null,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "interview:defend"
@@ -1622,7 +1694,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:web-vitals",
@@ -1640,7 +1713,8 @@
       "limits": "производительность рендеринга",
       "stack": null,
       "adjacent": [
-        "fe.render-perf"
+        "fe.render-perf",
+        "fe.perf-budget"
       ]
     },
     {
@@ -1650,10 +1724,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -1668,7 +1743,8 @@
       "limits": "скорость загрузки",
       "stack": null,
       "adjacent": [
-        "fe.web-perf"
+        "fe.web-perf",
+        "fe.perf-budget"
       ]
     },
     {
@@ -1682,7 +1758,8 @@
       "weight": 2,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "interview:defend"
@@ -1697,7 +1774,9 @@
       ],
       "limits": "CI и деплой",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "fe.frontend-platform"
+      ]
     },
     {
       "id": "fe.component-tests",
@@ -1710,7 +1789,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:test-pick",
@@ -1738,10 +1818,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "interview:defend"
@@ -1771,15 +1852,23 @@
       "weights": {
         "backend": {
           "junior": 2,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
         },
         "frontend": {
           "junior": 2,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
         },
         "ai": {
           "junior": 2,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
+        },
+        "engineering": {
+          "junior": 2,
+          "middle": 1,
+          "senior": 1
         }
       },
       "proof": [
@@ -1809,15 +1898,23 @@
       "weights": {
         "backend": {
           "junior": 3,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
         },
         "frontend": {
           "junior": 2,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
         },
         "ai": {
           "junior": 1,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
+        },
+        "engineering": {
+          "junior": 1,
+          "middle": 1,
+          "senior": 1
         }
       },
       "proof": [
@@ -1848,15 +1945,23 @@
       "weights": {
         "backend": {
           "junior": 3,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
         },
         "frontend": {
           "junior": 1,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
         },
         "ai": {
           "junior": 2,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": 2,
+          "middle": 2,
+          "senior": 2
         }
       },
       "proof": [
@@ -1886,15 +1991,23 @@
       "weights": {
         "backend": {
           "junior": 2,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
         },
         "frontend": {
           "junior": 2,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
         },
         "ai": {
           "junior": 1,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": 2,
+          "middle": 2,
+          "senior": 2
         }
       },
       "proof": [
@@ -1926,15 +2039,23 @@
       "weights": {
         "backend": {
           "junior": 3,
-          "middle": 2
+          "middle": 2,
+          "senior": 1
         },
         "frontend": {
           "junior": 3,
-          "middle": 2
+          "middle": 2,
+          "senior": 1
         },
         "ai": {
           "junior": 2,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
+        },
+        "engineering": {
+          "junior": 3,
+          "middle": 2,
+          "senior": 1
         }
       },
       "proof": [
@@ -1964,11 +2085,18 @@
       "weights": {
         "backend": {
           "junior": 1,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
         },
         "frontend": {
           "junior": 1,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
+        },
+        "engineering": {
+          "junior": 1,
+          "middle": 1,
+          "senior": 1
         }
       },
       "proof": [
@@ -1994,15 +2122,22 @@
       "grades": [
         "middle"
       ],
-      "weight": 1,
+      "weight": 2,
       "weights": {
         "backend": {
           "junior": null,
-          "middle": 1
+          "middle": 1,
+          "senior": 2
         },
         "frontend": {
           "junior": null,
-          "middle": 1
+          "middle": 1,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": null,
+          "middle": 1,
+          "senior": 2
         }
       },
       "proof": [
@@ -2016,7 +2151,10 @@
       ],
       "limits": "наставничество",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "common.architecture-decisions",
+        "common.mentoring"
+      ]
     },
     {
       "id": "common.security-basics",
@@ -2030,15 +2168,23 @@
       "weights": {
         "backend": {
           "junior": 2,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
         },
         "frontend": {
           "junior": 2,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
         },
         "ai": {
           "junior": 1,
-          "middle": 1
+          "middle": 1,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": 1,
+          "middle": 1,
+          "senior": 2
         }
       },
       "proof": [
@@ -2068,11 +2214,13 @@
       "weights": {
         "backend": {
           "junior": 1,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
         },
         "frontend": {
           "junior": 2,
-          "middle": 2
+          "middle": 2,
+          "senior": 2
         }
       },
       "proof": [
@@ -2105,15 +2253,23 @@
       "weights": {
         "backend": {
           "junior": 1,
-          "middle": 2
+          "middle": 2,
+          "senior": 1
         },
         "frontend": {
           "junior": 1,
-          "middle": 1
+          "middle": 1,
+          "senior": 1
         },
         "ai": {
           "junior": 1,
-          "middle": 2
+          "middle": 2,
+          "senior": 1
+        },
+        "engineering": {
+          "junior": 2,
+          "middle": 1,
+          "senior": 1
         }
       },
       "proof": [
@@ -2137,19 +2293,27 @@
       "grades": [
         "middle"
       ],
-      "weight": 1,
+      "weight": 2,
       "weights": {
         "backend": {
           "junior": null,
-          "middle": 1
+          "middle": 1,
+          "senior": 2
         },
         "frontend": {
           "junior": null,
-          "middle": 1
+          "middle": 1,
+          "senior": 2
         },
         "ai": {
           "junior": null,
-          "middle": 1
+          "middle": 1,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": null,
+          "middle": 2,
+          "senior": 2
         }
       },
       "proof": [
@@ -2179,7 +2343,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 3
+        "middle": 3,
+        "senior": 2
       },
       "proof": [
         "task:schema-types",
@@ -2216,7 +2381,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "task:schema-types",
@@ -2246,7 +2412,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:dedup-count",
@@ -2265,7 +2432,8 @@
       "limits": "мониторинг качества данных в продакшене",
       "stack": null,
       "adjacent": [
-        "eng.idempotent-load"
+        "eng.idempotent-load",
+        "eng.data-platform"
       ]
     },
     {
@@ -2279,7 +2447,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:idempotent-load",
@@ -2313,7 +2482,8 @@
       "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:incremental-watermark",
@@ -2343,10 +2513,11 @@
         "middle",
         "senior"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:partition-prune",
@@ -2375,7 +2546,8 @@
       "weight": 2,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:scd2-as-of",
@@ -2393,7 +2565,8 @@
       "limits": "выбор модели под конкретную нагрузку и BI-инструмент",
       "stack": null,
       "adjacent": [
-        "eng.etl-pipeline"
+        "eng.etl-pipeline",
+        "eng.data-platform"
       ]
     },
     {
@@ -2405,10 +2578,11 @@
         "middle",
         "senior"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:cron-runs",
@@ -2444,7 +2618,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:docker-cache",
@@ -2480,7 +2655,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:secrets-leak",
@@ -2504,7 +2680,8 @@
       "adjacent": [
         "eng.dockerfile",
         "eng.secrets",
-        "eng.deploy-rollback"
+        "eng.deploy-rollback",
+        "eng.platform-design"
       ]
     },
     {
@@ -2518,7 +2695,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:secrets-leak"
@@ -2547,7 +2725,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:k8s-probes",
@@ -2576,10 +2755,11 @@
         "middle",
         "senior"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:k8s-capacity",
@@ -2613,7 +2793,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:deploy-rollback",
@@ -2646,10 +2827,11 @@
         "middle",
         "senior"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:tf-plan-count",
@@ -2666,7 +2848,9 @@
       ],
       "limits": "проектирование облачной архитектуры",
       "stack": null,
-      "adjacent": []
+      "adjacent": [
+        "eng.platform-design"
+      ]
     },
     {
       "id": "eng.test-strategy",
@@ -2680,7 +2864,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:test-pyramid",
@@ -2704,7 +2889,8 @@
       "stack": null,
       "adjacent": [
         "eng.ui-autotests",
-        "eng.test-design"
+        "eng.test-design",
+        "eng.quality-platform"
       ]
     },
     {
@@ -2719,7 +2905,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:boundary-values",
@@ -2755,7 +2942,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:fixture-isolation",
@@ -2789,7 +2977,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:flaky-line",
@@ -2810,7 +2999,8 @@
       "limits": "стабильность целой инфраструктуры CI",
       "stack": null,
       "adjacent": [
-        "eng.test-isolation"
+        "eng.test-isolation",
+        "eng.quality-platform"
       ]
     },
     {
@@ -2824,7 +3014,8 @@
       "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:contract-test",
@@ -2853,7 +3044,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:locator-stability",
@@ -2885,7 +3077,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:error-budget",
@@ -2911,7 +3104,8 @@
       "stack": null,
       "adjacent": [
         "eng.alerting",
-        "eng.incident-postmortem"
+        "eng.incident-postmortem",
+        "eng.reliability-program"
       ]
     },
     {
@@ -2925,7 +3119,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:symptom-alert",
@@ -2958,10 +3153,11 @@
         "middle",
         "senior"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:error-budget",
@@ -2986,7 +3182,8 @@
       "limits": "руководство инцидентом",
       "stack": null,
       "adjacent": [
-        "eng.slo"
+        "eng.slo",
+        "eng.reliability-program"
       ]
     },
     {
@@ -2999,7 +3196,8 @@
       "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:retry-amplification",
@@ -3028,10 +3226,11 @@
         "middle",
         "senior"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": null,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:littles-law",
@@ -3066,10 +3265,11 @@
         "middle",
         "senior"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:latency-percentile",
@@ -3108,7 +3308,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:structured-output",
@@ -3142,7 +3343,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:structured-output",
@@ -3175,7 +3377,8 @@
       "weight": 3,
       "weights": {
         "junior": 2,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:rag-chunking",
@@ -3212,7 +3415,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:vector-topk",
@@ -3246,7 +3450,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:tool-use-trace",
@@ -3279,7 +3484,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:prompt-injection",
@@ -3296,7 +3502,8 @@
       "stack": null,
       "adjacent": [
         "ai.tool-use",
-        "ai.pii-masking"
+        "ai.pii-masking",
+        "ai.ai-risk"
       ]
     },
     {
@@ -3309,7 +3516,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:retrieval-eval",
@@ -3330,7 +3538,8 @@
       "stack": null,
       "adjacent": [
         "ai.rag",
-        "ai.validation"
+        "ai.validation",
+        "ai.llm-system-design"
       ]
     },
     {
@@ -3341,10 +3550,11 @@
         "junior",
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:token-cost",
@@ -3379,7 +3589,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 1
       },
       "proof": [
         "task:token-cost",
@@ -3415,7 +3626,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:classification-metrics",
@@ -3452,7 +3664,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:model-selection",
@@ -3485,7 +3698,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:data-leakage",
@@ -3516,7 +3730,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:feature-pipeline",
@@ -3551,7 +3766,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "task:split-sizes",
@@ -3587,7 +3803,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:inference-mode",
@@ -3623,10 +3840,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:model-registry",
@@ -3647,7 +3865,8 @@
       "stack": null,
       "adjacent": [
         "ai.model-serving",
-        "ai.monitoring-drift"
+        "ai.monitoring-drift",
+        "ai.ml-platform"
       ]
     },
     {
@@ -3660,7 +3879,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:model-registry",
@@ -3681,7 +3901,8 @@
       "stack": null,
       "adjacent": [
         "ai.model-versioning",
-        "ai.model-serving"
+        "ai.model-serving",
+        "ai.ml-platform"
       ]
     },
     {
@@ -3695,7 +3916,8 @@
       "weight": 3,
       "weights": {
         "junior": 3,
-        "middle": 1
+        "middle": 1,
+        "senior": 1
       },
       "proof": [
         "task:pandas-output",
@@ -3727,10 +3949,11 @@
       "grades": [
         "middle"
       ],
-      "weight": 2,
+      "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 2
+        "middle": 2,
+        "senior": 3
       },
       "proof": [
         "task:ab-uplift",
@@ -3768,7 +3991,8 @@
       "weight": 2,
       "weights": {
         "junior": 2,
-        "middle": 2
+        "middle": 2,
+        "senior": 2
       },
       "proof": [
         "task:pii-masking",
@@ -3787,7 +4011,8 @@
       "stack": null,
       "adjacent": [
         "ai.prompt-injection",
-        "ai.llm-fallback"
+        "ai.llm-fallback",
+        "ai.ai-risk"
       ]
     },
     {
@@ -3800,7 +4025,8 @@
       "weight": 3,
       "weights": {
         "junior": 1,
-        "middle": 3
+        "middle": 3,
+        "senior": 3
       },
       "proof": [
         "task:llm-retry",
@@ -3823,7 +4049,492 @@
       "stack": null,
       "adjacent": [
         "ai.llm-api",
+        "ai.pii-masking",
+        "ai.llm-system-design"
+      ]
+    },
+    {
+      "id": "be.system-design",
+      "specialization": "backend",
+      "statement": "Проектировал систему из нескольких сервисов под нагрузку и требования: компоненты, хранилища, сценарии отказа, обоснованные компромиссы",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "system design",
+        "проектирование системы",
+        "архитектура системы",
+        "архитектуру сервиса",
+        "спроектировал систему"
+      ],
+      "limits": "что спроектированная система выдержала реальную нагрузку — без метрик эксплуатации",
+      "stack": null,
+      "adjacent": [
+        "be.service-boundaries",
+        "be.distributed-consistency"
+      ]
+    },
+    {
+      "id": "be.reliability-design",
+      "specialization": "backend",
+      "statement": "Закладывал надёжность сервиса в архитектуру: деградация, изоляция отказов, лимиты, план восстановления",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "отказоустойчивость",
+        "graceful degradation",
+        "деградация функциональности",
+        "bulkhead",
+        "план восстановления"
+      ],
+      "limits": "реальные цифры доступности без данных мониторинга",
+      "stack": null,
+      "adjacent": [
+        "be.retries-timeouts",
+        "be.observability"
+      ]
+    },
+    {
+      "id": "be.data-scale",
+      "specialization": "backend",
+      "statement": "Масштабировал хранение данных: шардирование, реплики чтения, архивирование, перенос без простоя",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "шардирование",
+        "sharding",
+        "реплики чтения",
+        "read replica",
+        "партиционирование таблиц"
+      ],
+      "limits": "конкретную СУБД и её настройку под вашу нагрузку",
+      "stack": null,
+      "adjacent": [
+        "be.sql-schema",
+        "be.performance"
+      ]
+    },
+    {
+      "id": "fe.frontend-platform",
+      "specialization": "frontend",
+      "statement": "Строил платформу фронтенда для нескольких команд: монорепозиторий, общие пакеты, правила сборки и выкладки",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "монорепозиторий",
+        "monorepo",
+        "микрофронтенд",
+        "micro-frontend",
+        "module federation",
+        "фронтенд-платформа"
+      ],
+      "limits": "что платформой реально пользуются другие команды",
+      "stack": null,
+      "adjacent": [
+        "fe.architecture",
+        "fe.bundler"
+      ]
+    },
+    {
+      "id": "fe.perf-budget",
+      "specialization": "frontend",
+      "statement": "Вводил бюджет производительности и следил за ним в CI: лимиты размера и метрик, разбор регрессий",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "performance budget",
+        "бюджет производительности",
+        "size-limit",
+        "lighthouse ci",
+        "perf budget"
+      ],
+      "limits": "скорость на реальных устройствах пользователей без полевых данных (RUM)",
+      "stack": null,
+      "adjacent": [
+        "fe.web-perf",
+        "fe.render-perf"
+      ]
+    },
+    {
+      "id": "fe.design-system-governance",
+      "specialization": "frontend",
+      "statement": "Развивал дизайн-систему как продукт: версии, миграции потребителей, правила вклада, доступность по умолчанию",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "дизайн-систему",
+        "design system",
+        "ui-kit",
+        "storybook",
+        "библиотеку компонентов"
+      ],
+      "limits": "визуальный вкус и работу дизайнера",
+      "stack": null,
+      "adjacent": [
+        "fe.components",
+        "fe.a11y"
+      ]
+    },
+    {
+      "id": "ai.llm-system-design",
+      "specialization": "ai",
+      "statement": "Проектировал LLM-систему целиком: маршрутизация моделей, кэш, оценка, бюджет стоимости и задержки, деградация",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "архитектура llm",
+        "llm-платформа",
+        "llm gateway",
+        "маршрутизация моделей",
+        "llm-систему"
+      ],
+      "limits": "качество ответов на ваших данных без размеченного набора",
+      "stack": null,
+      "adjacent": [
+        "ai.llm-eval",
+        "ai.llm-fallback"
+      ]
+    },
+    {
+      "id": "ai.ml-platform",
+      "specialization": "ai",
+      "statement": "Строил ML-платформу для команды: обучение, реестр моделей, хранилище признаков, выкладка и мониторинг по единому процессу",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "ml-платформа",
+        "ml platform",
+        "feature store",
+        "kubeflow",
+        "mlflow"
+      ],
+      "limits": "что платформа окупилась для бизнеса",
+      "stack": null,
+      "adjacent": [
+        "ai.model-versioning",
+        "ai.monitoring-drift"
+      ]
+    },
+    {
+      "id": "ai.ai-risk",
+      "specialization": "ai",
+      "statement": "Управлял рисками ИИ-решения: персональные данные, промпт-инъекции, ответственность за ошибки модели, аудит",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "риски ии",
+        "ai safety",
+        "responsible ai",
+        "аудит модели",
+        "ai governance"
+      ],
+      "limits": "юридическое соответствие конкретной отрасли",
+      "stack": null,
+      "adjacent": [
+        "ai.prompt-injection",
         "ai.pii-masking"
+      ]
+    },
+    {
+      "id": "eng.platform-design",
+      "specialization": "engineering",
+      "statement": "Проектировал внутреннюю платформу выкладки: шаблоны сервисов, окружения, политики, самообслуживание команд",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "platform engineering",
+        "внутренняя платформа",
+        "golden path",
+        "internal developer platform",
+        "self-service"
+      ],
+      "limits": "что командам стало удобнее — без опроса или метрик скорости поставки",
+      "stack": null,
+      "adjacent": [
+        "eng.iac",
+        "eng.ci-cd"
+      ]
+    },
+    {
+      "id": "eng.reliability-program",
+      "specialization": "engineering",
+      "statement": "Вёл надёжность как программу: SLO по сервисам, политика бюджета ошибок, ревью инцидентов и их действий",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "политика бюджета ошибок",
+        "error budget policy",
+        "программа надёжности",
+        "reliability review",
+        "дежурства"
+      ],
+      "limits": "фактическую доступность без истории инцидентов",
+      "stack": null,
+      "adjacent": [
+        "eng.slo",
+        "eng.incident-postmortem"
+      ]
+    },
+    {
+      "id": "eng.quality-platform",
+      "specialization": "engineering",
+      "statement": "Строил инфраструктуру качества для нескольких команд: стратегия тестирования, стабильность прогонов, метрики качества релизов",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "стратегия тестирования",
+        "quality gates",
+        "тестовая инфраструктура",
+        "test platform",
+        "метрики качества"
+      ],
+      "limits": "качество конкретного продукта без истории дефектов",
+      "stack": null,
+      "adjacent": [
+        "eng.test-strategy",
+        "eng.flaky-tests"
+      ]
+    },
+    {
+      "id": "eng.data-platform",
+      "specialization": "engineering",
+      "statement": "Проектировал платформу данных: слои хранилища, контракты данных, владение, стоимость хранения и вычислений",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "data platform",
+        "платформа данных",
+        "data contract",
+        "lakehouse",
+        "data mesh"
+      ],
+      "limits": "качество бизнес-отчётов поверх платформы",
+      "stack": null,
+      "adjacent": [
+        "eng.dwh-modeling",
+        "eng.data-quality"
+      ]
+    },
+    {
+      "id": "common.architecture-decisions",
+      "specialization": "common",
+      "statement": "Принимал и документировал архитектурные решения: варианты, компромиссы, последствия (ADR, дизайн-ревью)",
+      "grades": [
+        "senior"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "frontend": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "ai": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        }
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "ADR",
+        "architecture decision",
+        "дизайн-ревью",
+        "design review",
+        "архитектурное решение",
+        "RFC"
+      ],
+      "limits": "что решение оказалось верным на дистанции",
+      "stack": null,
+      "adjacent": [
+        "common.code-review"
+      ]
+    },
+    {
+      "id": "common.mentoring",
+      "specialization": "common",
+      "statement": "Наставлял разработчиков: онбординг, разбор задач, рост младших до самостоятельной работы",
+      "grades": [
+        "senior"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "frontend": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "ai": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        }
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "ментор",
+        "наставник",
+        "менторство",
+        "онбординг новичков",
+        "тимлид"
+      ],
+      "limits": "управленческие навыки и найм",
+      "stack": null,
+      "adjacent": [
+        "common.code-review"
       ]
     }
   ]

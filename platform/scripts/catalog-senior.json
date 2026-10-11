@@ -1,0 +1,596 @@
+{
+  "_comment": "Колонка S каталога (ADR 0003, дополнение 10.10 16:15) поверх личного каталога-Markdown владельца. scripts/catalog-to-json.mjs: вес Senior = вес Middle, если не задан в seniorWeights (число — для всех специализаций у common); entries — записи только для Senior (системный дизайн, надёжность, платформа, наставничество); commonWeightsEngineering — веса J/M общих записей для Engineering (раньше их не было, общие утверждения давали Engineering ноль). Предложение агента, не каталог владельца.",
+  "seniorWeights": {
+    "be.lang-core": 2,
+    "be.orm": 1,
+    "be.api-validation": 1,
+    "be.config-secrets": 1,
+    "be.linux-shell": 1,
+    "fe.api-client": 2,
+    "fe.css-layout": 1,
+    "fe.responsive": 1,
+    "fe.forms": 1,
+    "fe.css-cascade": 1,
+    "fe.html-semantic": 1,
+    "fe.dom-events": 1,
+    "fe.routing": 1,
+    "ai.prompting": 1,
+    "ai.ml-baseline": 1,
+    "ai.pandas-sql": 1,
+    "ai.llm-api": 1,
+    "eng.etl-pipeline": 2,
+    "eng.dockerfile": 1,
+    "eng.test-isolation": 1,
+    "eng.ui-autotests": 1,
+    "eng.secrets": 1,
+    "eng.data-types": 1,
+    "eng.test-design": 1,
+    "common.git": 1,
+    "common.debugging": 1,
+    "common.docker-local": 1,
+    "be.service-boundaries": 3,
+    "be.distributed-consistency": 3,
+    "be.observability": 3,
+    "be.performance": 3,
+    "be.retries-timeouts": 3,
+    "be.migrations": 3,
+    "be.message-queue": 3,
+    "be.grpc": 2,
+    "be.nosql": 2,
+    "be.rate-limit": 2,
+    "fe.architecture": 3,
+    "fe.web-perf": 3,
+    "fe.render-perf": 3,
+    "fe.ssr": 3,
+    "fe.server-state": 3,
+    "fe.realtime-client": 2,
+    "fe.e2e-tests": 3,
+    "ai.llm-eval": 3,
+    "ai.monitoring-drift": 3,
+    "ai.llm-fallback": 3,
+    "ai.model-versioning": 3,
+    "ai.ab-testing": 3,
+    "ai.prompt-injection": 3,
+    "ai.llm-cost": 3,
+    "eng.capacity-planning": 3,
+    "eng.iac": 3,
+    "eng.incident-postmortem": 3,
+    "eng.observability": 3,
+    "eng.k8s-resources": 3,
+    "eng.retries-resilience": 3,
+    "eng.partitioning": 3,
+    "eng.orchestration": 3,
+    "eng.slo": 3,
+    "common.code-review": 2,
+    "common.security-basics": 2,
+    "common.ci-basics": 2
+  },
+  "entries": [
+    {
+      "id": "be.system-design",
+      "specialization": "backend",
+      "statement": "Проектировал систему из нескольких сервисов под нагрузку и требования: компоненты, хранилища, сценарии отказа, обоснованные компромиссы",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "system design",
+        "проектирование системы",
+        "архитектура системы",
+        "архитектуру сервиса",
+        "спроектировал систему"
+      ],
+      "limits": "что спроектированная система выдержала реальную нагрузку — без метрик эксплуатации",
+      "stack": null,
+      "adjacent": [
+        "be.service-boundaries",
+        "be.distributed-consistency"
+      ]
+    },
+    {
+      "id": "be.reliability-design",
+      "specialization": "backend",
+      "statement": "Закладывал надёжность сервиса в архитектуру: деградация, изоляция отказов, лимиты, план восстановления",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "отказоустойчивость",
+        "graceful degradation",
+        "деградация функциональности",
+        "bulkhead",
+        "план восстановления"
+      ],
+      "limits": "реальные цифры доступности без данных мониторинга",
+      "stack": null,
+      "adjacent": [
+        "be.retries-timeouts",
+        "be.observability"
+      ]
+    },
+    {
+      "id": "be.data-scale",
+      "specialization": "backend",
+      "statement": "Масштабировал хранение данных: шардирование, реплики чтения, архивирование, перенос без простоя",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "шардирование",
+        "sharding",
+        "реплики чтения",
+        "read replica",
+        "партиционирование таблиц"
+      ],
+      "limits": "конкретную СУБД и её настройку под вашу нагрузку",
+      "stack": null,
+      "adjacent": [
+        "be.sql-schema",
+        "be.performance"
+      ]
+    },
+    {
+      "id": "fe.frontend-platform",
+      "specialization": "frontend",
+      "statement": "Строил платформу фронтенда для нескольких команд: монорепозиторий, общие пакеты, правила сборки и выкладки",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "монорепозиторий",
+        "monorepo",
+        "микрофронтенд",
+        "micro-frontend",
+        "module federation",
+        "фронтенд-платформа"
+      ],
+      "limits": "что платформой реально пользуются другие команды",
+      "stack": null,
+      "adjacent": [
+        "fe.architecture",
+        "fe.bundler"
+      ]
+    },
+    {
+      "id": "fe.perf-budget",
+      "specialization": "frontend",
+      "statement": "Вводил бюджет производительности и следил за ним в CI: лимиты размера и метрик, разбор регрессий",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "performance budget",
+        "бюджет производительности",
+        "size-limit",
+        "lighthouse ci",
+        "perf budget"
+      ],
+      "limits": "скорость на реальных устройствах пользователей без полевых данных (RUM)",
+      "stack": null,
+      "adjacent": [
+        "fe.web-perf",
+        "fe.render-perf"
+      ]
+    },
+    {
+      "id": "fe.design-system-governance",
+      "specialization": "frontend",
+      "statement": "Развивал дизайн-систему как продукт: версии, миграции потребителей, правила вклада, доступность по умолчанию",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "дизайн-систему",
+        "design system",
+        "ui-kit",
+        "storybook",
+        "библиотеку компонентов"
+      ],
+      "limits": "визуальный вкус и работу дизайнера",
+      "stack": null,
+      "adjacent": [
+        "fe.components",
+        "fe.a11y"
+      ]
+    },
+    {
+      "id": "ai.llm-system-design",
+      "specialization": "ai",
+      "statement": "Проектировал LLM-систему целиком: маршрутизация моделей, кэш, оценка, бюджет стоимости и задержки, деградация",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "архитектура llm",
+        "llm-платформа",
+        "llm gateway",
+        "маршрутизация моделей",
+        "llm-систему"
+      ],
+      "limits": "качество ответов на ваших данных без размеченного набора",
+      "stack": null,
+      "adjacent": [
+        "ai.llm-eval",
+        "ai.llm-fallback"
+      ]
+    },
+    {
+      "id": "ai.ml-platform",
+      "specialization": "ai",
+      "statement": "Строил ML-платформу для команды: обучение, реестр моделей, хранилище признаков, выкладка и мониторинг по единому процессу",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "ml-платформа",
+        "ml platform",
+        "feature store",
+        "kubeflow",
+        "mlflow"
+      ],
+      "limits": "что платформа окупилась для бизнеса",
+      "stack": null,
+      "adjacent": [
+        "ai.model-versioning",
+        "ai.monitoring-drift"
+      ]
+    },
+    {
+      "id": "ai.ai-risk",
+      "specialization": "ai",
+      "statement": "Управлял рисками ИИ-решения: персональные данные, промпт-инъекции, ответственность за ошибки модели, аудит",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "риски ии",
+        "ai safety",
+        "responsible ai",
+        "аудит модели",
+        "ai governance"
+      ],
+      "limits": "юридическое соответствие конкретной отрасли",
+      "stack": null,
+      "adjacent": [
+        "ai.prompt-injection",
+        "ai.pii-masking"
+      ]
+    },
+    {
+      "id": "eng.platform-design",
+      "specialization": "engineering",
+      "statement": "Проектировал внутреннюю платформу выкладки: шаблоны сервисов, окружения, политики, самообслуживание команд",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "platform engineering",
+        "внутренняя платформа",
+        "golden path",
+        "internal developer platform",
+        "self-service"
+      ],
+      "limits": "что командам стало удобнее — без опроса или метрик скорости поставки",
+      "stack": null,
+      "adjacent": [
+        "eng.iac",
+        "eng.ci-cd"
+      ]
+    },
+    {
+      "id": "eng.reliability-program",
+      "specialization": "engineering",
+      "statement": "Вёл надёжность как программу: SLO по сервисам, политика бюджета ошибок, ревью инцидентов и их действий",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "политика бюджета ошибок",
+        "error budget policy",
+        "программа надёжности",
+        "reliability review",
+        "дежурства"
+      ],
+      "limits": "фактическую доступность без истории инцидентов",
+      "stack": null,
+      "adjacent": [
+        "eng.slo",
+        "eng.incident-postmortem"
+      ]
+    },
+    {
+      "id": "eng.quality-platform",
+      "specialization": "engineering",
+      "statement": "Строил инфраструктуру качества для нескольких команд: стратегия тестирования, стабильность прогонов, метрики качества релизов",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "стратегия тестирования",
+        "quality gates",
+        "тестовая инфраструктура",
+        "test platform",
+        "метрики качества"
+      ],
+      "limits": "качество конкретного продукта без истории дефектов",
+      "stack": null,
+      "adjacent": [
+        "eng.test-strategy",
+        "eng.flaky-tests"
+      ]
+    },
+    {
+      "id": "eng.data-platform",
+      "specialization": "engineering",
+      "statement": "Проектировал платформу данных: слои хранилища, контракты данных, владение, стоимость хранения и вычислений",
+      "grades": [
+        "senior"
+      ],
+      "weight": 3,
+      "weights": {
+        "junior": null,
+        "middle": null,
+        "senior": 3
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "data platform",
+        "платформа данных",
+        "data contract",
+        "lakehouse",
+        "data mesh"
+      ],
+      "limits": "качество бизнес-отчётов поверх платформы",
+      "stack": null,
+      "adjacent": [
+        "eng.dwh-modeling",
+        "eng.data-quality"
+      ]
+    },
+    {
+      "id": "common.architecture-decisions",
+      "specialization": "common",
+      "statement": "Принимал и документировал архитектурные решения: варианты, компромиссы, последствия (ADR, дизайн-ревью)",
+      "grades": [
+        "senior"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "frontend": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "ai": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        }
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "ADR",
+        "architecture decision",
+        "дизайн-ревью",
+        "design review",
+        "архитектурное решение",
+        "RFC"
+      ],
+      "limits": "что решение оказалось верным на дистанции",
+      "stack": null,
+      "adjacent": [
+        "common.code-review"
+      ]
+    },
+    {
+      "id": "common.mentoring",
+      "specialization": "common",
+      "statement": "Наставлял разработчиков: онбординг, разбор задач, рост младших до самостоятельной работы",
+      "grades": [
+        "senior"
+      ],
+      "weight": 2,
+      "weights": {
+        "backend": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "frontend": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "ai": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        },
+        "engineering": {
+          "junior": null,
+          "middle": null,
+          "senior": 2
+        }
+      },
+      "proof": [
+        "interview:defend"
+      ],
+      "markers": [
+        "ментор",
+        "наставник",
+        "менторство",
+        "онбординг новичков",
+        "тимлид"
+      ],
+      "limits": "управленческие навыки и найм",
+      "stack": null,
+      "adjacent": [
+        "common.code-review"
+      ]
+    }
+  ],
+  "commonWeightsEngineering": {
+    "common.git": {
+      "junior": 2,
+      "middle": 1
+    },
+    "common.http": {
+      "junior": 1,
+      "middle": 1
+    },
+    "common.sql-queries": {
+      "junior": 2,
+      "middle": 2
+    },
+    "common.unit-tests": {
+      "junior": 2,
+      "middle": 2
+    },
+    "common.debugging": {
+      "junior": 3,
+      "middle": 2
+    },
+    "common.algo-complexity": {
+      "junior": 1,
+      "middle": 1
+    },
+    "common.code-review": {
+      "junior": null,
+      "middle": 1
+    },
+    "common.security-basics": {
+      "junior": 1,
+      "middle": 1
+    },
+    "common.docker-local": {
+      "junior": 2,
+      "middle": 1
+    },
+    "common.ci-basics": {
+      "junior": null,
+      "middle": 2
+    }
+  }
+}

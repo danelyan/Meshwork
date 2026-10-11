@@ -17,13 +17,13 @@ export const DEMO_POOL_BACKEND: DemoProfile[] = [
     id: 'demo-cat-web-api-s-1', name: 'Демо: Тимур Каримов', specialization: 'backend', subcategoryId: 'backend.web-api', fspState: 'not_linked',
     category: { specialization: 'backend', grade: 'senior' }, contact: 'timur.karimov@example.com',
     stack: ['Java', 'Spring Boot', 'PostgreSQL', 'OpenAPI'],
-    claims: [['be.api-contract', 'third_party'], ['be.rest-design', 'artifact'], ['be.layering', 'artifact'], ['be.rate-limit', 'artifact'], ['be.authz', 'third_party'], ['be.observability', 'artifact'], ['be.integration-tests', 'artifact'], ['common.code-review', 'third_party']],
+    claims: [['be.api-contract', 'third_party'], ['be.rest-design', 'artifact'], ['be.layering', 'artifact'], ['be.rate-limit', 'artifact'], ['be.authz', 'third_party'], ['be.observability', 'artifact'], ['be.integration-tests', 'artifact'], ['be.system-design', 'artifact'], ['common.architecture-decisions', 'third_party']],
   },
   {
     id: 'demo-cat-web-api-s-2', name: 'Демо: Ольга Мельникова', specialization: 'backend', subcategoryId: 'backend.web-api', fspState: 'no_achievements',
     category: { specialization: 'backend', grade: 'senior' }, contact: 'olga.melnikova@example.com',
     stack: ['Go', 'Gin', 'PostgreSQL', 'gRPC'],
-    claims: [['be.grpc', 'artifact'], ['be.api-contract', 'artifact'], ['be.service-boundaries', 'third_party'], ['be.error-handling', 'artifact'], ['be.performance', 'self_reported'], ['be.sql-indexes', 'artifact'], ['common.code-review', 'artifact'], ['common.ci-basics', 'artifact']],
+    claims: [['be.grpc', 'artifact'], ['be.api-contract', 'artifact'], ['be.service-boundaries', 'third_party'], ['be.error-handling', 'artifact'], ['be.performance', 'self_reported'], ['be.sql-indexes', 'artifact'], ['common.code-review', 'artifact'], ['common.ci-basics', 'artifact'], ['be.system-design', 'third_party']],
   },
   {
     id: 'demo-cat-integrations-j-1', name: 'Демо: Денис Прохоров', specialization: 'backend', subcategoryId: 'backend.integrations', fspState: 'not_linked',
@@ -41,13 +41,13 @@ export const DEMO_POOL_BACKEND: DemoProfile[] = [
     id: 'demo-cat-integrations-s-1', name: 'Демо: Артём Белов', specialization: 'backend', subcategoryId: 'backend.integrations', fspState: 'no_achievements',
     category: { specialization: 'backend', grade: 'senior' }, contact: 'artem.belov@example.com',
     stack: ['Java', 'Kafka', 'Spring Boot', 'PostgreSQL'],
-    claims: [['be.message-queue', 'artifact'], ['be.idempotency', 'third_party'], ['be.retries-timeouts', 'artifact'], ['be.distributed-consistency', 'artifact'], ['be.external-integration', 'third_party'], ['be.observability', 'artifact'], ['be.service-boundaries', 'self_reported']],
+    claims: [['be.message-queue', 'artifact'], ['be.idempotency', 'third_party'], ['be.retries-timeouts', 'artifact'], ['be.distributed-consistency', 'artifact'], ['be.external-integration', 'third_party'], ['be.observability', 'artifact'], ['be.service-boundaries', 'self_reported'], ['be.reliability-design', 'artifact'], ['common.architecture-decisions', 'third_party']],
   },
   {
     id: 'demo-cat-integrations-s-2', name: 'Демо: Екатерина Наумова', specialization: 'backend', subcategoryId: 'backend.integrations', fspState: 'linked',
     category: { specialization: 'backend', grade: 'senior' }, contact: 'ekaterina.naumova@example.com',
     stack: ['Go', 'RabbitMQ', 'gRPC', 'Docker'],
-    claims: [['be.message-queue', 'third_party'], ['be.idempotency', 'artifact'], ['be.retries-timeouts', 'third_party'], ['be.grpc', 'artifact'], ['be.api-contract', 'artifact'], ['be.concurrency', 'artifact'], ['common.code-review', 'artifact'], ['common.docker-local', 'artifact']],
+    claims: [['be.message-queue', 'third_party'], ['be.idempotency', 'artifact'], ['be.retries-timeouts', 'third_party'], ['be.grpc', 'artifact'], ['be.api-contract', 'artifact'], ['be.concurrency', 'artifact'], ['common.code-review', 'artifact'], ['common.docker-local', 'artifact'], ['be.reliability-design', 'third_party']],
   },
   {
     id: 'demo-cat-highload-j-1', name: 'Демо: Кирилл Зубов', specialization: 'backend', subcategoryId: 'backend.highload', fspState: 'not_linked',
@@ -77,13 +77,13 @@ export const DEMO_POOL_BACKEND: DemoProfile[] = [
     id: 'demo-cat-highload-s-1', name: 'Демо: Станислав Егоров', specialization: 'backend', subcategoryId: 'backend.highload', fspState: 'no_achievements',
     category: { specialization: 'backend', grade: 'senior' }, contact: 'stanislav.egorov@example.com',
     stack: ['Go', 'Kafka', 'ClickHouse', 'Kubernetes'],
-    claims: [['be.performance', 'artifact'], ['be.concurrency', 'artifact'], ['be.message-queue', 'third_party'], ['be.distributed-consistency', 'artifact'], ['be.observability', 'third_party'], ['be.rate-limit', 'artifact'], ['be.nosql', 'artifact'], ['common.code-review', 'third_party']],
+    claims: [['be.performance', 'artifact'], ['be.concurrency', 'artifact'], ['be.distributed-consistency', 'artifact'], ['be.observability', 'third_party'], ['be.rate-limit', 'artifact'], ['be.nosql', 'artifact'], ['common.code-review', 'third_party'], ['be.data-scale', 'artifact'], ['be.reliability-design', 'third_party']],
   },
   {
     id: 'demo-cat-highload-s-2', name: 'Демо: Дарья Фёдорова', specialization: 'backend', subcategoryId: 'backend.highload', fspState: 'linked',
     category: { specialization: 'backend', grade: 'senior' }, contact: 'darya.fedorova@example.com',
     stack: ['Java', 'Redis', 'PostgreSQL', 'Grafana'],
-    claims: [['be.performance', 'third_party'], ['be.cache', 'artifact'], ['be.sql-indexes', 'artifact'], ['be.service-boundaries', 'artifact'], ['be.observability', 'artifact'], ['be.background-jobs', 'artifact'], ['be.concurrency', 'self_reported'], ['common.ci-basics', 'third_party']],
+    claims: [['be.performance', 'third_party'], ['be.cache', 'artifact'], ['be.sql-indexes', 'artifact'], ['be.service-boundaries', 'artifact'], ['be.observability', 'artifact'], ['be.background-jobs', 'artifact'], ['be.concurrency', 'self_reported'], ['common.ci-basics', 'third_party'], ['be.data-scale', 'third_party']],
   },
   {
     id: 'demo-cat-data-model-j-1', name: 'Демо: Руслан Хасанов', specialization: 'backend', subcategoryId: 'backend.data-model', fspState: 'not_linked',
@@ -113,12 +113,12 @@ export const DEMO_POOL_BACKEND: DemoProfile[] = [
     id: 'demo-cat-data-model-s-1', name: 'Демо: Максим Дьяконов', specialization: 'backend', subcategoryId: 'backend.data-model', fspState: 'linked',
     category: { specialization: 'backend', grade: 'senior' }, contact: 'maxim.dyakonov@example.com',
     stack: ['PostgreSQL', 'Java', 'Liquibase', 'Debezium'],
-    claims: [['be.transactions', 'third_party'], ['be.migrations', 'artifact'], ['be.concurrency', 'artifact'], ['be.distributed-consistency', 'artifact'], ['be.sql-indexes', 'artifact'], ['be.sql-schema', 'third_party'], ['common.code-review', 'artifact']],
+    claims: [['be.transactions', 'third_party'], ['be.migrations', 'artifact'], ['be.concurrency', 'artifact'], ['be.distributed-consistency', 'artifact'], ['be.sql-indexes', 'artifact'], ['be.sql-schema', 'third_party'], ['common.code-review', 'artifact'], ['be.data-scale', 'artifact'], ['common.architecture-decisions', 'third_party']],
   },
   {
     id: 'demo-cat-data-model-s-2', name: 'Демо: Елена Тарасова', specialization: 'backend', subcategoryId: 'backend.data-model', fspState: 'no_achievements',
     category: { specialization: 'backend', grade: 'senior' }, contact: 'elena.tarasova@example.com',
     stack: ['PostgreSQL', 'Python', 'MongoDB', 'Alembic'],
-    claims: [['be.transactions', 'artifact'], ['be.nosql', 'third_party'], ['be.migrations', 'third_party'], ['be.idempotency', 'artifact'], ['be.sql-indexes', 'artifact'], ['be.service-boundaries', 'self_reported'], ['be.performance', 'self_reported'], ['common.code-review', 'artifact']],
+    claims: [['be.transactions', 'artifact'], ['be.nosql', 'third_party'], ['be.migrations', 'third_party'], ['be.idempotency', 'artifact'], ['be.sql-indexes', 'artifact'], ['be.service-boundaries', 'self_reported'], ['be.performance', 'self_reported'], ['common.code-review', 'artifact'], ['be.data-scale', 'third_party']],
   },
 ];

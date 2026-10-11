@@ -89,7 +89,9 @@ describe('проект под работодателя: лента и сдача
   it('шаблоны: работодателю — список с подкатегориями; кандидату — 403', async () => {
     const res = await templatesRoute(jsonRequest('/api/employer/project-templates?specialization=backend', 'GET', undefined, EMP));
     const body = await res.json();
-    expect(body.templates.map((t: { id: string }) => t.id).sort()).toEqual(['be-integrations-middle-delivery', 'be-integrations-senior-outbox', 'be-webapi-junior-booking', 'be-webapi-junior-notes', 'be-webapi-middle-orders', 'be-webapi-senior-ratelimit']);
+    // 13 шаблонов Backend (E-07: каждая категория); исходные шесть на месте, чужих направлений нет.
+    expect(body.templates.map((t: { id: string }) => t.id)).toEqual(expect.arrayContaining(['be-integrations-middle-delivery', 'be-integrations-senior-outbox', 'be-webapi-junior-booking', 'be-webapi-junior-notes', 'be-webapi-middle-orders', 'be-webapi-senior-ratelimit']));
+    expect(body.templates.every((t: { id: string }) => t.id.startsWith('be-'))).toBe(true);
     expect(body.templates[0].tests.hidden).toBeGreaterThan(body.templates[0].tests.visible);
     expect((await templatesRoute(jsonRequest('/x', 'GET', undefined, cand('p-be')))).status).toBe(403);
   });
@@ -287,12 +289,13 @@ describe('проект под работодателя: лента и сдача
   });
 
   it('лента: своя подкатегория выше соседних того же направления; грейд не выше категории', async () => {
-    // У be-m-1 шаблон по умолчанию — backend.integrations (первый Middle в алфавите); добавляем Middle под web-api.
+    // У be-m-1 шаблон по умолчанию — первая подкатегория направления (backend.web-api); добавляем Middle под интеграции.
     await prisma.vacancy.create({
-      data: { id: 'demo-vac-be-m-web', companyId: 'demo-co-northstream', title: 'Web API (Middle)', specialization: 'backend', grade: 'middle', subcategoryId: 'backend.web-api', salaryFrom: 150000, salaryTo: 200000, needs: [], stack: ['Node.js'] },
+      data: { id: 'demo-vac-be-m-int', companyId: 'demo-co-northstream', title: 'Интеграции (Middle)', specialization: 'backend', grade: 'middle', subcategoryId: 'backend.integrations', salaryFrom: 150000, salaryTo: 200000, needs: [], stack: ['Node.js'] },
     });
-    const web = await upsertProjectTask({ companyId: 'demo-co-northstream', companyName: COMPANY }, 'demo-vac-be-m-web', { requiredCatalogIds: [], wishesText: null, visibility: 'open', subcategoryId: 'backend.web-api' });
-    expect(web.template.id).toBe('be-webapi-middle-orders');
+    // подкатегория берётся из потребности, если в запросе её нет
+    const int = await upsertProjectTask({ companyId: 'demo-co-northstream', companyName: COMPANY }, 'demo-vac-be-m-int', { requiredCatalogIds: [], wishesText: null, visibility: 'open' });
+    expect(int.template.id).toBe('be-integrations-middle-delivery');
 
     const makePref = async (id: string, subcategoryId: string | null) => {
       await makeCandidate(id, 'backend', 'middle');

@@ -39,18 +39,18 @@ beforeEach(async () => {
 afterAll(() => prisma.$disconnect());
 
 describe('каталог в БД', () => {
-  it('syncClaimCatalog: 120 записей, повторный запуск идемпотентен; getCatalog читает из БД', async () => {
+  it('syncClaimCatalog: 135 записей, повторный запуск идемпотентен; getCatalog читает из БД', async () => {
     await syncClaimCatalog(prisma);
     await syncClaimCatalog(prisma);
-    expect(await prisma.claimCatalog.count()).toBe(120);
+    expect(await prisma.claimCatalog.count()).toBe(135);
     const cat = await getCatalog();
     expect(cat.find((c) => c.id === 'be.idempotency')).toMatchObject({ specialization: 'backend', grades: ['middle'], weight: 3 });
   });
 
   it('пустой ClaimCatalog: getCatalog отдаёт файл, proposeClaims досеивает', async () => {
-    expect((await getCatalog()).length).toBe(120);
+    expect((await getCatalog()).length).toBe(135);
     await proposeClaims(A, [v('be.cache')]);
-    expect(await prisma.claimCatalog.count()).toBe(120);
+    expect(await prisma.claimCatalog.count()).toBe(135);
   });
 });
 

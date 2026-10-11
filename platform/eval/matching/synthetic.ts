@@ -188,7 +188,9 @@ function profFor(e: CatalogEntry, a: number, g: SynGrade, inFocus: boolean, rnd:
 export function generateSynthetic(seed = SYN_SEED, opts: { faked?: FakedOptions } = {}): SynSet {
   let rnd = mulberry32(seed);
   const pick = <T,>(xs: T[]) => xs[Math.floor(rnd() * xs.length)]!;
-  const cat = catalogFromFile();
+  // Записи только для Senior (scripts/catalog-senior.json, 11.10) генератор не берёт: он строит окна по позиции записи,
+  // и новые записи сдвинули бы весь набор. Senior здесь оценивается по весам Middle (weightFor).
+  const cat = catalogFromFile().filter((e) => !(e.grades.length === 1 && e.grades[0] === 'senior'));
   const bySpec = new Map<string, CatalogEntry[]>();
   for (const e of cat) bySpec.set(e.specialization, [...(bySpec.get(e.specialization) ?? []), e]);
   const common = bySpec.get('common') ?? [];

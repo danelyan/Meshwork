@@ -37,12 +37,13 @@ export const REACH_PENALTY = 0.5;
  * (старые данные, фикстуры) — общий `weight` для грейдов из `grades`.
  */
 export function gradeWeight(entry: CatalogEntry, spec: Specialization, grade: Grade): number | null {
-  // Senior: в каталоге веса только J/M (§ 7). ПРЕДЛОЖЕНИЕ: Senior ожидает то же, что Middle, — вес Middle,
-  // пока каталог не получит колонку S (ADR 0003, дополнение 10.10 16:15).
+  // Senior: колонка S каталога (scripts/catalog-senior.json, ADR 0003, дополнение 10.10 16:15).
+  // Таблица без колонки S (старые данные, фикстуры) — вес Middle.
   const g = grade === 'senior' ? 'middle' : grade;
   const w = entry.weights;
   if (w) {
     const byGrade = 'junior' in w ? w : w[spec];
+    if (grade === 'senior' && byGrade && 'senior' in byGrade) return byGrade.senior ?? null;
     return byGrade?.[g] ?? null;
   }
   return entry.grades.includes(grade) || entry.grades.includes(g) ? entry.weight : null;

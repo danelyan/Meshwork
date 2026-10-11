@@ -159,8 +159,10 @@ describe('банк engineering', () => {
     }
     // Грейд S (конвертер понимает «+S»): senior в grades у eng.* — ровно там, где proof даёт Senior-семейство.
     const seniorTasks = new Set(ENGINEERING_GENERATORS.filter((g) => g.grade === 'senior').map((g) => g.taskId));
+    // Записи только для Senior (scripts/catalog-senior.json) доказываются защитой, а не тестом — вне правила.
+    const seniorOnly = (c: { grades: string[] }) => c.grades.length === 1 && c.grades[0] === 'senior';
     for (const c of cat.values())
-      if (c.specialization === 'engineering') {
+      if (c.specialization === 'engineering' && !seniorOnly(c)) {
         expect(c.grades.includes('senior'), `${c.id}: grades ${c.grades.join('+')}`).toBe(c.proof.some((p) => seniorTasks.has(p)));
         expect(c.grades.filter((g) => !['junior', 'middle', 'senior'].includes(g))).toEqual([]);
       }

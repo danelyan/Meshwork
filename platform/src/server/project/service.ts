@@ -9,6 +9,7 @@ import { githubHeaders } from '../collector/github';
 import { getText } from '../collector/http-json';
 import { maskContacts } from '../collector/mask';
 import { disclosedCandidateIds, hasAiAssessmentConsent } from '../consent/service';
+import { SUBCATEGORIES } from '../../lib/directions';
 import { prisma } from '../db';
 import { categoryLabel } from '../employer/ranking';
 import { createInvitation } from '../employer/invitations';
@@ -129,8 +130,13 @@ export function listTemplateViews(filter: { specialization?: string; grade?: str
     .map(templateView);
 }
 
-function pickTemplate(spec: string, grade: string, subcategoryId?: string): LoadedTemplate | null {
-  const all = getTemplates().filter((t) => t.manifest.specialization === spec);
+/** Порядок подкатегорий направления (lib/directions): без подкатегории берём шаблон первой — Web API, UI-приложение …, а не первой по алфавиту. */
+const SUB_ORDER = new Map(SUBCATEGORIES.map((s) => [s.id, s.order]));
+
+function pickTemplate(spec: string, grade: string, subcategoryId?: string | null): LoadedTemplate | null {
+  const all = getTemplates()
+    .filter((t) => t.manifest.specialization === spec)
+    .sort((x, y) => (SUB_ORDER.get(x.manifest.subcategoryId) ?? 99) - (SUB_ORDER.get(y.manifest.subcategoryId) ?? 99) || x.manifest.id.localeCompare(y.manifest.id));
   return (
     all.find((t) => t.manifest.grade === grade && (!subcategoryId || t.manifest.subcategoryId === subcategoryId)) ??
     all.find((t) => t.manifest.grade === grade) ??
@@ -204,7 +210,7 @@ export async function upsertProjectTask(
   if (existing && existing._count.submissions > 0) {
     throw errors.conflict('Задание уже сдают: перегенерация поменяла бы условие у тех, кто сдал. Создай новую потребность.');
   }
-  const template = input.templateId ? getTemplate(input.templateId) : pickTemplate(vacancy.specialization, vacancy.grade, input.subcategoryId);
+  const template = input.templateId ? getTemplate(input.templateId) : pickTemplate(vacancy.specialization, vacancy.grade, input.subcategoryId ?? vacancy.subcategoryId);
   if (!template) throw new AppError('bad_request', 'Нет шаблона проекта под это направление и грейд', 400);
 
   const catalog = await loadCatalog();

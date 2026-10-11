@@ -160,6 +160,7 @@ export const API_ACCESS = {
   '/api/employer/assistant/messages': 'employer',
   '/api/employer/company': 'employer',
   '/api/employer/invitations': 'employer',
+  '/api/employer/invitations/[id]/hire': 'employer',
   '/api/employer/search': 'employer',
   '/api/employer/vacancies': 'employer',
   '/api/employer/vacancies/[id]': 'employer',

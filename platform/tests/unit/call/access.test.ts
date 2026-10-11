@@ -39,7 +39,7 @@ describe('гейт записи созвона для работодателя (
   it('без принятого приглашения — только оценки, без записи', async () => {
     accepted(0);
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'summary', recording: false });
-    expect(db.invitation.findMany).toHaveBeenCalledWith({ where: { companyId: 'co-1', candidateId: { in: ['cand-1'] }, status: 'accepted' }, select: { id: true, candidateId: true } });
+    expect(db.invitation.findMany).toHaveBeenCalledWith({ where: { companyId: 'co-1', candidateId: { in: ['cand-1'] }, status: { in: ['accepted', 'hired'] } }, select: { id: true, candidateId: true } });
   });
 
   it('accepted, но раскрытие отозвано (Г5) — снова только оценки', async () => {

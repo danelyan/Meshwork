@@ -220,7 +220,48 @@ if (existsSync(DIRECTION_ENTRIES)) {
   }
 }
 
-const dateMatch = /(\d{2})\.(\d{2})\.(\d{4})/.exec(md.split('\n').find((l) => l.includes('Статус')) ?? '');
+// Колонка S (ADR 0003, дополнение 10.10 16:15) поверх каталога-Markdown: scripts/catalog-senior.json.
+// Вес Senior = вес Middle, если не переопределён в seniorWeights; entries — записи только для Senior;
+// commonWeightsEngineering — веса J/M общих записей для Engineering. Смежность новых записей — в обе стороны.
+const SENIOR = join(here, 'catalog-senior.json');
+if (existsSync(SENIOR)) {
+  const sen = JSON.parse(readFileSync(SENIOR, 'utf8'));
+  for (const [id, bySpec] of Object.entries(sen.commonWeightsEngineering ?? {})) {
+    const c = byId.get(id);
+    if (!c || c.specialization !== 'common') fail(`commonWeightsEngineering: ${id} — не запись common`);
+    c.weights.engineering = bySpec;
+  }
+  for (const e of sen.entries ?? []) {
+    const spec = { be: 'backend', fe: 'frontend', ai: 'ai', eng: 'engineering', common: 'common' }[e.id.split('.')[0]];
+    if (spec !== e.specialization) fail(`${e.id}: префикс не своей специализации`);
+    if (byId.has(e.id)) fail(`повтор ID ${e.id}`);
+    if (!Array.isArray(e.proof) || e.proof.length === 0) fail(`${e.id}: нет пути доказательства`);
+    entries.push(e);
+    byId.set(e.id, e);
+  }
+  for (const e of sen.entries ?? []) {
+    for (const a of e.adjacent) {
+      if (!byId.has(a)) fail(`${e.id}: смежность на несуществующий ${a}`);
+      if (!byId.get(a).adjacent.includes(e.id)) byId.get(a).adjacent.push(e.id);
+    }
+  }
+  const overrides = sen.seniorWeights ?? {};
+  for (const id of Object.keys(overrides)) if (!byId.has(id)) fail(`seniorWeights: ID ${id} нет в каталоге`);
+  for (const e of entries) {
+    const o = overrides[e.id];
+    const tables = 'junior' in e.weights ? [[null, e.weights]] : Object.entries(e.weights);
+    for (const [spec, t] of tables) {
+      if ('senior' in t && o === undefined) continue;
+      const v = o === undefined ? t.middle : typeof o === 'number' ? o : o[spec];
+      // переопределение не включает Senior там, где Middle не ожидается (у common — по специализации)
+      t.senior = v === undefined || t.middle === null ? (t.senior ?? t.middle ?? null) : v;
+    }
+    const nums = tables.flatMap(([, t]) => Object.values(t)).filter((x) => x !== null);
+    e.weight = Math.max(...nums);
+  }
+}
+
+const dateMatch =/(\d{2})\.(\d{2})\.(\d{4})/.exec(md.split('\n').find((l) => l.includes('Статус')) ?? '');
 const version = dateMatch
   ? `claims-catalog-${/черновик/i.test(md.slice(0, 400)) ? 'draft-' : ''}${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`
   : 'claims-catalog-unknown';

@@ -10,12 +10,12 @@ export const DEMO_POOL_FRONTEND: DemoProfile[] = [
   {
     id: 'demo-cat-ui-app-s-1', name: 'Демо: Олег Воронин', specialization: 'frontend', subcategoryId: 'frontend.ui-app', fspState: 'linked',
     contact: 'o.voronin@example.com', category: { specialization: 'frontend', grade: 'senior' }, stack: ['Vue', 'TypeScript', 'Pinia', 'Vitest'],
-    claims: [['fe.architecture', 'artifact'], ['fe.state-mgmt', 'third_party'], ['fe.routing', 'artifact'], ['fe.forms', 'artifact'], ['fe.ts-typing', 'third_party'], ['fe.component-tests', 'artifact'], ['fe.api-client', 'artifact'], ['common.code-review', 'artifact']],
+    claims: [['fe.architecture', 'artifact'], ['fe.state-mgmt', 'third_party'], ['fe.routing', 'artifact'], ['fe.forms', 'artifact'], ['fe.ts-typing', 'third_party'], ['fe.component-tests', 'artifact'], ['common.code-review', 'artifact'], ['fe.frontend-platform', 'artifact'], ['common.architecture-decisions', 'third_party']],
   },
   {
     id: 'demo-cat-ui-app-s-2', name: 'Демо: Ксения Лебедева', specialization: 'frontend', subcategoryId: 'frontend.ui-app', fspState: 'not_linked',
     contact: 'k.lebedeva@example.com', category: { specialization: 'frontend', grade: 'senior' }, stack: ['React', 'TypeScript', 'TanStack Query', 'Vite', 'Playwright'],
-    claims: [['fe.architecture', 'third_party'], ['fe.state-mgmt', 'artifact'], ['fe.server-state', 'artifact'], ['fe.forms', 'artifact'], ['fe.routing', 'artifact'], ['fe.e2e-tests', 'third_party'], ['fe.ts-typing', 'artifact'], ['common.code-review', 'third_party']],
+    claims: [['fe.architecture', 'third_party'], ['fe.state-mgmt', 'artifact'], ['fe.server-state', 'artifact'], ['fe.forms', 'artifact'], ['fe.routing', 'artifact'], ['fe.e2e-tests', 'third_party'], ['fe.ts-typing', 'artifact'], ['common.code-review', 'third_party'], ['fe.frontend-platform', 'third_party']],
   },
   {
     id: 'demo-cat-design-system-j-1', name: 'Демо: Мария Орлова', specialization: 'frontend', subcategoryId: 'frontend.design-system', fspState: 'no_achievements',
@@ -40,12 +40,12 @@ export const DEMO_POOL_FRONTEND: DemoProfile[] = [
   {
     id: 'demo-cat-design-system-s-1', name: 'Демо: Елена Фомина', specialization: 'frontend', subcategoryId: 'frontend.design-system', fspState: 'no_achievements',
     contact: 'e.fomina@example.com', category: { specialization: 'frontend', grade: 'senior' }, stack: ['React', 'TypeScript', 'Storybook', 'Style Dictionary', 'Rollup'],
-    claims: [['fe.architecture', 'third_party'], ['fe.css-architecture', 'third_party'], ['fe.a11y', 'third_party'], ['fe.bundler', 'artifact'], ['fe.component-tests', 'artifact'], ['fe.design-handoff', 'artifact'], ['fe.ts-typing', 'artifact'], ['common.code-review', 'third_party'], ['common.ci-basics', 'artifact']],
+    claims: [['fe.architecture', 'third_party'], ['fe.css-architecture', 'third_party'], ['fe.a11y', 'third_party'], ['fe.bundler', 'artifact'], ['fe.component-tests', 'artifact'], ['fe.design-handoff', 'artifact'], ['fe.ts-typing', 'artifact'], ['fe.design-system-governance', 'artifact'], ['common.mentoring', 'third_party']],
   },
   {
     id: 'demo-cat-design-system-s-2', name: 'Демо: Игорь Субботин', specialization: 'frontend', subcategoryId: 'frontend.design-system', fspState: 'not_linked',
     contact: 'i.subbotin@example.com', category: { specialization: 'frontend', grade: 'senior' }, stack: ['Web Components', 'Lit', 'TypeScript', 'Vite'],
-    claims: [['fe.architecture', 'artifact'], ['fe.css-architecture', 'artifact'], ['fe.cross-browser', 'third_party'], ['fe.a11y', 'artifact'], ['fe.dom-events', 'artifact'], ['fe.render-lifecycle', 'artifact'], ['fe.e2e-tests', 'artifact'], ['common.code-review', 'artifact']],
+    claims: [['fe.architecture', 'artifact'], ['fe.css-architecture', 'artifact'], ['fe.cross-browser', 'third_party'], ['fe.a11y', 'artifact'], ['fe.dom-events', 'artifact'], ['fe.render-lifecycle', 'artifact'], ['fe.e2e-tests', 'artifact'], ['common.code-review', 'artifact'], ['fe.design-system-governance', 'third_party']],
   },
   {
     id: 'demo-cat-web-perf-j-1', name: 'Демо: Дарья Власова', specialization: 'frontend', subcategoryId: 'frontend.web-perf', fspState: 'not_linked',
@@ -70,12 +70,12 @@ export const DEMO_POOL_FRONTEND: DemoProfile[] = [
   {
     id: 'demo-cat-web-perf-s-1', name: 'Демо: Светлана Крылова', specialization: 'frontend', subcategoryId: 'frontend.web-perf', fspState: 'not_linked',
     contact: 's.krylova@example.com', category: { specialization: 'frontend', grade: 'senior' }, stack: ['Next.js', 'React', 'Webpack', 'Sentry', 'TypeScript'],
-    claims: [['fe.web-perf', 'third_party'], ['fe.render-perf', 'third_party'], ['fe.ssr', 'artifact'], ['fe.architecture', 'artifact'], ['fe.bundler', 'artifact'], ['fe.browser-storage', 'artifact'], ['common.http', 'third_party'], ['common.ci-basics', 'artifact'], ['common.code-review', 'artifact']],
+    claims: [['fe.render-perf', 'third_party'], ['fe.ssr', 'artifact'], ['fe.architecture', 'artifact'], ['fe.bundler', 'artifact'], ['fe.browser-storage', 'artifact'], ['common.http', 'third_party'], ['common.ci-basics', 'artifact'], ['fe.perf-budget', 'artifact'], ['common.architecture-decisions', 'third_party']],
   },
   {
     id: 'demo-cat-web-perf-s-2', name: 'Демо: Михаил Гусев', specialization: 'frontend', subcategoryId: 'frontend.web-perf', fspState: 'no_achievements',
     contact: 'm.gusev@example.com', category: { specialization: 'frontend', grade: 'senior' }, stack: ['Svelte', 'Vite', 'Service Worker', 'Lighthouse CI'],
-    claims: [['fe.web-perf', 'artifact'], ['fe.render-perf', 'artifact'], ['fe.event-loop', 'third_party'], ['fe.browser-storage', 'third_party'], ['fe.bundler', 'third_party'], ['fe.ssr', 'self_reported'], ['common.http', 'artifact'], ['common.algo-complexity', 'artifact']],
+    claims: [['fe.web-perf', 'artifact'], ['fe.render-perf', 'artifact'], ['fe.event-loop', 'third_party'], ['fe.browser-storage', 'third_party'], ['fe.bundler', 'third_party'], ['fe.ssr', 'self_reported'], ['common.http', 'artifact'], ['common.algo-complexity', 'artifact'], ['fe.perf-budget', 'third_party']],
   },
   {
     id: 'demo-cat-realtime-j-1', name: 'Демо: Виктория Назарова', specialization: 'frontend', subcategoryId: 'frontend.realtime', fspState: 'no_achievements',
@@ -100,11 +100,11 @@ export const DEMO_POOL_FRONTEND: DemoProfile[] = [
   {
     id: 'demo-cat-realtime-s-1', name: 'Демо: Татьяна Мельникова', specialization: 'frontend', subcategoryId: 'frontend.realtime', fspState: 'no_achievements',
     contact: 't.melnikova@example.com', category: { specialization: 'frontend', grade: 'senior' }, stack: ['React', 'TypeScript', 'WebSocket', 'Yjs', 'Playwright'],
-    claims: [['fe.realtime-client', 'third_party'], ['fe.server-state', 'artifact'], ['fe.architecture', 'artifact'], ['fe.browser-storage', 'artifact'], ['fe.state-mgmt', 'third_party'], ['fe.e2e-tests', 'artifact'], ['common.http', 'third_party'], ['common.algo-complexity', 'artifact'], ['common.code-review', 'artifact']],
+    claims: [['fe.realtime-client', 'third_party'], ['fe.server-state', 'artifact'], ['fe.architecture', 'artifact'], ['fe.browser-storage', 'artifact'], ['fe.state-mgmt', 'third_party'], ['fe.e2e-tests', 'artifact'], ['common.http', 'third_party'], ['fe.frontend-platform', 'artifact'], ['common.mentoring', 'third_party']],
   },
   {
     id: 'demo-cat-realtime-s-2', name: 'Демо: Андрей Шестаков', specialization: 'frontend', subcategoryId: 'frontend.realtime', fspState: 'linked',
     contact: 'a.shestakov@example.com', category: { specialization: 'frontend', grade: 'senior' }, stack: ['Svelte', 'TypeScript', 'SSE', 'Service Worker', 'Node.js'],
-    claims: [['fe.realtime-client', 'artifact'], ['fe.architecture', 'third_party'], ['fe.server-state', 'third_party'], ['fe.render-perf', 'artifact'], ['fe.event-loop', 'third_party'], ['fe.browser-storage', 'artifact'], ['common.http', 'artifact'], ['common.security-basics', 'artifact'], ['common.code-review', 'third_party']],
+    claims: [['fe.realtime-client', 'artifact'], ['fe.architecture', 'third_party'], ['fe.server-state', 'third_party'], ['fe.render-perf', 'artifact'], ['fe.event-loop', 'third_party'], ['fe.browser-storage', 'artifact'], ['common.http', 'artifact'], ['common.security-basics', 'artifact'], ['fe.frontend-platform', 'third_party']],
   },
 ];

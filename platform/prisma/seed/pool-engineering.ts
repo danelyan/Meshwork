@@ -30,12 +30,12 @@ export const DEMO_POOL_ENGINEERING: DemoProfile[] = [
   {
     id: 'demo-cat-data-eng-s-1', name: 'Демо: Георгий Савельев', specialization: 'engineering', subcategoryId: 'engineering.data-eng', fspState: 'linked',
     contact: 'g.saveliev@example.com', category: { specialization: 'engineering', grade: 'senior' }, stack: ['Spark', 'Airflow', 'Trino', 'Iceberg', 'Python'],
-    claims: [['eng.idempotent-load', 'artifact'], ['eng.incremental-load', 'artifact'], ['eng.partitioning', 'third_party'], ['eng.dwh-modeling', 'artifact'], ['eng.orchestration', 'artifact'], ['eng.etl-pipeline', 'artifact'], ['eng.observability', 'third_party'], ['common.code-review', 'artifact']],
+    claims: [['eng.idempotent-load', 'artifact'], ['eng.incremental-load', 'artifact'], ['eng.partitioning', 'third_party'], ['eng.dwh-modeling', 'artifact'], ['eng.orchestration', 'artifact'], ['eng.observability', 'third_party'], ['common.code-review', 'artifact'], ['eng.data-platform', 'artifact'], ['common.architecture-decisions', 'third_party']],
   },
   {
     id: 'demo-cat-data-eng-s-2', name: 'Демо: Ирина Ковалёва', specialization: 'engineering', subcategoryId: 'engineering.data-eng', fspState: 'no_achievements',
     contact: 'i.kovaleva@example.com', category: { specialization: 'engineering', grade: 'senior' }, stack: ['Flink', 'Kafka', 'Snowflake', 'dbt'],
-    claims: [['eng.incremental-load', 'third_party'], ['eng.idempotent-load', 'artifact'], ['eng.dwh-modeling', 'artifact'], ['eng.partitioning', 'artifact'], ['eng.capacity-planning', 'artifact'], ['eng.slo', 'self_reported'], ['common.code-review', 'artifact'], ['common.security-basics', 'self_reported']],
+    claims: [['eng.incremental-load', 'third_party'], ['eng.idempotent-load', 'artifact'], ['eng.dwh-modeling', 'artifact'], ['eng.partitioning', 'artifact'], ['eng.capacity-planning', 'artifact'], ['eng.slo', 'self_reported'], ['common.code-review', 'artifact'], ['common.security-basics', 'self_reported'], ['eng.data-platform', 'third_party']],
   },
   {
     id: 'demo-cat-devops-j-1', name: 'Демо: Денис Орлов', specialization: 'engineering', subcategoryId: 'engineering.devops', fspState: 'not_linked',
@@ -60,12 +60,12 @@ export const DEMO_POOL_ENGINEERING: DemoProfile[] = [
   {
     id: 'demo-cat-devops-s-1', name: 'Демо: Матвей Дроздов', specialization: 'engineering', subcategoryId: 'engineering.devops', fspState: 'linked',
     contact: 'm.drozdov@example.com', category: { specialization: 'engineering', grade: 'senior' }, stack: ['Kubernetes', 'Terraform', 'ArgoCD', 'Vault', 'Prometheus'],
-    claims: [['eng.iac', 'artifact'], ['eng.k8s-resources', 'artifact'], ['eng.deploy-rollback', 'third_party'], ['eng.ci-cd', 'artifact'], ['eng.capacity-planning', 'artifact'], ['eng.observability', 'artifact'], ['common.security-basics', 'third_party'], ['common.code-review', 'artifact']],
+    claims: [['eng.iac', 'artifact'], ['eng.k8s-resources', 'artifact'], ['eng.deploy-rollback', 'third_party'], ['eng.ci-cd', 'artifact'], ['eng.capacity-planning', 'artifact'], ['eng.observability', 'artifact'], ['common.security-basics', 'third_party'], ['eng.platform-design', 'artifact'], ['common.mentoring', 'third_party']],
   },
   {
     id: 'demo-cat-devops-s-2', name: 'Демо: Елена Макарова', specialization: 'engineering', subcategoryId: 'engineering.devops', fspState: 'not_linked',
     contact: 'e.makarova@example.com', category: { specialization: 'engineering', grade: 'senior' }, stack: ['AWS', 'Terraform', 'Kubernetes', 'Jenkins', 'Go'],
-    claims: [['eng.iac', 'artifact'], ['eng.deploy-rollback', 'artifact'], ['eng.ci-cd', 'third_party'], ['eng.k8s-resources', 'self_reported'], ['eng.slo', 'artifact'], ['eng.observability', 'third_party'], ['eng.incident-postmortem', 'self_reported'], ['common.code-review', 'artifact']],
+    claims: [['eng.iac', 'artifact'], ['eng.deploy-rollback', 'artifact'], ['eng.ci-cd', 'third_party'], ['eng.k8s-resources', 'self_reported'], ['eng.slo', 'artifact'], ['eng.observability', 'third_party'], ['eng.incident-postmortem', 'self_reported'], ['common.code-review', 'artifact'], ['eng.platform-design', 'third_party']],
   },
   {
     id: 'demo-cat-qa-automation-j-1', name: 'Демо: Софья Тихонова', specialization: 'engineering', subcategoryId: 'engineering.qa-automation', fspState: 'no_achievements',
@@ -90,12 +90,12 @@ export const DEMO_POOL_ENGINEERING: DemoProfile[] = [
   {
     id: 'demo-cat-qa-automation-s-1', name: 'Демо: Анастасия Румянцева', specialization: 'engineering', subcategoryId: 'engineering.qa-automation', fspState: 'linked',
     contact: 'a.rumyantseva@example.com', category: { specialization: 'engineering', grade: 'senior' }, stack: ['Kotlin', 'Playwright', 'Pact', 'Allure', 'Kubernetes'],
-    claims: [['eng.test-strategy', 'artifact'], ['eng.flaky-tests', 'artifact'], ['eng.contract-tests', 'artifact'], ['eng.ui-autotests', 'third_party'], ['eng.test-design', 'artifact'], ['eng.observability', 'self_reported'], ['common.code-review', 'artifact'], ['common.ci-basics', 'third_party']],
+    claims: [['eng.test-strategy', 'artifact'], ['eng.flaky-tests', 'artifact'], ['eng.contract-tests', 'artifact'], ['eng.ui-autotests', 'third_party'], ['eng.observability', 'self_reported'], ['common.code-review', 'artifact'], ['common.ci-basics', 'third_party'], ['eng.quality-platform', 'artifact'], ['common.mentoring', 'third_party']],
   },
   {
     id: 'demo-cat-qa-automation-s-2', name: 'Демо: Семён Воробьёв', specialization: 'engineering', subcategoryId: 'engineering.qa-automation', fspState: 'not_linked',
     contact: 's.vorobyov@example.com', category: { specialization: 'engineering', grade: 'senior' }, stack: ['Java', 'RestAssured', 'TestContainers', 'Jenkins'],
-    claims: [['eng.contract-tests', 'third_party'], ['eng.flaky-tests', 'artifact'], ['eng.test-strategy', 'artifact'], ['eng.test-isolation', 'artifact'], ['eng.deploy-rollback', 'self_reported'], ['common.code-review', 'artifact'], ['common.security-basics', 'self_reported']],
+    claims: [['eng.contract-tests', 'third_party'], ['eng.flaky-tests', 'artifact'], ['eng.test-strategy', 'artifact'], ['eng.test-isolation', 'artifact'], ['eng.deploy-rollback', 'self_reported'], ['common.code-review', 'artifact'], ['common.security-basics', 'self_reported'], ['eng.quality-platform', 'third_party']],
   },
   {
     id: 'demo-cat-sre-j-1', name: 'Демо: Юлия Фролова', specialization: 'engineering', subcategoryId: 'engineering.sre', fspState: 'not_linked',
@@ -120,11 +120,11 @@ export const DEMO_POOL_ENGINEERING: DemoProfile[] = [
   {
     id: 'demo-cat-sre-s-1', name: 'Демо: Владимир Лапин', specialization: 'engineering', subcategoryId: 'engineering.sre', fspState: 'no_achievements',
     contact: 'v.lapin@example.com', category: { specialization: 'engineering', grade: 'senior' }, stack: ['Kubernetes', 'Prometheus', 'Thanos', 'Go', 'Terraform'],
-    claims: [['eng.slo', 'artifact'], ['eng.capacity-planning', 'artifact'], ['eng.incident-postmortem', 'third_party'], ['eng.retries-resilience', 'artifact'], ['eng.observability', 'artifact'], ['eng.k8s-resources', 'artifact'], ['common.code-review', 'artifact'], ['common.security-basics', 'self_reported']],
+    claims: [['eng.slo', 'artifact'], ['eng.capacity-planning', 'artifact'], ['eng.incident-postmortem', 'third_party'], ['eng.observability', 'artifact'], ['eng.k8s-resources', 'artifact'], ['common.code-review', 'artifact'], ['common.security-basics', 'self_reported'], ['eng.reliability-program', 'artifact'], ['common.architecture-decisions', 'third_party']],
   },
   {
     id: 'demo-cat-sre-s-2', name: 'Демо: Оксана Гусева', specialization: 'engineering', subcategoryId: 'engineering.sre', fspState: 'linked',
     contact: 'o.guseva@example.com', category: { specialization: 'engineering', grade: 'senior' }, stack: ['Envoy', 'Jaeger', 'Python', 'Kafka', 'AWS'],
-    claims: [['eng.incident-postmortem', 'artifact'], ['eng.slo', 'artifact'], ['eng.retries-resilience', 'third_party'], ['eng.capacity-planning', 'artifact'], ['eng.deploy-rollback', 'artifact'], ['eng.alerting', 'artifact'], ['eng.observability', 'third_party'], ['common.code-review', 'third_party']],
+    claims: [['eng.incident-postmortem', 'artifact'], ['eng.slo', 'artifact'], ['eng.retries-resilience', 'third_party'], ['eng.capacity-planning', 'artifact'], ['eng.deploy-rollback', 'artifact'], ['eng.alerting', 'artifact'], ['eng.observability', 'third_party'], ['common.code-review', 'third_party'], ['eng.reliability-program', 'third_party']],
   },
 ];

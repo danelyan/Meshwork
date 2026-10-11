@@ -1,0 +1,19 @@
+{
+  "id": "ai-datasci-senior-cohorts",
+  "subcategoryId": "ai.data-science",
+  "specialization": "ai",
+  "grade": "senior",
+  "title": "Когортное удержание, LTV и CUPED для A/B по выручке",
+  "summary": "Когортная таблица удержания и накопленного LTV с учётом цензурирования справа, CUPED-поправка по предпериодной выручке, сравнение групп с доверительным интервалом; обязательный DESIGN.md",
+  "stack": ["python312", "pandas", "numpy", "pytest"],
+  "catalogIds": ["ai.ab-testing", "ai.pandas-sql", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

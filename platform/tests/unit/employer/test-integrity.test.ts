@@ -1,4 +1,4 @@
-import { loadTestIntegrity, publicIntegrity } from '@/server/employer/test-integrity';
+import { loadGradeConfidence, loadTestIntegrity, publicIntegrity } from '@/server/employer/test-integrity';
 
 const findMany = vi.fn();
 vi.mock('@/server/db', () => ({ prisma: { testAttempt: { findMany: (...a: unknown[]) => findMany(...a) } } }));
@@ -61,5 +61,27 @@ describe('loadTestIntegrity: попытка, давшая категорию', (
     expect(findMany).not.toHaveBeenCalled();
     findMany.mockResolvedValueOnce([]);
     expect((await loadTestIntegrity(new Map([['c2', cat]]))).size).toBe(0);
+  });
+});
+
+describe('loadGradeConfidence: уверенность теста в грейде категории', () => {
+  const cat = { specialization: 'backend' as const, grade: 'middle' as const, subcategoryId: null };
+
+  it('берёт pPass последней пройденной попытки с той же категорией; чужой грейд и пустой pPass пропускает', async () => {
+    findMany.mockResolvedValue([
+      { candidateId: 'a', specialization: 'backend', grade: 'senior', subcategoryId: null, pPass: 0.4 },
+      { candidateId: 'a', specialization: 'backend', grade: 'middle', subcategoryId: null, pPass: 0.87 },
+      { candidateId: 'a', specialization: 'backend', grade: 'middle', subcategoryId: null, pPass: 0.5 },
+      { candidateId: 'b', specialization: 'backend', grade: 'middle', subcategoryId: null, pPass: null },
+    ]);
+    const out = await loadGradeConfidence(new Map([['a', cat], ['b', cat], ['c', null]]));
+    expect(out.get('a')).toBe(0.87);
+    expect(out.has('b')).toBe(false);
+    expect(out.has('c')).toBe(false);
+  });
+
+  it('пустой набор - без запроса', async () => {
+    expect((await loadGradeConfidence(new Map([['c', null]]))).size).toBe(0);
+    expect(findMany).not.toHaveBeenCalled();
   });
 });

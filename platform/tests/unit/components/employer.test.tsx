@@ -89,6 +89,15 @@ describe('кабинет работодателя: компоненты', () => 
     expect(screen.getByTestId('test-integrity').textContent).toMatch(/были замечания \(рисунок ответов\), подтверждён повторно/);
   });
 
+  it('карточка: уверенность теста в грейде рядом с категорией, с оговоркой; нет теста - строки нет', () => {
+    const { rerender } = render(<ol><CandidateMatchCard item={ITEM} vacancyId="v1" /></ol>);
+    expect(screen.queryByTestId('grade-confidence-line')).toBeNull();
+    rerender(<ol><CandidateMatchCard item={{ ...ITEM, gradeConfidence: 0.874 }} vacancyId="v1" /></ol>);
+    const line = screen.getByTestId('grade-confidence-line').textContent ?? '';
+    expect(line).toContain('не ниже Middle: 87 %');
+    expect(line).toContain('не вероятность найма');
+  });
+
   it('карточка: рядом с проверкой честности - сигнал «решения теста» созвона, если он есть', () => {
     const item = { ...ITEM, testIntegrity: { level: 'low' as const, groups: [], confirmedAgain: false }, explanation: { ...ITEM.explanation, depthMap: { topics: [], confirmed: 0, matchedNeed: 0, testOwnership: 'explained' as const } } };
     render(<ol><CandidateMatchCard item={item} vacancyId="v1" /></ol>);

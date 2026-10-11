@@ -541,8 +541,8 @@ function ResultScreen({
         </p>
         <dl className={styles.facts}>
           <div>
-            <dt>Уверенность в {grade}</dt>
-            <dd>{Math.round(r.pPass * 100)}%</dd>
+            <dt>Вероятность, что уровень не ниже {grade}</dt>
+            <dd>{Math.round(r.pPass * 100)} %</dd>
           </div>
           {attempt.grade !== 'junior' && (
             <div>
@@ -555,6 +555,9 @@ function ResultScreen({
             <dd>{r.answered}</dd>
           </div>
         </dl>
+        <p className={ui.muted} data-testid="confidence-note">
+          Это уверенность теста по вашим ответам, а не вероятность найма.
+        </p>
         <p className={ui.muted}>
           <ObjectionButton subject="grade_test" subjectId={attempt.id} />
         </p>

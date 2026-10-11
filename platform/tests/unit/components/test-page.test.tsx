@@ -225,6 +225,9 @@ describe('TestPage', () => {
     render(<TestPage />);
     expect((await screen.findByTestId('result-title')).textContent).toBe('Middle подтверждён');
     expect(screen.getByText('категория записана')).toBeDefined();
+    expect(screen.getByText(/Вероятность, что уровень не ниже Middle/)).toBeDefined();
+    expect(screen.getByText('93 %')).toBeDefined();
+    expect(screen.getByTestId('confidence-note').textContent).toMatch(/не вероятность найма/);
   });
 });
 

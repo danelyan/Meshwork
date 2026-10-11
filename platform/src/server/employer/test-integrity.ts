@@ -66,3 +66,25 @@ export async function loadTestIntegrity(categories: ReadonlyMap<string, Category
   }
   return out;
 }
+
+/**
+ * Уверенность теста в текущем грейде кандидата: P(уровень не ниже категории) по ответам попытки, давшей категорию
+ * (policy.ts → probAbove, формулу не меняем). Это уверенность теста, а не вероятность найма. Нет попытки (демо, старые
+ * данные) или у неё нет числа - записи нет, работодателю ничего не показываем.
+ */
+export async function loadGradeConfidence(categories: ReadonlyMap<string, CategoryKey | null>): Promise<Map<string, number>> {
+  const ids = [...categories].filter(([, c]) => c !== null).map(([id]) => id);
+  const out = new Map<string, number>();
+  if (ids.length === 0) return out;
+  const attempts = await prisma.testAttempt.findMany({
+    where: { candidateId: { in: ids }, status: 'passed' },
+    select: { candidateId: true, specialization: true, grade: true, subcategoryId: true, pPass: true },
+    orderBy: [{ finishedAt: 'desc' }, { id: 'asc' }],
+  });
+  for (const a of attempts) {
+    const c = categories.get(a.candidateId);
+    if (!c || out.has(a.candidateId) || a.pPass === null) continue;
+    if (a.specialization === c.specialization && a.grade === c.grade && (a.subcategoryId ?? null) === (c.subcategoryId ?? null)) out.set(a.candidateId, a.pPass);
+  }
+  return out;
+}

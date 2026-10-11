@@ -181,10 +181,17 @@ async function degrade(ctx: ToolContext, input: TurnInput, pipeline: PipelineRes
   await finishAndSave(ctx.conversationId, createReplyStream(ctx.emit, ctx.signal, undefined, ctx.pace), text);
 }
 
-/** Отдать реплику и сохранить то, что стало ответом (при стопе посреди нарезки — показанный кусок). */
+/**
+ * Сохранить реплику до отдачи, затем отдать: F5 в первые секунды хода уже видит ответ в истории
+ * (нарезка готового текста идёт секунды). Стоп посреди нарезки — в БД остаётся показанный кусок;
+ * стоп до первого куска — запись убирается.
+ */
 async function finishAndSave(conversationId: string, reply: ReturnType<typeof createReplyStream>, text: string) {
-  const saved = await reply.finish(text);
-  if (saved) await saveMessage(conversationId, { role: 'assistant', content: saved });
+  const id = await saveMessage(conversationId, { role: 'assistant', content: text });
+  const shown = await reply.finish(text);
+  if (shown === text) return;
+  if (shown) await prisma.message.update({ where: { id }, data: { content: shown } });
+  else await prisma.message.delete({ where: { id } });
 }
 
 /**
@@ -261,8 +268,9 @@ export async function ensurePromptVersion(conversationId: string): Promise<void>
   await prisma.message.create({ data: { conversationId, role: 'system', content: marker } });
 }
 
-async function saveMessage(conversationId: string, m: ChatMessage): Promise<void> {
-  await prisma.message.create({
+async function saveMessage(conversationId: string, m: ChatMessage): Promise<string> {
+  const { id } = await prisma.message.create({
+    select: { id: true },
     data: {
       conversationId,
       role: m.role,
@@ -272,4 +280,5 @@ async function saveMessage(conversationId: string, m: ChatMessage): Promise<void
     },
   });
   await prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } });
+  return id;
 }

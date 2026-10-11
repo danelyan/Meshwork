@@ -158,7 +158,7 @@ export function CallPanel() {
     active: phase === 'live' && !textOnly,
     voice,
     busy,
-    onPhrase: async ({ pcm, browserText }) => {
+    onPhrase: async ({ pcm, browserText }, decide) => {
       if (!id) return false;
       markSpeechEnd();
       let audioRef: string | undefined;
@@ -174,20 +174,17 @@ export function CallPanel() {
       }
       // Шум без слов — не ответ: молча слушаем дальше.
       if (!text.trim()) return false;
-      if (busyRef.current) {
-        // Кира ещё думает: договорённое уходит следующим ходом.
+      // Семантический фильтр (lib/interrupt.ts): поддакивание поверх Киры и команда «стоп» — не ход.
+      const d = decide(text);
+      if (d === 'ignore' || d === 'hard') return false;
+      if (busyRef.current || d === 'queue') {
+        // Кира ещё думает или готовит озвучку: договорённое уходит следующим ходом, ответ звучит целиком.
         const p = pending.current;
         pending.current = { text: p ? `${p.text} ${text}` : text, ...((p?.audioRef ?? audioRef) ? { audioRef: p?.audioRef ?? audioRef } : {}) };
         return true;
       }
       await sendRef.current({ text, ...(audioRef ? { audioRef } : {}) });
       return true;
-    },
-    onResume: () => {
-      const ai = lastAiRef.current;
-      if (busyRef.current || !ai || !id) return;
-      replays.current += 1;
-      voiceRef.current?.speak(ai.text, `call-${id}-${ai.index}-again${replays.current}`);
     },
   });
   const hushed = talk.hushed;
@@ -320,13 +317,21 @@ export function CallPanel() {
   const startedAt = call ? new Date(call.startedAt).getTime() : now;
   const canFinish = answered > 0 && !busy;
   const canAnswer = Boolean(last && last.role === 'ai' && last.meta) && !closing && phase === 'live';
-  // Фраза, сказанная пока Кира думала, уходит, как только ответ пришёл.
+  // Фраза, сказанная пока Кира думала, уходит, когда ответ пришёл и прозвучал (send() останавливает озвучку).
+  // Пауза — чтобы озвучка ответа успела начаться (статус loading), прежде чем решить, что Кира молчит.
+  const voiceStatus = voice?.status;
   useEffect(() => {
     if (busy || !canAnswer || !pending.current) return;
-    const p = pending.current;
-    pending.current = null;
-    void send(p);
-  }, [busy, canAnswer, send]);
+    if (voiceStatus === 'speaking' || voiceStatus === 'loading') return;
+    const t = setTimeout(() => {
+      const s = voiceRef.current?.status;
+      if (s === 'speaking' || s === 'loading' || !pending.current) return;
+      const p = pending.current;
+      pending.current = null;
+      void send(p);
+    }, 150);
+    return () => clearTimeout(t);
+  }, [busy, canAnswer, send, voiceStatus]);
   const progress = call?.progress;
   const summary = interview ? summaryOf(call?.verdict) : null;
   const stage = phase === 'done' ? 'summary' : stageOf(turnsOf(transcript), closing);

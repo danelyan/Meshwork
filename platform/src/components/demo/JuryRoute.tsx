@@ -22,7 +22,7 @@ interface RouteStep {
 
 /** Маршрут на 5 минут: порядок рассчитан на критерии оценки (подбор 35 %, тест и валидация 25 %). */
 export const JURY_ROUTE: RouteStep[] = [
-  { id: 'search', persona: { id: 'demo-employer', to: '/employer/search' }, see: 'Подборка кандидатов с обоснованием по каждому и вилкой зарплаты; компания ищет сама.', criterion: 'Подбор · 35 %' },
+  { id: 'search', persona: { id: 'demo-employer', to: '/employer' }, see: 'Подборка кандидатов с обоснованием по каждому и вилкой зарплаты; компания ищет сама.', criterion: 'Подбор · 35 %' },
   { id: 'invite', persona: { id: 'demo-employer-granit', to: '/employer/invitations' }, see: 'Приглашения с вилкой, контакты после согласия кандидата, отметка о найме.', criterion: 'Подбор · 35 %' },
   { id: 'evaluate', link: { href: '/evaluate', label: 'Проверить подбор' }, see: 'Прогон нашего ранжирования на наборе жюри: метрики рядом с базовой линией.', criterion: 'Подбор · 35 %' },
   { id: 'test', persona: { id: 'demo-tested', to: '/test' }, see: 'Адаптивный тест кандидата и выданная им категория: специализация и грейд.', criterion: 'Тест · 25 %' },

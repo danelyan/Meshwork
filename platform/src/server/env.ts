@@ -93,6 +93,18 @@ export const envSchema = z
     LLM_FALLBACK_NAME: optionalString,
     LLM_FALLBACK_EXTRA_BODY: jsonObject('LLM_FALLBACK_EXTRA_BODY'),
 
+    /**
+     * Отдельная модель для созвонов (getLlm({ purpose: 'call' })): те же правила, что у LLM_FALLBACK_* (тройка BASE_URL +
+     * API_KEY + MODEL, FOLDER_ID для Yandex AI Studio). Не задана — созвоны идут на основной модели; при её сбое запрос
+     * уходит на основную (LLM_PROVIDER).
+     */
+    LLM_CALL_BASE_URL: optionalString.pipe(z.url().optional()),
+    LLM_CALL_API_KEY: optionalString,
+    LLM_CALL_MODEL: optionalString,
+    LLM_CALL_FOLDER_ID: optionalString,
+    LLM_CALL_NAME: optionalString,
+    LLM_CALL_EXTRA_BODY: jsonObject('LLM_CALL_EXTRA_BODY'),
+
     /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
     STT_PROVIDER: z.enum(['auto', 'yandex', 'openai', 'browser', 'off']).default('auto'),
     /** STT_PROVIDER=openai: OpenAI-совместимый /audio/transcriptions (vLLM whisper в Selectel). Базовый URL с /v1, ключ сервиса — Bearer. */
@@ -226,6 +238,12 @@ export const envSchema = z
     if (fallbackKeys.some((k) => env[k])) {
       for (const key of fallbackKeys) {
         if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен, если задана запасная модель (LLM_FALLBACK_*)` });
+      }
+    }
+    const callKeys = ['LLM_CALL_BASE_URL', 'LLM_CALL_API_KEY', 'LLM_CALL_MODEL'] as const;
+    if (callKeys.some((k) => env[k])) {
+      for (const key of callKeys) {
+        if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен, если задана модель созвонов (LLM_CALL_*)` });
       }
     }
     if (env.LLM_PROVIDER === 'yandex') need(['YANDEX_API_KEY', 'YANDEX_FOLDER_ID', 'YANDEX_MODEL'], 'yandex');

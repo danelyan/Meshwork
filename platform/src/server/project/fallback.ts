@@ -31,8 +31,12 @@ export type ProjectContext = SpecContext | ComposeContext | EvaluateContext;
 
 export const CONTEXT_TAG = 'project_context';
 
+/**
+ * JSON внутри тега: `<` и `>` экранируются как \u003c / \u003e (как в call/prompt-utils.ts) — файлы репозитория и
+ * журнал ИИ кандидата не могут закрыть тег и открыть свой блок, а JSON остаётся валидным (parseContextBlock).
+ */
 export function contextBlock(ctx: ProjectContext): string {
-  return `<${CONTEXT_TAG}>\n${JSON.stringify(ctx)}\n</${CONTEXT_TAG}>`;
+  return `<${CONTEXT_TAG}>\n${JSON.stringify(ctx).replace(/</g, '\\u003c').replace(/>/g, '\\u003e')}\n</${CONTEXT_TAG}>`;
 }
 
 export function parseContextBlock(text: string): ProjectContext | null {

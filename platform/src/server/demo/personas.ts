@@ -79,7 +79,3 @@ export const INJECTION_PERSONA: DemoPersona = {
 };
 
 export const ALL_PERSONAS: DemoPersona[] = [FRESH_PERSONA, ...CANDIDATE_PERSONAS, ...EMPLOYER_PERSONAS, INJECTION_PERSONA];
-
-export function personaById(id: string): DemoPersona | undefined {
-  return ALL_PERSONAS.find((p) => p.id === id);
-}

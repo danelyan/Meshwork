@@ -10,7 +10,7 @@ import type { HeaderAccount } from '@/server/auth/role-plan';
 import { DashboardFrame } from './DashboardFrame';
 import { useThemeRoot } from './theme';
 
-const BARE_PATHS = ['/onboarding', '/design/consultant-grid-preview', '/design/consultant-grid-v1', '/design/consultant-grid-v2', '/design/consultant-grid-v3'];
+const BARE_PATHS = ['/admin', '/onboarding', '/design/consultant-grid-preview', '/design/consultant-grid-v1', '/design/consultant-grid-v2', '/design/consultant-grid-v3'];
 
 const BareContext = createContext<(on: boolean) => void>(() => undefined);
 

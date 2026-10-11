@@ -1,0 +1,29 @@
+/* Раскладка админки (E-08): боковое меню + рабочая область. Только токены tokens.css. */
+.shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100dvh; background: var(--bg); color: var(--text); }
+.side { border-right: 1px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; height: 100dvh; overflow-y: auto; }
+.brand { font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.group { display: grid; gap: 2px; }
+.groupTitle { font-family: var(--mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 0 0 4px 8px; }
+.link { display: block; padding: 6px 8px; border-radius: var(--radius-sm); color: var(--text); text-decoration: none; font-size: var(--fs-sm); }
+.link:hover { background: var(--surface-hover); }
+.active { background: var(--surface-hover); font-weight: 600; box-shadow: inset 2px 0 0 var(--blue); }
+.who { margin-top: auto; display: grid; gap: 6px; font-size: var(--fs-sm); color: var(--text-soft); }
+.main { padding: 28px 32px; min-width: 0; display: grid; align-content: start; gap: 20px; }
+.title { font-size: var(--fs-xl); font-weight: 700; margin: 0; }
+.muted { color: var(--muted); font-size: var(--fs-sm); margin: 0; }
+.center { min-height: 100dvh; display: grid; place-items: center; padding: 24px; background: var(--bg); }
+.card { width: min(420px, 100%); display: grid; gap: 14px; padding: 24px; }
+.form { display: grid; gap: 12px; }
+.secret { font-family: var(--mono); font-size: var(--fs-sm); word-break: break-all; background: var(--surface-dim); padding: 8px 10px; border-radius: var(--radius-sm); }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.table th { text-align: left; font-family: var(--mono); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.table td { padding: 8px 10px; border-bottom: 1px solid var(--border-faint); vertical-align: top; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mono { font-family: var(--mono); font-size: var(--fs-xs); }
+.json { font-family: var(--mono); font-size: var(--fs-xs); white-space: pre-wrap; word-break: break-all; margin: 0; max-width: 420px; color: var(--text-soft); }
+@media (max-width: 760px) {
+  .shell { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .main { padding: 20px 16px; }
+}

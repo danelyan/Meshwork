@@ -19,7 +19,7 @@ import {
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 type Method = (typeof METHODS)[number];
-type Role = 'public' | 'candidate' | 'employer' | 'user' | 'session';
+type Role = 'public' | 'candidate' | 'employer' | 'user' | 'session' | 'staff';
 
 export interface RouteOp {
   file: string;
@@ -199,8 +199,11 @@ async function schemaUsed(op: RouteOp, re: RegExp): Promise<Found | null> {
 // --- сборка ---
 
 const SEC_COOKIE = [{ cookieAuth: [] }];
+// Админка (ADR 0009): своя кука персонала fsp_admin, пользовательская cid не подходит.
+const SEC_ADMIN = [{ adminCookieAuth: [] }];
 
 function roleOf(op: RouteOp): Role {
+  if (/\brequireStaff\(req\b/.test(op.text)) return 'staff';
   if (/\brequireEmployer\(/.test(op.text)) return 'employer';
   if (/\brequireCandidate\(/.test(op.text)) return 'candidate';
   if (/\brequireUser\(/.test(op.text)) return 'user';
@@ -214,6 +217,7 @@ const ROLE_TEXT: Record<Role, string> = {
   employer: 'Нужна сессия работодателя (кука cid).',
   user: 'Нужна сессия аккаунта любой роли (кука cid).',
   session: 'Нужна любая сессия (кука cid).',
+  staff: 'Нужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403.',
 };
 
 function successStatuses(op: RouteOp): number[] {
@@ -349,7 +353,7 @@ export async function buildSpec(opts: BuildOptions = {}): Promise<Record<string,
     const errs = new Set<number>(Object.keys(ov.errors ?? {}).map(Number));
     if (requestBody || zodQuery || /\.parse\(|badRequest\(/.test(text)) errs.add(400);
     if (role !== 'public') errs.add(401);
-    if (role === 'candidate' || role === 'employer' || /assertSameOrigin\(|forbidden\(/.test(text)) errs.add(403);
+    if (role === 'candidate' || role === 'employer' || role === 'staff' || /assertSameOrigin\(|forbidden\(/.test(text)) errs.add(403);
     if (/\{\w+\}/.test(op.path) || /notFound\(/.test(text)) errs.add(404);
     if (/\b409\b|conflict\(/.test(text)) errs.add(409);
     if (/payloadTooLarge\(/.test(text)) errs.add(413);
@@ -378,7 +382,7 @@ export async function buildSpec(opts: BuildOptions = {}): Promise<Record<string,
       tags: [tag],
       summary: ov.summary ?? (firstLine(op.doc).split(/(?<=[.!?])\s/)[0] || key),
       description: [ov.description ?? doc, ROLE_TEXT[role]].filter(Boolean).join('\n\n'),
-      ...(role === 'public' ? { security: [] } : { security: SEC_COOKIE }),
+      ...(role === 'public' ? { security: [] } : { security: role === 'staff' ? SEC_ADMIN : SEC_COOKIE }),
       ...(parameters.length ? { parameters } : {}),
       ...(requestBody ? { requestBody } : {}),
       responses,
@@ -412,7 +416,10 @@ export async function buildSpec(opts: BuildOptions = {}): Promise<Record<string,
     tags,
     paths,
     components: {
-      securitySchemes: { cookieAuth: { type: 'apiKey', in: 'cookie', name: 'cid', description: 'Подписанная сессионная кука платформы' } },
+      securitySchemes: {
+        cookieAuth: { type: 'apiKey', in: 'cookie', name: 'cid', description: 'Подписанная сессионная кука платформы' },
+        adminCookieAuth: { type: 'apiKey', in: 'cookie', name: 'fsp_admin', description: 'Сессия персонала админки (ADR 0009): вход /api/admin/auth/login + /api/admin/auth/totp' },
+      },
       schemas: Object.fromEntries(Object.entries(componentSchemas).sort(([a], [b]) => a.localeCompare(b))),
       responses: responsesComponent,
     },

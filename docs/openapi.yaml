@@ -9,6 +9,9 @@ servers:
     description: "Тот же origin, что и интерфейс"
 tags:
   -
+    name: admin
+    description: "Админка владельцев платформы (E-08, ADR 0009): вход персонала (пароль + TOTP), персонал, журнал; разделы фаз 1–5"
+  -
     name: auth
     description: "Вход, сессия, согласие на обработку ПДн, роль"
   -
@@ -102,6 +105,395 @@ tags:
     name: uploads
     description: "Загрузка резюме и документов: разбор, оригинал, скачивание, удаление"
 paths:
+  "/api/admin/audit":
+    get:
+      operationId: getAdminAudit
+      tags:
+        - admin
+      summary: "Журнал действий персонала (только owner): лента новых сверху, фильтры по сотруднику, действию и объекту, курсор."
+      description: "Журнал действий персонала (только owner): лента новых сверху, фильтры по сотруднику, действию и объекту, курсор.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: actorId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        -
+          name: action
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        -
+          name: targetType
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+        -
+          name: targetId
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        -
+          name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        -
+          name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: "Журнал действий персонала (только owner): лента новых сверху, фильтры по сотруднику, действию и объекту, курсор."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/login":
+    post:
+      operationId: postAdminAuthLogin
+      tags:
+        - admin
+      summary: "Вход персонала, шаг 1: почта и пароль."
+      description: "Вход персонала, шаг 1: почта и пароль. Верно → промежуточная кука fsp_admin_pre (5 минут) и следующий шаг: `totp` — ввести код, `setup` — TOTP ещё не настроен, в ответе секрет и otpauth-URI для приложения-аутентификатора. Неверная пара или отключённый сотрудник — 401 без уточнения.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  minLength: 3
+                  maxLength: 254
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: "Вход персонала, шаг 1: почта и пароль. Верно → промежуточная кука fsp_admin_pre (5 минут) и следующий шаг:"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/logout":
+    post:
+      operationId: postAdminAuthLogout
+      tags:
+        - admin
+      summary: "Выход персонала: сессия отзывается в БД, кука fsp_admin стирается."
+      description: "Выход персонала: сессия отзывается в БД, кука fsp_admin стирается.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Выход персонала: сессия отзывается в БД, кука fsp_admin стирается."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/me":
+    get:
+      operationId: getAdminAuthMe
+      tags:
+        - admin
+      summary: "Кто вошёл в админку: сотрудник, роль и список его прав (для интерфейса; решает всё равно сервер)."
+      description: "Кто вошёл в админку: сотрудник, роль и список его прав (для интерфейса; решает всё равно сервер).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Кто вошёл в админку: сотрудник, роль и список его прав (для интерфейса; решает всё равно сервер)."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/password":
+    post:
+      operationId: postAdminAuthPassword
+      tags:
+        - admin
+      summary: "Смена своего пароля (временный пароль из приглашения меняют после первого входа)."
+      description: "Смена своего пароля (временный пароль из приглашения меняют после первого входа). Прочие сессии отзываются.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                current:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                next:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+              required:
+                - current
+                - next
+      responses:
+        "200":
+          description: "Смена своего пароля (временный пароль из приглашения меняют после первого входа). Прочие сессии отзываются."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/auth/totp":
+    post:
+      operationId: postAdminAuthTotp
+      tags:
+        - admin
+      summary: "Вход персонала, шаг 2: код TOTP (RFC 6238, 6 цифр, шаг 30 с)."
+      description: "Вход персонала, шаг 2: код TOTP (RFC 6238, 6 цифр, шаг 30 с). Нужна кука fsp_admin_pre из шага 1. Верный код → кука сессии fsp_admin и `{ next: \"/admin\" }`; при первом входе код включает TOTP.\n\nВход не нужен."
+      security: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  pattern: "^\\d{6}$"
+              required:
+                - code
+      responses:
+        "200":
+          description: "Вход персонала, шаг 2: код TOTP (RFC 6238, 6 цифр, шаг 30 с). Нужна кука fsp_admin_pre из шага 1."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/staff":
+    get:
+      operationId: getAdminStaff
+      tags:
+        - admin
+      summary: "Персонал платформы (только owner): список."
+      description: "Персонал платформы (только owner): список.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      responses:
+        "200":
+          description: "Персонал платформы (только owner): список."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postAdminStaff
+      tags:
+        - admin
+      summary: "Пригласить сотрудника (только owner): создаётся учётка с временным паролем — он в ответе один раз."
+      description: "Пригласить сотрудника (только owner): создаётся учётка с временным паролем — он в ответе один раз. TOTP — при первом входе.\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  minLength: 3
+                  maxLength: 254
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                role:
+                  type: string
+                  enum:
+                    - owner
+                    - moderator
+                    - support
+              required:
+                - email
+                - name
+                - role
+      responses:
+        "201":
+          description: "Создано. Пригласить сотрудника (только owner): создаётся учётка с временным паролем — он в ответе один раз. TOTP — при первом входе."
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  "/api/admin/staff/{id}":
+    patch:
+      operationId: patchAdminStaffId
+      tags:
+        - admin
+      summary: "Изменить сотрудника (только owner): сменить роль, отключить/включить или сбросить 2FA."
+      description: "Изменить сотрудника (только owner): сменить роль, отключить/включить или сбросить 2FA. Причина обязательна, сессии сотрудника отзываются. Себя менять нельзя; последний активный owner не снимается (409).\n\nНужна сессия персонала админки (кука fsp_admin: пароль + TOTP); право — по матрице server/admin/permissions.ts, иначе 403."
+      security:
+        -
+          adminCookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          "application/json":
+            schema:
+              anyOf:
+                -
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      enum:
+                        - owner
+                        - moderator
+                        - support
+                    reason:
+                      type: string
+                      maxLength: 1000
+                  required:
+                    - role
+                    - reason
+                -
+                  type: object
+                  properties:
+                    disabled:
+                      type: boolean
+                    reason:
+                      type: string
+                      maxLength: 1000
+                  required:
+                    - disabled
+                    - reason
+                -
+                  type: object
+                  properties:
+                    resetTotp:
+                      type: boolean
+                      const: true
+                    reason:
+                      type: string
+                      maxLength: 1000
+                  required:
+                    - resetTotp
+                    - reason
+      responses:
+        "200":
+          description: "Изменить сотрудника (только owner): сменить роль, отключить/включить или сбросить 2FA. Причина обязательна,"
+          content:
+            "application/json":
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/auth/account":
     delete:
       operationId: deleteAuthAccount
@@ -6111,30 +6503,6 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/profile/pdf":
-    get:
-      operationId: getProfilePdf
-      tags:
-        - profile
-      summary: "Скачать PDF-профиль"
-      description: "Стандартизированный PDF-профиль текущего кандидата, формируется сервером (pdfkit): категория из теста с датой и версией политики, основное из анкеты и резюме, подтверждённые утверждения с уровнем доказанности (без цитат), статус ФСП, ступени проверки. Всегда `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, без кеширования. Только свои данные.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "PDF-файл профиля"
-          content:
-            "application/pdf":
-              schema:
-                type: string
-                format: binary
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/profile/privacy":
     get:
       operationId: getProfilePrivacy
@@ -7458,6 +7826,11 @@ components:
       in: cookie
       name: cid
       description: "Подписанная сессионная кука платформы"
+    adminCookieAuth:
+      type: apiKey
+      in: cookie
+      name: fsp_admin
+      description: "Сессия персонала админки (ADR 0009): вход /api/admin/auth/login + /api/admin/auth/totp"
   schemas:
     AiDefenseStartInput:
       type: object

@@ -72,7 +72,7 @@ export function toErrorResponse(err: unknown): Response {
 }
 
 /** Пути, где протухшая кука не должна давать 401: выход, проверка входа, сам вход. */
-const STALE_CHECK_SKIP = ['/api/auth/logout', '/api/auth/me', '/api/auth/stale', '/api/auth/yandex', '/api/auth/register', '/api/auth/verify', '/api/auth/login', '/api/auth/password/', '/api/demo/login', '/api/dev/'];
+const STALE_CHECK_SKIP = ['/api/auth/logout', '/api/auth/me', '/api/auth/stale', '/api/auth/yandex', '/api/auth/register', '/api/auth/verify', '/api/auth/login', '/api/auth/password/', '/api/demo/login', '/api/dev/', '/api/admin/'];
 
 /** Обёртка route handler'а: бросай AppError/ZodError — получишь правильный ответ. */
 export function withErrors<A extends unknown[]>(

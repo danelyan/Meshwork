@@ -3,12 +3,14 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 
 import {
   ACTION_ACCESS,
+  ADMIN_PUBLIC_ROUTES,
   API_ACCESS,
   type ApiLevel,
   type ApiRule,
   type HttpMethod,
   PAGE_ACCESS,
   type PageLevel,
+  isAdminRoute,
   matchRoute,
 } from '@/server/auth/access';
 
@@ -68,8 +70,13 @@ function sourceWithLocalImports(file: string): string {
 }
 
 const files = walk(APP);
-const pages = files.filter((f) => f.endsWith(`${sep}page.tsx`)).map((f) => ({ file: f, route: routeOf(f) }));
-const routes = files.filter((f) => f.endsWith(`${sep}route.ts`)).map((f) => ({ file: f, route: routeOf(f) }));
+const allPages = files.filter((f) => f.endsWith(`${sep}page.tsx`)).map((f) => ({ file: f, route: routeOf(f) }));
+const allRoutes = files.filter((f) => f.endsWith(`${sep}route.ts`)).map((f) => ({ file: f, route: routeOf(f) }));
+// Админка (E-08, ADR 0009) — свой контур: кука персонала, гвард requirePageStaff / requireStaff (отдельный блок ниже).
+const pages = allPages.filter((p) => !isAdminRoute(p.route));
+const routes = allRoutes.filter((r) => !isAdminRoute(r.route));
+const adminPages = allPages.filter((p) => isAdminRoute(p.route));
+const adminRoutes = allRoutes.filter((r) => isAdminRoute(r.route));
 
 /** Гварды страниц по уровню; `requirePageAccess` читает таблицу сам и подходит любому уровню. */
 const PAGE_GUARD: Record<Exclude<PageLevel, 'public'>, RegExp> = {
@@ -77,7 +84,7 @@ const PAGE_GUARD: Record<Exclude<PageLevel, 'public'>, RegExp> = {
   candidate: /\brequirePage(Candidate|Access)\(/,
   employer: /\brequirePage(Employer|Access)\(/,
 };
-const ANY_PAGE_GUARD = /\brequirePage(Account|Candidate|Employer|Access|User)\(/;
+const ANY_PAGE_GUARD = /\brequirePage(Account|Candidate|Employer|Access|User|Staff)\(/;
 
 /**
  * Каждый вызов `requirePageAccess(...)` обязан получать строковый литерал с адресом этой страницы:
@@ -226,6 +233,38 @@ describe('матрица API: полнота и вызов гварда', () => 
   it('у каждой записи API_ACCESS есть маршрут', () => {
     const existing = new Set(routes.map((r) => r.route));
     expect(Object.keys(API_ACCESS).filter((k) => !existing.has(k))).toEqual([]);
+  });
+});
+
+describe('админка: каждый маршрут под гвардом персонала', () => {
+  it('фундамент админки на месте', () => {
+    expect(adminPages.map((p) => p.route)).toContain('/admin/login');
+    expect(adminRoutes.map((r) => r.route)).toContain('/api/admin/auth/totp');
+  });
+
+  it('публичные шаги входа существуют (нет мёртвых строк)', () => {
+    const existing = new Set([...adminPages, ...adminRoutes].map((x) => x.route));
+    expect(ADMIN_PUBLIC_ROUTES.filter((r) => !existing.has(r))).toEqual([]);
+  });
+
+  it.each(adminPages.filter((p) => !ADMIN_PUBLIC_ROUTES.includes(p.route)).map((p) => [p.route, p] as const))('страница %s — requirePageStaff со своим адресом', (route, { file }) => {
+    const code = sourceWithLocalImports(file);
+    const staticPrefix = route.split('/[')[0]!;
+    const m = /\brequirePageStaff\(\s*(['"`])([^'"`]*)/.exec(code);
+    expect(m, `${route}: нужен requirePageStaff('<адрес>', '<право>')`).not.toBeNull();
+    const value = m![2]!;
+    expect(route.includes('/[') ? value.startsWith(`${staticPrefix}/`) : value.split(/[?#]/, 1)[0] === route, `${route}: адрес ${value}`).toBe(true);
+    // Пользовательские гварды на странице админки — ошибка: пустили бы по cid.
+    expect(code).not.toMatch(/\brequirePage(Account|Candidate|Employer|Access|User)\(/);
+  });
+
+  it.each(adminRoutes.map((r) => [r.route, r] as const))('API %s — requireStaff(req…) в каждом обработчике', (route, { file }) => {
+    const src = stripComments(readFileSync(file, 'utf8'));
+    const hs = handlers(src);
+    expect(unrecognizedExports(src)).toEqual([]);
+    expect(hs.length).toBeGreaterThan(0);
+    if (ADMIN_PUBLIC_ROUTES.includes(route)) return;
+    for (const [method, code] of hs) expect(/\brequireStaff\(req\b/.test(code), `${route} ${method}: нужен requireStaff(req…)`).toBe(true);
   });
 });
 

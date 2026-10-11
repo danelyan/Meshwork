@@ -1,7 +1,7 @@
 import { Container } from '@/components/shell/Container';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { Button, Panel } from '@/components/ui';
-import { PERSONA_NOTE, type PersonaRow, type SyntheticRow } from '@/server/validation/grade-test-figures';
+import type { PersonaRow, SyntheticRow } from '@/server/validation/grade-test-figures';
 import type { MatchingExtended, MatchingResults } from '@/server/validation/matching-results';
 
 import { dec, pct } from './format';
@@ -137,14 +137,15 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
           <ul className={styles.list}>
             <li>
               <b>Тест не защищён от нейросети в соседнем окне.</b> Задание с числовым ответом решает любая современная модель, и мы не измеряли, насколько
-              это ломает категорию. Поэтому тест — предварительная калибровка грейда, а не доказательство умения.
+              это ломает категорию. Поэтому категория из теста — результат короткого адаптивного теста, а не доказательство умения на практике.
             </li>
             <li>
               <b>Защищает он от слива ответов:</b> уникальные экземпляры каждого задания (генераторы) и ротация заданий между попытками. Подсмотренный у
               знакомого ответ не подходит к вашему экземпляру; от модели это не защищает.
             </li>
             <li>
-              <b>Умение подтверждают три шага вне теста:</b> созвон с ИИ-интервьюером, проект на скрытых тестах и защита по собственному коду.
+              <b>Опыт дополнительно подтверждают три шага вне теста:</b> созвон с ИИ-интервьюером, проект на скрытых тестах и защита по собственному коду. Они
+              необязательны и категорию не меняют: она остаётся за тестом.
             </li>
           </ul>
           <div className={styles.links}>
@@ -171,11 +172,8 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
             ответах — 100 % по построению (seed → задания, код → проверка).
           </p>
 
-          <h3>Персоны по подкатегориям: вымышленные кандидаты, модель знаний задана агентом</h3>
-          <p className={styles.soft}>
-            Seed 1, 1000 попыток на персону и заявленный грейд в каждой из 18 подкатегорий, боевой движок теста без LLM и БД; в таблице — среднее по
-            подкатегориям.
-          </p>
+          <h3>Персоны: вымышленные кандидаты, модель знаний задана агентом</h3>
+          <p className={styles.soft}>Seed 1, 4000 попыток на персону, боевой движок теста без LLM и БД.</p>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
@@ -184,7 +182,6 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
                   <th>Уровень по легенде</th>
                   <th className={styles.num}>Заявил Junior: подтверждён</th>
                   <th className={styles.num}>Заявил Middle: подтверждён</th>
-                  <th className={styles.num}>Заявил Senior: подтверждён</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,15 +193,17 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
                     <td>{p.truth}</td>
                     <td className={styles.num}>{dec(p.pJunior, 2)}</td>
                     <td className={styles.num}>{dec(p.pMiddle, 2)}</td>
-                    <td className={styles.num}>{dec(p.pSenior, 2)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className={styles.soft}>{PERSONA_NOTE}</p>
+          <p className={styles.soft}>
+            Новички не должны получать Junior чаще 10 %: у B2 — 12 %, это граница, принятая владельцем. Middle у «узких» профилей (B4, F2) решается почти
+            монетой — свойство банка заданий.
+          </p>
 
-          <h3>θ-синтетика: 2000 кандидатов на подкатегорию, среднее по специализации</h3>
+          <h3>θ-синтетика: 2000 кандидатов на специализацию</h3>
           <p className={styles.soft}>
             Две популяции: persona — подобрана по персонам, legacy — исходные допущения. Какая ближе к людям, неизвестно без живой разметки.
           </p>
@@ -218,6 +217,7 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
                   <th className={styles.num}>Test-retest ({grade.targets.retest})</th>
                   <th className={styles.num}>κ* ({grade.targets.kappa})</th>
                   <th className={styles.num}>AUC M/J ({grade.targets.auc})</th>
+                  <th className={styles.num}>AUC J/новичок</th>
                   <th className={styles.num}>Длина</th>
                   <th className={styles.num}>Утечка трюка 30 %</th>
                 </tr>
@@ -233,6 +233,7 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
                     <td className={styles.num}>{pct(r.retest)}</td>
                     <td className={styles.num}>{dec(r.kappa, 2)}</td>
                     <td className={styles.num}>{dec(r.aucMiddleJunior)}</td>
+                    <td className={styles.num}>{dec(r.aucJuniorNovice)}</td>
                     <td className={styles.num}>{r.length.toFixed(2).replace('.', ',')}</td>
                     <td className={styles.num}>{pct(r.leak30)}</td>
                   </tr>
@@ -241,10 +242,10 @@ export function ValidationView({ grade, matching }: { grade: GradeTestData; matc
             </table>
           </div>
           <p className={styles.soft}>
-            * κ и AUC посчитаны на текущей механике с дозадаванием (политика v7). «Утечка трюка» — атака: кандидат заранее знает решение 30 % шаблонов;
-            ложное подтверждение растёт, защита держится на разных экземплярах заданий и ротации семейств между попытками.
+            * κ и AUC посчитаны без дозадавания Junior (отдельного замера для текущей механики нет). «Утечка трюка» — атака: кандидат заранее знает решение
+            30 % шаблонов; ложное подтверждение растёт, защита держится на разных экземплярах заданий, а банк пока мал.
           </p>
-          <h3>Как повторить (из platform/, ≈ 50 с полный прогон, без сети и БД)</h3>
+          <h3>Как повторить (из platform/, ~15 с, без сети)</h3>
           <pre className={styles.code}>{grade.commands.join('\n')}</pre>
         </section>
 

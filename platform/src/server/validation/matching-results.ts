@@ -76,6 +76,25 @@ const parseCalibration = (v: unknown): MatchingCalibration | null => {
   const r = Calibration.safeParse(v);
   return v !== undefined && r.success ? r.data : null;
 };
+/** Слепая разметка (eval/matching/blind-eval.ts): два ИИ-размечающих, κ, методы по разметкам. Блок необязательный. */
+const BlindMetric = z.object({ p5: Interval, p5strict: Interval.optional(), ndcg10: Interval });
+const BlindSet = z.object({
+  methods: z.record(z.string(), BlindMetric),
+  deltaOursMinusBm25: BlindMetric,
+  deltaOursMinusBaselineClaims: BlindMetric.optional(),
+});
+const Blind = z.object({
+  note: z.string().optional(),
+  vacancies: z.number(),
+  pool: z.number(),
+  pairs: z.number(),
+  labelers: z.object({ a: z.string(), b: z.string() }),
+  kappa: z.object({ ab: z.number(), aVsGenerator: z.number(), bVsGenerator: z.number(), consensusVsGenerator: z.number().optional() }),
+  exactAgreementAB: z.number().optional(),
+  coverageTop10: z.record(z.string(), z.number()).optional(),
+  sets: z.object({ a: BlindSet, b: BlindSet, consensus: BlindSet, generator: BlindSet.optional() }),
+});
+export type MatchingBlind = z.infer<typeof Blind>;
 
 export type MatchingSummary = z.infer<typeof Summary>;
 export type MatchingRow = z.infer<typeof Row>;
@@ -91,6 +110,8 @@ export interface MatchingResults {
   ablation: MatchingAblation | null;
   /** Калибровка балла в вероятность на синтетической разметке (если есть в results.json). */
   calibration: MatchingCalibration | null;
+  /** Независимая слепая разметка (если есть в results.json). */
+  blind: MatchingBlind | null;
 }
 
 const optional = (v: unknown): MatchingExtended | null => {
@@ -103,11 +124,16 @@ const parseAblation = (v: unknown): MatchingAblation | null => {
   return v !== undefined && r.success ? r.data : null;
 };
 
+const parseBlind = (v: unknown): MatchingBlind | null => {
+  const r = Blind.safeParse(v);
+  return v !== undefined && r.success ? r.data : null;
+};
+
 /** Разбор results.json; обязательная часть не сошлась — исключение (тест это ловит до стенда). */
 export function parseMatchingResults(json: unknown): MatchingResults {
   const base = z.object({ summary: Summary, rows: z.array(Row) }).parse(json);
   const o = json as Record<string, unknown>;
-  return { summary: base.summary, rows: base.rows, extended: optional(o.extended), legacyExtended: optional(o.legacyExtended), ablation: parseAblation(o.ablation), calibration: parseCalibration(o.calibration) };
+  return { summary: base.summary, rows: base.rows, extended: optional(o.extended), legacyExtended: optional(o.legacyExtended), ablation: parseAblation(o.ablation), blind: parseBlind(o.blind), calibration: parseCalibration(o.calibration) };
 }
 
 export function matchingResults(): MatchingResults {

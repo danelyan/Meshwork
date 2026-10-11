@@ -181,6 +181,21 @@ describe('проект под работодателя: лента и сдача
     expect((await getSubmission(jsonRequest('/x', 'GET', undefined, cand('p-fe')), params({ id: sub.id }))).status).toBe(404);
   });
 
+  it('Г3 (ADR 0005): без согласия на оценку ИИ скрытые тесты считаются, LLM-рубрика — нет', async () => {
+    await prisma.consent.updateMany({ where: { user: { candidateId: 'p-be' }, kind: 'ai_assessment' }, data: { revokedAt: new Date() } });
+    const res = await submit(jsonRequest('/x', 'POST', { repoUrl: 'https://github.com/demo/reference-solution' }, cand('p-be')), params({ id: taskId }));
+    expect(res.status).toBe(202);
+    const subId = (await res.json()).id as string;
+    const done = await waitChecked(subId, cand('p-be'));
+    expect(done.status).toBe('checked');
+    expect(done.result.tests).toEqual({ passed: 15, total: 15, score: 100 });
+    expect(done.result.rubric.results).toHaveLength(4);
+    expect(done.result.rubric.results.every((r: { passed: boolean | null; flag?: string }) => r.passed === null && r.flag === 'not_evaluated')).toBe(true);
+    // состояние общее для файла: убираем эту сдачу и возвращаем Г3
+    await prisma.projectSubmission.delete({ where: { id: subId } });
+    await grantConsents('u-p-be', ['ai_assessment']);
+  });
+
   it('работодатель: сдачи под псевдонимом, без ссылки на репозиторий, с таблицей критериев и скрытыми тестами', async () => {
     const res = await employerSubs(jsonRequest(`/api/employer/project-submissions?needId=${NEED}`, 'GET', undefined, EMP));
     expect(res.status).toBe(200);

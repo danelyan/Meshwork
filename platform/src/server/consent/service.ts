@@ -8,7 +8,15 @@ import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 
 import { deleteCandidateRecordings } from './recordings';
-import { CONSENT_TEXTS, type ConsentKindName, consentVersion } from './texts';
+import { getEnv } from '../env';
+
+import { CONSENT_TEXTS, type ConsentKindName, type ConsentText, callRecordingParagraphs, consentVersion } from './texts';
+
+/** Текст для показа: у Г2 срок хранения аудио — фактический, из env CALL_RECORDING_RETENTION_DAYS. */
+export function consentTextFor(kind: ConsentKindName): ConsentText {
+  const t = CONSENT_TEXTS[kind];
+  return kind === 'call_recording' ? { ...t, paragraphs: callRecordingParagraphs(getEnv().CALL_RECORDING_RETENTION_DAYS) } : t;
+}
 
 export interface ConsentRow {
   id: string;
@@ -80,10 +88,18 @@ export function consentRequired(kind: ConsentKindName, message: string): AppErro
   return new AppError('consent_required', message, 409, { kind, version: consentVersion(kind), href: CONSENTS_HREF[audience] });
 }
 
-/** Г3: без согласия на ИИ-оценку тест, созвон и защита недоступны (только эта функция). */
-export async function assertAiAssessmentConsent(candidateId: string): Promise<void> {
+/** Действует ли Г3 у кандидата (для фоновых шагов, где нельзя ответить 409: LLM-рубрика проекта). */
+export async function hasAiAssessmentConsent(candidateId: string): Promise<boolean> {
   const userId = await userIdForCandidate(candidateId);
-  if (userId && (await hasActiveConsent(userId, 'ai_assessment'))) return;
+  return Boolean(userId && (await hasActiveConsent(userId, 'ai_assessment')));
+}
+
+/**
+ * Г3: без согласия на ИИ-оценку тест, созвон и защита недоступны. Проверяется и на старте, и на каждом ответе,
+ * ходе и завершении: отзыв посреди сессии останавливает её, оценщик не запускается.
+ */
+export async function assertAiAssessmentConsent(candidateId: string): Promise<void> {
+  if (await hasAiAssessmentConsent(candidateId)) return;
   throw consentRequired(
     'ai_assessment',
     'Тест, созвон и защита оцениваются с помощью ИИ - для них нужно согласие на оценку ИИ. Дать его можно в настройках, раздел «Мои согласия».',
@@ -178,7 +194,24 @@ export async function revokeConsent(userId: string, kind: ConsentKindName, opts:
   const candidateId = await candidateOfUser(userId);
   let deletedRecordings: number | undefined;
   if (candidateId && kind === 'employer_visibility') await prisma.candidate.update({ where: { id: candidateId }, data: { hiddenFromEmployers: true } });
-  if (candidateId && kind === 'call_recording') deletedRecordings = await deleteCandidateRecordings(candidateId);
+  // revokedAt уже стоит: новые сегменты не пишутся (addAudio перепроверяет режим после записи). Сбой удаления файлов
+  // не отменяет отзыв и не превращается в 500 — removeAudio логирует и всё равно обнуляет audioPath.
+  if (candidateId && kind === 'call_recording') {
+    try {
+      deletedRecordings = await deleteCandidateRecordings(candidateId);
+    } catch (err) {
+      console.error('[consent] call recordings cleanup failed:', err instanceof Error ? err.message : err);
+      await prisma.callSession.updateMany({ where: { candidateId }, data: { audioPath: null } }).catch(() => undefined);
+      deletedRecordings = 0;
+    }
+  }
+  if (kind === 'identity_disclosure' && opts.invitationId) {
+    // ATS (R-X-02): событие «контакты закрыты». Импорт динамический — ats-webhook сам читает раскрытия отсюда.
+    const invitationId = opts.invitationId;
+    void import('../employer/ats-webhook')
+      .then((m) => m.notifyAtsStatusChanged(invitationId))
+      .catch((err) => console.warn('[ats] disclosure revoke event failed:', err instanceof Error ? err.message : err));
+  }
   return { kind, revokedAt: now.toISOString(), ...(deletedRecordings !== undefined ? { deletedRecordings } : {}) };
 }
 
@@ -239,7 +272,7 @@ export async function listConsents(userId: string): Promise<{ items: ConsentItem
   const rows = await rowsOf(userId);
   const kinds = [...new Set([...(user.candidateId ? CANDIDATE_LIST : []), ...(user.employerProfile ? EMPLOYER_LIST : []), 'pd_processing' as const])];
   const view = (kind: ConsentKindName, own: ConsentRow[], extra: Partial<ConsentItemView> = {}): ConsentItemView => {
-    const t = CONSENT_TEXTS[kind];
+    const t = consentTextFor(kind);
     const last = pickActive(own) ?? own[0] ?? null;
     return {
       kind,

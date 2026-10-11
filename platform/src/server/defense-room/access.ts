@@ -1,3 +1,4 @@
+import { assertEmployerConsents } from '../consent/service';
 import { prisma } from '../db';
 import { acceptedCandidateIds } from '../employer/matching';
 import { loadEmployerContext } from '../employer/context';
@@ -36,6 +37,7 @@ export async function resolveViewer(principal: SessionPrincipal | null, sessionI
     return { viewer: { role: 'candidate', candidateId: s.candidateId, peer: CANDIDATE_PEER }, session: s };
   }
   if (principal.userId && principal.employerProfileId) {
+    await assertEmployerConsents(principal.userId); // ADR 0005: комната — данные кандидата, нужна оферта
     const ctx = await loadEmployerContext(principal.employerProfileId);
     if (await employerMayAccess(ctx.companyId, s.candidateId)) {
       return {

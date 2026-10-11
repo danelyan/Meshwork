@@ -1,3 +1,5 @@
+import { EmployerConsentGate } from '@/components/consent/EmployerConsentGate';
+import { employerConsentsMissing } from '@/server/consent/service';
 import type { Metadata } from 'next';
 
 import styles from '@/components/employer/Employer.module.css';
@@ -12,6 +14,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function EmployerInvitationsPage() {
   const s = await requirePageEmployer('/employer/invitations');
+  // ADR 0005: без оферты и обязательства по данным — вместо данных кандидатов форма принятия условий.
+  if ((await employerConsentsMissing(s.userId)).length) return <div className={styles.page}><h1>Приглашения</h1><EmployerConsentGate /></div>;
   const ctx = await loadEmployerContext(s.employerProfileId);
   const [invitations, sent] = await Promise.all([listCompanyInvitations(ctx.companyId), invitationsSentToday(ctx.companyId)]);
   return <div className={styles.page}>

@@ -4,7 +4,9 @@ import { notFound } from 'next/navigation';
 import styles from '@/components/call/call.module.css';
 import { EmployerRoom } from '@/components/call/EmployerRoom';
 import { Kicker } from '@/components/ui';
+import { EmployerConsentGate } from '@/components/consent/EmployerConsentGate';
 import { requirePageEmployer } from '@/server/auth/page';
+import { employerConsentsMissing } from '@/server/consent/service';
 import { prisma } from '@/server/db';
 import { buildSnapshot, redactSnapshot, resolveViewer } from '@/server/defense-room';
 import { AppError } from '@/server/errors';
@@ -16,6 +18,7 @@ export const dynamic = 'force-dynamic';
 export default async function EmployerCallPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const s = await requirePageEmployer(`/employer/calls/${encodeURIComponent(id)}`);
+  if ((await employerConsentsMissing(s.userId)).length) return <div className={styles.page}><h1>Комната защиты</h1><EmployerConsentGate /></div>;
   let viewer;
   let session;
   try {

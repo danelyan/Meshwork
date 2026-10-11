@@ -16,6 +16,7 @@ import { POST as turnRoute } from '@/app/api/call/[id]/turn/route';
 import { POST as consentRoute } from '@/app/api/call/consent/route';
 import { GET as listRoute } from '@/app/api/call/route';
 import { POST as startRoute } from '@/app/api/call/start/route';
+import { DELETE as revokeRoute } from '@/app/api/consents/[kind]/route';
 import { CALL_RECORDING_CONSENT_VERSION, type CallVerdict, type CallView } from '@/server/call';
 import { resetEnvCache } from '@/server/env';
 import { clearStubResponses, registerStubResponse } from '@/server/llm/providers/stub';
@@ -81,6 +82,74 @@ async function consentAndStart() {
   expect(s.status).toBe(201);
   return json<{ sessionId: string; call: CallView; webrtc: { iceServers: unknown[] } }>(s);
 }
+
+const revokeConsent = (kind: string, cookie = cookieA(), query = '') => {
+  const req = jsonRequest(`/api/consents/${kind}${query}`, 'DELETE', undefined, cookie);
+  req.headers.set('origin', 'http://localhost');
+  return revokeRoute(req, { params: Promise.resolve({ kind }) });
+};
+
+describe('согласия посреди созвона (ADR 0005)', () => {
+  it('Г3: без согласия на оценку ИИ старт — 409 consent_required', async () => {
+    await prisma.consent.updateMany({ where: { userId: 'user-a', kind: 'ai_assessment' }, data: { revokedAt: new Date() } });
+    await consentRoute(jsonRequest('/api/call/consent', 'POST', { version: CALL_RECORDING_CONSENT_VERSION }, cookieA()));
+    const res = await startRoute(jsonRequest('/api/call/start', 'POST', { kind: 'qualifying' }, cookieA()));
+    expect(res.status).toBe(409);
+    expect((await json<{ error: { code: string; details: { kind: string } } }>(res)).error).toMatchObject({ code: 'consent_required', details: { kind: 'ai_assessment' } });
+  });
+
+  it('Г3 отозван посреди созвона: turn и finish — 409, оценщик не запускается', async () => {
+    const { sessionId: id } = await consentAndStart();
+    let evaluated = 0;
+    registerStubResponse('call_evaluator', () => { evaluated += 1; return { text: '{}' }; });
+    expect((await revokeConsent('ai_assessment')).status).toBe(200);
+    const t = await turnRoute(jsonRequest(`/api/call/${id}/turn`, 'POST', { text: STRONG }, cookieA()), ctx(id));
+    expect(t.status).toBe(409);
+    expect((await json<{ error: { code: string } }>(t)).error.code).toBe('consent_required');
+    const f = await finishRoute(jsonRequest(`/api/call/${id}/finish`, 'POST', {}, cookieA()), ctx(id));
+    expect(f.status).toBe(409);
+    expect(evaluated).toBe(0);
+    const row = await prisma.callSession.findUniqueOrThrow({ where: { id } });
+    expect(row.status).toBe('active');
+    expect(row.verdictJson).toBeNull();
+  });
+
+  it('Г2 отозван посреди созвона: аудио — 409 call_recording_off, файл не пишется, audioPath не ставится', async () => {
+    const { sessionId: id } = await consentAndStart();
+    expect((await revokeConsent('call_recording')).status).toBe(200);
+    const pcm = new Uint8Array(16_000 * 2);
+    const res = await audioRoute(new Request(`http://localhost/api/call/${id}/audio`, { method: 'POST', headers: { cookie: cookieA(), 'content-type': 'audio/l16' }, body: pcm }), ctx(id));
+    expect(res.status).toBe(409);
+    expect((await json<{ error: { code: string } }>(res)).error.code).toBe('call_recording_off');
+    expect((await prisma.callSession.findUniqueOrThrow({ where: { id } })).audioPath).toBeNull();
+    const list = await json<{ consent: { mode: string } }>(await listRoute(jsonRequest('/api/call', 'GET', undefined, cookieA())));
+    expect(list.consent.mode).toBe('text');
+  });
+
+  it('участник комнаты: пока созвон идёт — транскрипт; после завершения и отзыва Г5 — только оценки', async () => {
+    await prisma.callSession.create({
+      data: { id: 'room-1', candidateId: A, kind: 'qualifying', status: 'active', policyVersion: 'v', transcriptJson: [{ index: 0, role: 'candidate', text: 'мой ответ про индексы', at: new Date().toISOString(), tMs: 0 }] },
+    });
+    await prisma.callParticipant.create({ data: { callSessionId: 'room-1', userId: 'user-emp', role: 'employer' } });
+    // Принятое приглашение с раскрытием, затем кандидат отзывает раскрытие.
+    await prisma.invitation.create({ data: { id: 'inv-r', companyId: 'co-1', employerProfileId: 'ep-1', candidateId: A, salaryFrom: 1, salaryTo: 2, status: 'accepted' } });
+    await discloseAccepted();
+    const liveRes = await viewRoute(jsonRequest('/api/call/room-1', 'GET', undefined, cookieEmp()), ctx('room-1'));
+    const live = await json<CallView>(liveRes);
+    expect(liveRes.status, JSON.stringify(live)).toBe(200);
+    expect(live.transcript?.length).toBe(1);
+    expect((await revokeConsent('identity_disclosure', cookieA(), '?invitationId=inv-r')).status).toBe(200);
+    // идущая защита: участник в комнате продолжает работать
+    expect((await json<CallView>(await viewRoute(jsonRequest('/api/call/room-1', 'GET', undefined, cookieEmp()), ctx('room-1')))).transcript?.length).toBe(1);
+    await prisma.callSession.update({ where: { id: 'room-1' }, data: { status: 'finished', finishedAt: new Date() } });
+    const after = await viewRoute(jsonRequest('/api/call/room-1', 'GET', undefined, cookieEmp()), ctx('room-1'));
+    expect(after.status).toBe(200);
+    const body = await json<CallView>(after);
+    expect(body.access).toBe('summary');
+    expect(body.transcript ?? null).toBeNull();
+    expect(JSON.stringify(body)).not.toContain('мой ответ про индексы');
+  });
+});
 
 describe('квалифицирующий созвон: start → 2 turn → finish → вердикт → platform (stub)', () => {
   it('без согласия на запись старт — 409 call_consent_required', async () => {

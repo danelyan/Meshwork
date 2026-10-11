@@ -8,7 +8,7 @@ import type { Grade as PrismaGrade, Prisma, ProjectSubmissionStatus } from '@pri
 import { githubHeaders } from '../collector/github';
 import { getText } from '../collector/http-json';
 import { maskContacts } from '../collector/mask';
-import { disclosedCandidateIds } from '../consent/service';
+import { disclosedCandidateIds, hasAiAssessmentConsent } from '../consent/service';
 import { prisma } from '../db';
 import { categoryLabel } from '../employer/ranking';
 import { createInvitation } from '../employer/invitations';
@@ -664,7 +664,11 @@ export async function processSubmission(id: string): Promise<void> {
     const score = hidden.total ? Math.round((hidden.passed / hidden.total) * 100) : 0;
     const tests = { passed: hidden.passed, total: hidden.total, score };
     const rubricDef = RubricJson.safeParse(sub.projectTask.rubricJson);
-    const review = await reviewRubric({ criteria: rubricDef.success ? rubricDef.data.criteria : [], files, tests, aiLog: sub.aiLogText ?? '' });
+    // Г3 (ADR 0005): LLM-рубрика — оценка ИИ, без действующего согласия не запускается. Скрытые тесты runner — не ИИ.
+    const criteria = rubricDef.success ? rubricDef.data.criteria : [];
+    const review = (await hasAiAssessmentConsent(sub.candidateId))
+      ? await reviewRubric({ criteria, files, tests, aiLog: sub.aiLogText ?? '' })
+      : { source: 'fallback' as const, results: criteria.map((c) => ({ ...c, passed: null, evidence: 'Не оценено: нет согласия кандидата на оценку ИИ.', flag: 'not_evaluated' as const })), injectionSuspected: false };
     const result: ResultJson = {
       tests,
       visibleTests: visible?.status === 'done' ? visible.tests : [],

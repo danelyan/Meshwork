@@ -1,3 +1,4 @@
+import { assertEmployerConsents } from '@/server/consent/service';
 import { assertSameOrigin } from '@/server/auth/csrf';
 import { createInvitation, invitationsSentToday, listCompanyInvitations, loadEmployerContext } from '@/server/employer';
 import { InvitationInput } from '@/server/employer/schemas';
@@ -9,7 +10,8 @@ export const dynamic = 'force-dynamic';
 
 /** GET /api/employer/invitations — трекинг статусов (R-E-05) и остаток лимита за сутки. */
 export const GET = withErrors(async (req: Request) => {
-  const { employerProfileId } = requireEmployer(req);
+  const { employerProfileId, userId } = requireEmployer(req);
+  await assertEmployerConsents(userId); // ADR 0005: данные кандидатов — после оферты и обязательства
   const ctx = await loadEmployerContext(employerProfileId);
   const [invitations, sent] = await Promise.all([listCompanyInvitations(ctx.companyId), invitationsSentToday(ctx.companyId)]);
   return Response.json({ invitations, limit: { perDay: DAILY_INVITATION_LIMIT, sentToday: sent } });

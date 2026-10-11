@@ -215,6 +215,7 @@ export async function answerDefense(
   const text = normalizeAnswer(answer);
   const session = await loadOwnSession(candidateId, sessionId);
   if (session.status !== 'active') throw errors.conflict('Сессия защиты уже завершена');
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её
 
   const turns = session.turns.map((t) => ({ index: t.index, question: t.question, answer: t.answer }));
   const pending = turns.find((t) => t.answer === null);

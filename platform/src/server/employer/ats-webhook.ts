@@ -1,8 +1,10 @@
 // ATS (R-X-02, концепт): подписанный вебхук о смене статуса приглашения. Отправка только при заданных
 // ATS_WEBHOOK_URL и ATS_WEBHOOK_SECRET, иначе no-op. Контактов и имён кандидата в теле нет: только псевдоним
 // и флаг «контакты открыты»; сами контакты ATS получает через интерфейс платформы после принятия.
+// «Контакты открыты» = accepted и действующее раскрытие Г5 (ADR 0005); отзыв раскрытия шлёт событие с false.
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
+import { disclosedInvitationIds } from '../consent/service';
 import { prisma } from '../db';
 import { getEnv } from '../env';
 
@@ -17,6 +19,8 @@ export interface AtsStatusChange {
   companyId: string;
   vacancyId: string | null;
   candidateId: string;
+  /** Контакты открыты: accepted и действующее раскрытие (Г5). Не задано — по статусу (accepted). */
+  contactsOpen?: boolean;
 }
 
 export interface AtsWebhook {
@@ -33,7 +37,10 @@ export function signBody(body: string, secret: string): string {
 
 /** Тело и заголовки вебхука (X-FSP-Event, X-FSP-Signature, X-FSP-Event-Id). Чистая функция. */
 export function buildAtsWebhook(change: AtsStatusChange, secret: string, now = new Date()): AtsWebhook {
-  const id = `evt_${createHash('sha256').update(`${ATS_EVENT}:${change.invitationId}:${change.status}`).digest('hex').slice(0, 32)}`;
+  const contactsOpen = change.contactsOpen ?? change.status === 'accepted';
+  // Отзыв раскрытия при прежнем статусе accepted — отдельное событие со своим id (иначе ATS отбросит его как повтор).
+  const revoked = change.status === 'accepted' && !contactsOpen ? ':disclosure_revoked' : '';
+  const id = `evt_${createHash('sha256').update(`${ATS_EVENT}:${change.invitationId}:${change.status}${revoked}`).digest('hex').slice(0, 32)}`;
   const body = JSON.stringify({
     id,
     event: ATS_EVENT,
@@ -44,7 +51,7 @@ export function buildAtsWebhook(change: AtsStatusChange, secret: string, now = n
       companyId: change.companyId,
       vacancyId: change.vacancyId,
       candidate: pseudonym(change.candidateId),
-      contactsOpen: change.status === 'accepted',
+      contactsOpen,
     },
   });
   return {
@@ -89,5 +96,6 @@ export async function notifyAtsStatusChanged(invitationId: string): Promise<void
   if (!url || !secret) return;
   const inv = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { id: true, status: true, companyId: true, vacancyId: true, candidateId: true } });
   if (!inv?.companyId) return;
-  await sendAtsWebhook({ invitationId: inv.id, status: inv.status, companyId: inv.companyId, vacancyId: inv.vacancyId, candidateId: inv.candidateId }, { url, secret });
+  const contactsOpen = inv.status === 'accepted' && (await disclosedInvitationIds([inv.id])).has(inv.id);
+  await sendAtsWebhook({ invitationId: inv.id, status: inv.status, companyId: inv.companyId, vacancyId: inv.vacancyId, candidateId: inv.candidateId, contactsOpen }, { url, secret });
 }

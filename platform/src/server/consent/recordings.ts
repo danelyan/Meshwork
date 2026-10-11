@@ -10,11 +10,31 @@ import { getEnv } from '../env';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Удалить аудио созвонов. Ошибка ФС по одному созвону не останавливает остальные и не отменяет отзыв:
+ * `audioPath` обнуляется всегда (запись больше не отдаётся), сбой пишется в лог для ручной уборки.
+ */
 async function removeAudio(ids: readonly string[]): Promise<number> {
   const root = resolve(getEnv().CALL_DATA_DIR, 'calls');
-  for (const id of ids) await rm(ownedDirectory(root, id), { recursive: true, force: true });
+  for (const id of ids) {
+    try {
+      await rm(ownedDirectory(root, id), { recursive: true, force: true });
+    } catch (err) {
+      console.error(`[consent] audio of call ${id} not removed:`, err instanceof Error ? err.message : err);
+    }
+  }
   if (ids.length) await prisma.callSession.updateMany({ where: { id: { in: [...ids] } }, data: { audioPath: null } });
   return ids.length;
+}
+
+/** Удалить один сегмент (запись пришлась на момент отзыва Г2). Ошибка ФС — только в лог. */
+export async function removeSegment(sessionId: string, name: string): Promise<void> {
+  const root = resolve(getEnv().CALL_DATA_DIR, 'calls');
+  try {
+    await rm(resolve(ownedDirectory(root, sessionId), name), { force: true });
+  } catch (err) {
+    console.error(`[consent] segment ${sessionId}/${name} not removed:`, err instanceof Error ? err.message : err);
+  }
 }
 
 /** Все аудиозаписи кандидата (отзыв Г2). Каталог удаляется и у созвонов без audioPath — на случай гонки записи. */

@@ -52,10 +52,12 @@ describe('гейт записи созвона для работодателя (
     await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'full', recording: true });
   });
 
-  it('участник комнаты без accepted — транскрипт, но не запись', async () => {
+  it('участник комнаты без раскрытия: пока созвон идёт — транскрипт без записи; после завершения — только оценки', async () => {
     accepted(0);
     db.callParticipant.count.mockResolvedValue(1);
-    await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'full', recording: false });
+    await expect(resolveCallAccess(employer, { ...call, status: 'active' })).resolves.toEqual({ role: 'employer', access: 'full', recording: false });
+    await expect(resolveCallAccess(employer, { ...call, status: 'finished' })).resolves.toEqual({ role: 'employer', access: 'summary', recording: false });
+    await expect(resolveCallAccess(employer, call)).resolves.toEqual({ role: 'employer', access: 'summary', recording: false });
   });
 
   it('скрытый кандидат без accepted — 404', async () => {

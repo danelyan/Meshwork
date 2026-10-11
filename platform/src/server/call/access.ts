@@ -1,7 +1,8 @@
 // Кто что видит в созвоне (ADR 0003, п. 4; R-C-16, образец — employer/privacy.ts):
 //  - кандидат — свой созвон целиком и запись всегда;
 //  - работодатель — до принятого приглашения только оценки по темам (без цитат, транскрипта и записи);
-//    после accepted — всё; участник комнаты (defense-room) — транскрипт вживую, запись — только после accepted.
+//    после accepted с действующим раскрытием (Г5, ADR 0005) — всё; участник комнаты (defense-room) — транскрипт
+//    вживую, пока созвон идёт; после завершения или отзыва Г5 — как прочие работодатели (полный доступ только по Г5).
 import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
 import { errors } from '../errors';
@@ -35,7 +36,7 @@ export async function hasAcceptedInvitation(employerProfileId: string, candidate
  */
 export async function resolveCallAccess(
   who: CallPrincipal,
-  call: { id: string; candidateId: string },
+  call: { id: string; candidateId: string; status?: string | null },
 ): Promise<ResolvedAccess> {
   if (who.role === 'candidate') {
     if (!who.candidateId || who.candidateId !== call.candidateId) throw errors.notFound('Созвон не найден');
@@ -44,7 +45,10 @@ export async function resolveCallAccess(
   if (!who.employerProfileId) throw errors.forbidden('Доступно кандидату или работодателю');
   const accepted = await hasAcceptedInvitation(who.employerProfileId, call.candidateId);
   if (accepted) return { role: 'employer', access: 'full', recording: true };
-  const participant = who.userId
+  // Участник комнаты защиты видит транскрипт только пока звонок идёт (иначе комната не работает); после
+  // завершения его доступ такой же, как у прочих работодателей: полный — только при действующем раскрытии (Г5).
+  const live = call.status === 'active' || call.status === 'pending';
+  const participant = live && who.userId
     ? (await prisma.callParticipant.count({ where: { callSessionId: call.id, userId: who.userId } })) > 0
     : false;
   if (participant) return { role: 'employer', access: 'full', recording: false };

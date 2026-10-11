@@ -1,3 +1,4 @@
+import { assertEmployerConsents } from '@/server/consent/service';
 import { z } from 'zod';
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
@@ -22,6 +23,8 @@ async function ownerContext(owner: FavoriteOwner) {
   if (!user || user.role !== owner.role) throw errors.sessionStale();
   const kind = favoriteKind(user.role);
   if ((kind === 'vacancy' && !user.candidateId) || (kind === 'candidate' && !user.employerProfile)) throw errors.forbidden('Сначала создай профиль');
+  // ADR 0005: избранные кандидаты — данные кандидатов, работодателю они открыты после оферты и обязательства
+  if (kind === 'candidate') await assertEmployerConsents(owner.userId);
   return { kind, companyId: user.employerProfile?.companyId ?? null };
 }
 

@@ -2,10 +2,13 @@
 // Решение по отзыву (ADR 0005): после отзыва новые созвоны идут в текстовом режиме без записи голоса
 // (сервер не принимает аудио), а сохранённые записи удаляются сразу (consent/service.revokeConsent).
 import { errors } from '../errors';
-import { grantConsent, stateOf, userIdForCandidate } from '../consent/service';
+import { consentTextFor, grantConsent, stateOf, userIdForCandidate } from '../consent/service';
 import { CALL_RECORDING_CONSENT_PARAGRAPHS, CALL_RECORDING_CONSENT_VERSION } from '../consent/texts';
 
 export { CALL_RECORDING_CONSENT_PARAGRAPHS, CALL_RECORDING_CONSENT_VERSION, userIdForCandidate };
+
+/** Текст Г2 для показа перед созвоном — с фактическим сроком хранения аудио (env). */
+export const callRecordingConsentText = (): readonly string[] => consentTextFor('call_recording').paragraphs;
 
 /**
  * Режим записи: `audio` — согласие действует; `text` — кандидат отозвал согласие, созвон без записи голоса;

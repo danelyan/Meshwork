@@ -270,6 +270,19 @@ describe('answerDefense и вердикт', () => {
     await expect(answerDefense(A, s.sessionId, 'я'.repeat(4000), llm)).resolves.toHaveProperty('next');
   });
 
+  it('Г3 (ADR 0005): без согласия старт — 409; отзыв посреди защиты — ответ 409, оценщик не запускается', async () => {
+    await seed();
+    const s = await startDefense(A, 'claim-1', llm);
+    let evaluated = 0;
+    registerStubResponse('evaluator', () => { evaluated += 1; return { json: weakEval() }; });
+    await prisma.consent.updateMany({ where: { kind: 'ai_assessment', user: { candidateId: A } }, data: { revokedAt: new Date() } });
+    await expect(answerDefense(A, s.sessionId, 'ответ', llm)).rejects.toMatchObject({ status: 409, code: 'consent_required' });
+    expect(evaluated).toBe(0);
+    expect(await prisma.defenseTurn.count({ where: { sessionId: s.sessionId, answer: { not: null } } })).toBe(0);
+    await seed({ id: 'claim-2' });
+    await expect(startDefense(A, 'claim-2', llm)).rejects.toMatchObject({ status: 409, code: 'consent_required' });
+  });
+
   it('чужая сессия → 404; завершённая → 409', async () => {
     await seed();
     registerStubResponse('evaluator', () => ({ json: weakEval() }));

@@ -1,3 +1,4 @@
+import { assertEmployerConsents } from '@/server/consent/service';
 import { assertSameOrigin } from '@/server/auth/csrf';
 import { loadEmployerContext } from '@/server/employer';
 import { withErrors } from '@/server/errors';
@@ -15,7 +16,8 @@ type Ctx = { params: Promise<{ id: string }> };
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);
-  const { employerProfileId } = requireEmployer(req);
+  const { employerProfileId, userId } = requireEmployer(req);
+  await assertEmployerConsents(userId); // ADR 0005: данные кандидатов — после оферты и обязательства
   const { id } = await params;
   const input = InviteToDefenseInput.parse(await req.json().catch(() => ({})));
   const ctx = await loadEmployerContext(employerProfileId);

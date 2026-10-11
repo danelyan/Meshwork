@@ -24,6 +24,10 @@ describe('buildAtsWebhook', () => {
     expect(body.data).toMatchObject({ invitationId: 'inv1', status: 'accepted', contactsOpen: true, candidate: expect.stringMatching(/^Кандидат #[0-9A-F]{6}$/) });
     expect(JSON.stringify(body)).not.toContain('cand-secret-id');
     expect(buildAtsWebhook({ ...change, status: 'sent' }, SECRET).body).toContain('"contactsOpen":false');
+    // ADR 0005: отзыв раскрытия при accepted — contactsOpen false и отдельный id события
+    const revoked = buildAtsWebhook({ ...change, contactsOpen: false }, SECRET, NOW);
+    expect(JSON.parse(revoked.body).data.contactsOpen).toBe(false);
+    expect(revoked.id).not.toBe(buildAtsWebhook(change, SECRET, NOW).id);
   });
 });
 

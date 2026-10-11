@@ -1,3 +1,4 @@
+import { assertEmployerConsents } from '@/server/consent/service';
 import { assertSameOrigin } from '@/server/auth/csrf';
 import { joinCall } from '@/server/defense-room';
 import { withErrors } from '@/server/errors';
@@ -13,7 +14,8 @@ type Ctx = { params: Promise<{ id: string }> };
  */
 export const POST = withErrors(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);
-  requireEmployer(req);
+  const { userId } = requireEmployer(req);
+  await assertEmployerConsents(userId); // ADR 0005: данные кандидатов — после оферты и обязательства
   const { id } = await ctx.params;
   return Response.json(await joinCall(getSession(req), id));
 });

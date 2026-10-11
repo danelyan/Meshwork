@@ -3,7 +3,7 @@ import { savedCandidateCards } from '@/server/favorites';
 import { signUserSession } from '@/server/session';
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
-import { discloseAccepted } from '../../helpers/consents';
+import { discloseAccepted, grantEmployerConsents } from '../../helpers/consents';
 
 const employer = { userId: 'fav-employer', role: 'employer' as const, candidateId: null, employerProfileId: 'fav-profile' };
 const candidate = { userId: 'fav-user', role: 'candidate' as const, candidateId: 'fav-candidate', employerProfileId: null };
@@ -26,6 +26,8 @@ describe('persistent favorites: own account and fresh privacy projection', () =>
     await prisma.company.upsert({ where: { id: 'fav-company' }, create: { id: 'fav-company', name: 'Компания' }, update: {} });
     for (const owner of [candidate, other, employer]) await prisma.user.upsert({ where: { id: owner.userId }, update: {}, create: { id: owner.userId, role: owner.role, name: owner.userId, candidateId: owner.candidateId } });
     await prisma.employerProfile.upsert({ where: { id: employer.employerProfileId }, update: {}, create: { id: employer.employerProfileId, userId: employer.userId, companyId: 'fav-company' } });
+    // ADR 0005: избранные кандидаты работодателю — после оферты и обязательства
+    if (!(await prisma.consent.count({ where: { userId: employer.userId } }))) await grantEmployerConsents([employer.userId]);
     await prisma.vacancy.upsert({ where: { id: 'fav-vacancy' }, update: { archivedAt: null }, create: { id: 'fav-vacancy', companyId: 'fav-company', title: 'Backend', specialization: 'backend', grade: 'middle', salaryFrom: 100000, salaryTo: 200000, needs: [] } });
   });
   afterAll(() => prisma.$disconnect());

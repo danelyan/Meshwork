@@ -10,6 +10,7 @@ import { type CallPrincipal, publicVerdict, resolveCallAccess, type ResolvedAcce
 import { assertSegment, concatRecording, listSegments, recognizeSegment, saveSegment, callAudioDir } from './audio';
 import { publishCall } from './bus';
 import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from './consent';
+import { removeSegment } from '../consent/recordings';
 import { assertAiAssessmentConsent } from '../consent/service';
 import { CALL_DISCLAIMER, callDriver, questionTurns, type CallDriver, type DriverSession } from './drivers';
 import { assertCooldownPassed } from './readiness';
@@ -252,6 +253,7 @@ export async function submitTurn(
 ): Promise<TurnResult> {
   const row = await loadOwn(candidateId, sessionId);
   if (row.status !== 'active') throw errors.conflict('Созвон уже завершён');
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её
   const text = (input.text ?? '').replace(/\r\n/g, '\n').trim();
   // Сегмент должен существовать. Текст уже распознан в /audio или браузером — второй раз STT не зовём.
   if (input.audioRef) await assertSegment(sessionId, input.audioRef);
@@ -408,6 +410,8 @@ export async function finishCall(candidateId: string, sessionId: string, llm: Ll
     await running.catch(() => undefined);
     return buildView(await loadOwn(candidateId, sessionId), CANDIDATE_ACCESS);
   }
+  await loadOwn(candidateId, sessionId); // чужой созвон — 404 раньше, чем 409 о согласии
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её: оценщик не запускается
   const p = finishCallOnce(candidateId, sessionId, llm);
   finishing.set(sessionId, p);
   try {
@@ -565,8 +569,16 @@ export async function addAudio(candidateId: string, sessionId: string, pcm: Uint
   if ((await callRecordingMode(candidateId)) !== 'audio') {
     throw new AppError('call_recording_off', 'Запись голоса отключена в «Моих согласиях» - ответь текстом', 409);
   }
-  const audioRef = await saveSegment(sessionId, pcm);
+  const recordingOn = async () => (await callRecordingMode(candidateId)) === 'audio';
+  const audioRef = await saveSegment(sessionId, pcm, recordingOn);
   if (!row.audioPath) await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: callAudioDir(sessionId).rel } });
+  // Гонка с отзывом Г2: отзыв ставит revokedAt, затем удаляет файлы. Если он пришёлся между проверкой и записью —
+  // убираем свой сегмент сами и снимаем audioPath (порядок «записать → audioPath → перепроверить» закрывает окно).
+  if (!(await recordingOn())) {
+    await removeSegment(sessionId, audioRef);
+    await prisma.callSession.update({ where: { id: sessionId }, data: { audioPath: null } });
+    throw new AppError('call_recording_off', 'Запись голоса отключена в «Моих согласиях» - ответь текстом', 409);
+  }
   let text: string | null = null;
   try {
     text = await recognizeSegment(pcm);
@@ -578,7 +590,7 @@ export async function addAudio(candidateId: string, sessionId: string, pcm: Uint
 }
 
 export async function getRecording(who: CallPrincipal, sessionId: string, segment?: string): Promise<Buffer> {
-  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true } });
+  const row = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { id: true, candidateId: true, status: true } });
   if (!row) throw errors.notFound('Созвон не найден');
   const access = await resolveCallAccess(who, row);
   if (!access.recording) throw errors.forbidden('Запись созвона откроется после того, как кандидат примет приглашение');

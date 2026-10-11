@@ -8,7 +8,12 @@ import { DELETE as revoke } from '@/app/api/consents/[kind]/route';
 import { GET as listConsents, POST as grant } from '@/app/api/consents/route';
 import { GET as devObjections, POST as devAnswer } from '@/app/api/dev/objections/route';
 import { GET as companyInvites, POST as invite } from '@/app/api/employer/invitations/route';
+import { POST as assistant } from '@/app/api/employer/assistant/messages/route';
+import { GET as employerCalls } from '@/app/api/employer/calls/route';
+import { GET as submissions } from '@/app/api/employer/project-submissions/route';
 import { GET as search } from '@/app/api/employer/search/route';
+import { GET as matches } from '@/app/api/employer/vacancies/[id]/matches/route';
+import { GET as favorites, PUT as setFavorite } from '@/app/api/favorites/route';
 import { POST as respond } from '@/app/api/invitations/[id]/route';
 import { GET as myObjections, POST as object } from '@/app/api/objections/route';
 import { POST as onboarding } from '@/app/api/onboarding/route';
@@ -121,6 +126,58 @@ describe('согласия (ADR 0005)', () => {
     await grantEmployer();
     expect((await search(jsonRequest('/api/employer/search', 'GET', undefined, emp))).status).toBe(200);
     expect((await invite(local('/api/employer/invitations', 'POST', body, emp))).status).toBe(201);
+  });
+
+  it('без оферты закрыты все данные кандидатов: подборка, помощник, избранное, сдачи проекта, защиты, приглашения', async () => {
+    await seedPair();
+    await prisma.vacancy.create({ data: { id: 'vac-c', companyId: 'co-c', title: 'Backend', specialization: 'backend', grade: 'junior', salaryFrom: 1, salaryTo: 2, needs: [] } });
+    const get = (url: string) => jsonRequest(url, 'GET', undefined, emp);
+    const code = async (r: Response) => [r.status, ((await r.json()) as { error?: { code: string } }).error?.code];
+    const closed = [409, 'consent_required'];
+    expect(await code(await matches(get('/x'), params({ id: 'vac-c' })))).toEqual(closed);
+    expect(await code(await assistant(local('/api/employer/assistant/messages', 'POST', { text: 'Кого посмотреть?' }, emp)))).toEqual(closed);
+    expect(await code(await favorites(get('/api/favorites')))).toEqual(closed);
+    expect(await code(await setFavorite(local('/api/favorites', 'PUT', { kind: 'candidate', targetId: CAND, saved: true }, emp)))).toEqual(closed);
+    expect(await code(await submissions(get('/api/employer/project-submissions?needId=vac-c')))).toEqual(closed);
+    expect(await code(await employerCalls(get('/api/employer/calls')))).toEqual(closed);
+    expect(await code(await companyInvites(get('/api/employer/invitations')))).toEqual(closed);
+    await grantEmployer();
+    expect((await matches(get('/x'), params({ id: 'vac-c' }))).status).toBe(200);
+    expect((await favorites(get('/api/favorites'))).status).toBe(200);
+    expect((await submissions(get('/api/employer/project-submissions?needId=vac-c'))).status).toBe(200);
+    expect((await employerCalls(get('/api/employer/calls'))).status).toBe(200);
+    expect((await companyInvites(get('/api/employer/invitations'))).status).toBe(200);
+  });
+
+  it('раскрытие изолировано между работодателями: отзыв для A не закрывает B, без приглашения контактов нет', async () => {
+    await seedPair();
+    await grantEmployer();
+    for (const x of ['b', 'z']) {
+      await prisma.company.create({ data: { id: `co-${x}`, name: `Компания ${x}`, isDemo: false } });
+      await prisma.user.create({ data: { id: `u-emp-${x}`, name: `HR ${x}`, role: 'employer' } });
+      await prisma.employerProfile.create({ data: { id: `p-emp-${x}`, userId: `u-emp-${x}`, companyId: `co-${x}` } });
+      await prisma.consent.createMany({ data: (['employer_offer', 'employer_data_obligation'] as const).map((kind) => ({ userId: `u-emp-${x}`, kind, version: consentVersion(kind) })) });
+    }
+    const empB = `cid=${signUserSession({ userId: 'u-emp-b', role: 'employer', employerProfileId: 'p-emp-b' })}`;
+    const empZ = `cid=${signUserSession({ userId: 'u-emp-z', role: 'employer', employerProfileId: 'p-emp-z' })}`;
+    await sentInvitation();
+    await prisma.invitation.create({ data: { id: 'inv-b', companyId: 'co-b', employerProfileId: 'p-emp-b', candidateId: CAND, salaryFrom: 100000, salaryTo: 150000 } });
+    const version = CONSENT_TEXTS.identity_disclosure.version;
+    for (const id of ['inv-1', 'inv-b']) {
+      expect((await respond(local(`/api/invitations/${id}`, 'POST', { action: 'accept', disclosureVersion: version }, cand), params({ id }))).status).toBe(200);
+    }
+    const contactsOf = async (cookie: string) => {
+      const body = await (await companyInvites(jsonRequest('/x', 'GET', undefined, cookie))).json();
+      return (body.invitations as { candidate: { contacts: unknown } }[]).map((i) => i.candidate.contacts);
+    };
+    expect(await contactsOf(emp)).toEqual([{ name: 'Анна Кандидатова', contact: '@anna' }]);
+    expect(await contactsOf(empB)).toEqual([{ name: 'Анна Кандидатова', contact: '@anna' }]);
+    expect(await contactsOf(empZ)).toEqual([]);
+    expect((await revoke(local('/api/consents/identity_disclosure?invitationId=inv-1', 'DELETE', undefined, cand), params({ kind: 'identity_disclosure' }))).status).toBe(200);
+    expect(await contactsOf(emp)).toEqual([null]);
+    expect(await contactsOf(empB)).toEqual([{ name: 'Анна Кандидатова', contact: '@anna' }]);
+    // Раскрытие по чужому приглашению выдать нельзя.
+    expect((await grant(local('/api/consents', 'POST', { kind: 'identity_disclosure', version, context: { invitationId: 'inv-zz' } }, cand))).status).toBe(404);
   });
 
   it('принятие приглашения: без раскрытия — 409, с раскрытием — контакты; отзыв раскрытия возвращает псевдоним', async () => {

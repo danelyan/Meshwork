@@ -48,7 +48,11 @@ export async function listSegments(sessionId: string): Promise<string[]> {
 }
 
 /** Сохранить сегмент; вернуть имя файла. Чётная длина PCM обязательна (16 бит). */
-export async function saveSegment(sessionId: string, pcm: Uint8Array): Promise<string> {
+/**
+ * `mayWrite` — перепроверка права на запись (Г2, ADR 0005) прямо перед записью файла: отзыв согласия,
+ * пришедший во время загрузки, не должен оставить файл.
+ */
+export async function saveSegment(sessionId: string, pcm: Uint8Array, mayWrite?: () => Promise<boolean>): Promise<string> {
   if (pcm.byteLength === 0) throw new AppError('bad_request', 'Пустая запись', 400);
   if (pcm.byteLength > CALL_SEGMENT_MAX_BYTES) throw new AppError('payload_too_large', 'Ответ длиннее полутора минут - раздели его на два', 413);
   const existing = await listSegments(sessionId);
@@ -58,6 +62,7 @@ export async function saveSegment(sessionId: string, pcm: Uint8Array): Promise<s
   const data = Buffer.from(pcm.buffer, pcm.byteOffset, pcm.byteLength - (pcm.byteLength % 2));
   const next = existing.length ? Number(existing[existing.length - 1]!.slice(0, 3)) + 1 : 0;
   const name = `${String(next).padStart(3, '0')}.wav`;
+  if (mayWrite && !(await mayWrite())) throw new AppError('call_recording_off', 'Запись голоса отключена в «Моих согласиях» - ответь текстом', 409);
   try {
     await writeFile(path.join(abs, name), Buffer.concat([wavHeader(data.byteLength), data]), { flag: 'wx' });
   } catch (err) {

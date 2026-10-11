@@ -1,4 +1,4 @@
-import { CALL_RECORDING_CONSENT_PARAGRAPHS, CALL_RECORDING_CONSENT_VERSION, callReadiness, callRecordingMode, listCalls } from '@/server/call';
+import { CALL_RECORDING_CONSENT_VERSION, callReadiness, callRecordingConsentText, callRecordingMode, listCalls } from '@/server/call';
 import { CallListQuery } from '@/server/call/schemas';
 import { withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
@@ -20,7 +20,7 @@ export const GET = withErrors(async (req: Request) => {
     callReadiness(candidateId, 'interview'),
   ]);
   return Response.json({
-    consent: { given: mode === 'audio', mode, version: CALL_RECORDING_CONSENT_VERSION, text: CALL_RECORDING_CONSENT_PARAGRAPHS },
+    consent: { given: mode === 'audio', mode, version: CALL_RECORDING_CONSENT_VERSION, text: callRecordingConsentText() },
     calls,
     /** Можно ли начать созвон (readiness.ts): нет темы для разговора или пауза после прошлого. */
     readiness: { qualifying, interview },

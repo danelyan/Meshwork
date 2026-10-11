@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { countOf } from '@/lib/plural';
 
 import { CALL_RECORDING_CONSENT_VERSION, callRecordingMode } from '../call/consent';
-import { assertAiAssessmentConsent } from '../consent/service';
+import { assertAiAssessmentConsent, hasAiAssessmentConsent } from '../consent/service';
 import { CALL_LIMITS } from '../call/plan';
 import { prisma } from '../db';
 import { getEnv } from '../env';
@@ -251,6 +251,7 @@ export async function candidateTurn(candidateId: string, sessionId: string, rawT
   if (text.length > DEFENSE_ROOM_LIMITS.maxAnswerChars) throw new AppError('answer_too_long', `Ответ длиннее ${DEFENSE_ROOM_LIMITS.maxAnswerChars} символов`, 400);
   const s = await loadOwn(candidateId, sessionId);
   if (s.status !== 'active') throw errors.conflict('Сессия защиты уже завершена');
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её
   await lockPlan(sessionId);
   try {
     const before = await prisma.callSession.findUniqueOrThrow({ where: { id: sessionId }, select: { transcriptJson: true } });
@@ -341,8 +342,9 @@ async function respond(
  * уточнений. Ход занят — ничего не делаем: продолжение случится на следующем ответе кандидата.
  */
 export async function resumeAi(sessionId: string, llm: LlmProvider): Promise<TurnResult | null> {
-  const s = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { status: true, transcriptJson: true } });
+  const s = await prisma.callSession.findUnique({ where: { id: sessionId }, select: { status: true, transcriptJson: true, candidateId: true } });
   if (!s || s.status !== 'active') return null;
+  if (!(await hasAiAssessmentConsent(s.candidateId))) return null; // Г3 отозван — ИИ в комнате не отвечает
   const t = asTranscript(s.transcriptJson);
   if (t[t.length - 1]?.role !== 'candidate') return null;
   if (await isAiMuted(sessionId)) return null;
@@ -378,6 +380,7 @@ async function storedVerdict(sessionId: string): Promise<DefenseRoomVerdict> {
 export async function finishDefenseRoom(candidateId: string, sessionId: string, llm: LlmProvider): Promise<DefenseRoomVerdict> {
   const s = await loadOwn(candidateId, sessionId);
   if (s.status !== 'active') return storedVerdict(sessionId);
+  await assertAiAssessmentConsent(candidateId); // Г3 (ADR 0005): отзыв посреди сессии останавливает её: оценщик не запускается
   await lockPlan(sessionId);
   try {
     return await finishLocked(sessionId, llm);

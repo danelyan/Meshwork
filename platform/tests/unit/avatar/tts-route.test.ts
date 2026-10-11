@@ -147,7 +147,7 @@ describe('/api/tts', () => {
       expect(globalFetch).not.toHaveBeenCalled();
       const calls = undiciMock.fetch.mock.calls as unknown as [string, RequestInit & { dispatcher?: { url: string } }][];
       expect(calls.map(([, init]) => JSON.parse(String(init.body)).model_id)).toEqual(['eleven_flash_v2_5', 'eleven_v4']);
-      expect(calls[0][1].dispatcher?.url).toBe('http://u:p@proxy.test:3128');
+      expect(calls[0]?.[1].dispatcher?.url).toBe('http://u:p@proxy.test:3128');
       expect(undiciMock.agents).toEqual(['http://u:p@proxy.test:3128']);
     });
   });

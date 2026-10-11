@@ -10086,6 +10086,8 @@ paths:
                   enum:
                     - companion
                     - employer
+                realtime:
+                  type: boolean
               required:
                 - text
       responses:

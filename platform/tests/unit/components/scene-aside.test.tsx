@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { AsideProvider } from '@/components/consultant/aside-refresh';
 import { SceneAside } from '@/components/consultant/SceneAside';
-import { AI_CONSENT_BLOCKER, HIDDEN_BLOCKER, type SceneAsideData, blockerNotes, candidateSteps, stepBlocker, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
+import { AI_CONSENT_BLOCKER, HIDDEN_BLOCKER, type SceneAsideData, blockerNotes, candidateSteps, promoteNow, stepBlocker, demandFor, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
 import type { OnboardingView } from '@/server/onboarding/types';
 
 // MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
@@ -39,6 +39,17 @@ describe('journey steps', () => {
     const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, project: true, aiDefense: true, invitations: 2, accepted: 1 });
     expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'done', 'done', 'done', 'now']);
     expect(hintFor('candidate', s, undefined).title).toBe('Живая защита');
+  });
+  it('приглашение принято, проекта нет: «сейчас» — проект, защита ждёт сданного проекта', () => {
+    const f = { ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, invitations: 1, accepted: 1 };
+    const s = promoteNow(candidateSteps(f), 'project', true);
+    expect(s.find((x) => x.id === 'project')!.state).toBe('now');
+    expect(s.find((x) => x.id === 'live_defense')!.state).toBe('next');
+    expect(s.find((x) => x.id === 'live_defense')!.note).toBe('после сданного проекта компания предложит слоты');
+    // созвона нет, приглашение принято — «сейчас» всё равно у проекта (так считает journeyState)
+    const t = promoteNow(candidateSteps({ ...f, call: false }), 'project', true);
+    expect(t.filter((x) => x.state === 'now').map((x) => x.id)).toEqual(['project']);
+    expect(promoteNow(candidateSteps({ ...f, call: false }), 'project').find((x) => x.id === 'call')!.state).toBe('now');
   });
   it('lane hired: найм — финальный этап «Нанят в …», весь путь пройден, подсказка про найм', () => {
     const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, call: true, project: true, aiDefense: true, invitations: 1, accepted: 1, hired: { company: 'Северный Поток' } });
@@ -145,6 +156,11 @@ describe('блок под текущий шаг', () => {
   it('с блоком шага подсказка под путём не дублируется', () => {
     render(<SceneAside data={{ ...base, stepBlock: { step: 'call' } }} />);
     expect(screen.queryByTestId('aside-hint')).toBeNull();
+  });
+
+  it('проект при принятом приглашении: «Компания ждёт твой проект»', () => {
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'project', project: null, forLive: true } }} />);
+    expect(screen.getByTestId('aside-step-project').textContent).toMatch(/Компания ждёт твой проект: без него защиту не назначить/);
   });
 
   it('счётчик приглашений в блоке', () => {

@@ -203,7 +203,7 @@ function StepBlockView({ block, market, docs, role }: { block: StepBlock; market
       return <StepCard id="step-call" title="Созвон с ИИ" text="Короткий голосовой разговор по темам резюме. Итог - карта глубины, работодатель видит её до приглашения." href="/consultant?call=1" cta="Созвониться" blocker={block.blocker} />;
     case 'project': {
       const p = block.project;
-      return <StepCard id="step-project" title="Лента заданий" text="Возьми проект из ленты, сдай репозиторий и дождись проверки." extra={p ? `${p.title}: ${PROJECT_STATUS[p.status]}` : undefined} href={p && p.status !== 'checked' ? `/projects/${p.taskId}` : '/projects'} cta={p && p.status !== 'checked' ? 'Открыть задание' : 'Открыть ленту заданий'} blocker={block.blocker} />;
+      return <StepCard id="step-project" title="Лента заданий" text={block.forLive ? 'Компания ждёт твой проект: без него защиту не назначить. Возьми проект из ленты, сдай репозиторий и дождись проверки.' : 'Возьми проект из ленты, сдай репозиторий и дождись проверки.'} extra={p ? `${p.title}: ${PROJECT_STATUS[p.status]}` : undefined} href={p && p.status !== 'checked' ? `/projects/${p.taskId}` : '/projects'} cta={p && p.status !== 'checked' ? 'Открыть задание' : 'Открыть ленту заданий'} blocker={block.blocker} />;
     }
     case 'ai_defense': {
       const p = block.project;

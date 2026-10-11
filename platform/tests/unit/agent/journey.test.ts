@@ -139,6 +139,15 @@ describe('journeyState: порядок шагов (ADR 0008)', () => {
     expect(await next()).toBe('live_defense');
   });
 
+  it('принятое приглашение без проверенного проекта → проект: без него компания не назначит защиту', async () => {
+    Object.assign(w, { category: true, qualifying: 1, checkedProjects: 0, acceptedInv: 1 });
+    const s = await journeyState('c1');
+    expect(s.nextStep).toBe('project');
+    expect(stepHint(s)).toMatch(/приглашение принято, но без сданного проекта компания не назначит защиту/i);
+    w.acceptedInv = 0;
+    expect(stepHint(await journeyState('c1'))).toBe(STEP_HINT.project);
+  });
+
   it('нанят — важнее всего', async () => {
     Object.assign(w, { sentInv: 1, acceptedInv: 1, hired: true });
     const s = await journeyState('c1');

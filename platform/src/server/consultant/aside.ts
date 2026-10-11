@@ -128,6 +128,8 @@ export interface StepBlock {
   project?: { taskId: string; title: string; status: 'submitted' | 'running' | 'checked' | 'failed' } | null;
   /** hired: компания, отметившая найм. */
   hired?: { company: string } | null;
+  /** project: приглашение принято, а проверенного проекта нет — компания ждёт проект, без него защиту не назначить. */
+  forLive?: boolean;
   /**
    * test: спрос в направлении кандидата (из знакомства) - одна строка вместо таблицы по всем направлениям (владелец 11.10:
    * «какой смысл … если у пользователя и так один определённый стек»). Направление не выбрано — таблица market помогает выбрать.
@@ -280,8 +282,9 @@ export interface CandidateFacts {
 /** Знакомство → тест → квалифицирующий созвон → проект → ИИ-защита → приглашения → живая защита → нанят. */
 /** Шаги вне порядка (приглашение, живая защита, найм) приоритетнее по journeyState.nextStep: «сейчас» - у них, чтобы путь и блок шага показывали одно. */
 const PRIORITY_STEP: Partial<Record<string, string>> = { invitations: 'invites', live_defense: 'live_defense', hired: 'hired' };
-export function promoteNow(steps: JourneyStep[], nextStep: string): JourneyStep[] {
-  const id = PRIORITY_STEP[nextStep];
+/** liveWaitsProject: приглашение принято, проекта нет — «сейчас» у проекта (без него компания не назначит защиту). */
+export function promoteNow(steps: JourneyStep[], nextStep: string, liveWaitsProject = false): JourneyStep[] {
+  const id = PRIORITY_STEP[nextStep] ?? (nextStep === 'project' && liveWaitsProject ? 'project' : undefined);
   if (!id || !steps.some((s) => s.id === id)) return steps;
   return steps.map((s) => (s.id === id ? { ...s, state: 'now', locked: undefined } : s.state === 'now' ? { ...s, state: 'next' } : s));
 }
@@ -318,7 +321,7 @@ export function candidateSteps(f: CandidateFacts): JourneyStep[] {
       done: answered,
       lockedNote: 'Компании находят тебя сами после теста; проект и ИИ-защита повышают шансы на приглашение',
     },
-    { id: 'live_defense', label: 'Живая защита', short: 'Защита', note: hired ? 'пройдена' : answered ? 'работодатель назначит время' : 'после принятого приглашения', href: '/invitations', done: hired !== null, lockedNote: 'Сначала: принять приглашение компании - тогда она предложит время защиты' },
+    { id: 'live_defense', label: 'Живая защита', short: 'Защита', note: hired ? 'пройдена' : answered ? (f.project === true ? 'работодатель назначит время' : 'после сданного проекта компания предложит слоты') : 'после принятого приглашения', href: '/invitations', done: hired !== null, lockedNote: 'Сначала: принять приглашение компании - тогда она предложит время защиты' },
     ...(hired ? [{ id: 'hired', label: `Нанят в ${hired.company}`, short: 'Нанят', note: 'компания отметила найм', href: '/invitations', done: true, final: true }] : []),
   ]);
 }
@@ -414,7 +417,8 @@ async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<ty
   if (step === 'test') return demand ? { step, demand } : { step };
   if (step === 'project' || step === 'ai_defense') {
     const subs = await loadLatestSubmissions(candidateId);
-    return { step, project: step === 'project' ? subs.latest : subs.checked ?? subs.latest };
+    const forLive = step === 'project' && journey.counts.acceptedInvitations > 0;
+    return { step, project: step === 'project' ? subs.latest : subs.checked ?? subs.latest, ...(forLive ? { forLive } : {}) };
   }
   if (step === 'waiting' || step === 'invitations' || step === 'live_defense') return { step, invitations: { pending: journey.counts.pendingInvitations, accepted: journey.counts.acceptedInvitations, total: invitations } };
   if (step === 'hired') return { step, hired: journey.hired ? { company: journey.hired.company } : null };
@@ -449,6 +453,7 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
   const steps = blockerNotes(promoteNow(
     candidateSteps({ intro, introNote: introNote(view, intro, false, known.known?.filter((k) => k.source === 'onboarding').length ?? 0), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations }),
     journey.nextStep,
+    journey.counts.acceptedInvitations > 0 && !journey.steps.project,
   ), step, facts);
   const market = vacancies && !cand?.specialization ? marketRows(vacancies, () => false) : undefined;
   const stats = candidateStats({ confirmed: profileClaims, category });

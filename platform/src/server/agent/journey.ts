@@ -41,12 +41,21 @@ export const CALL_NO_SOURCES_HINT =
 export const AI_CONSENT_HINT =
   'Нет согласия на оценку ИИ: без него тест, созвон и защиты не запустятся (ответят ошибкой). Сначала предложи дать согласие — кнопка «Дать согласие» в правой колонке «Твой путь» или /settings, раздел «Мои согласия»; потом — шаг ниже.';
 
+/** Приглашение принято, проверенного проекта нет: компания не может предложить слоты живой защиты (live-defense: project_not_submitted). */
+export const PROJECT_FOR_LIVE_HINT =
+  'Приглашение принято, но без сданного проекта компания не назначит защиту: слоты живой защиты предлагаются только по проверенной сдаче. Предложи взять проект из ленты на экране /projects (инструмента нет — дай ссылку), сдать репозиторий и дождаться проверки; после этого компания предложит время.';
+
 /** Шаги, которые без согласия на оценку ИИ не запустятся. */
 export const AI_CONSENT_STEPS: readonly JourneyStep[] = ['test', 'call', 'project', 'ai_defense', 'live_defense'];
 
 /** Подсказка с учётом состояния: шаг «созвон» без источников — другой текст; без согласия на ИИ — сначала согласие. */
-export function stepHint(state: Pick<JourneyState, 'nextStep' | 'callNeedsSources'> & Partial<Pick<JourneyState, 'aiConsent'>>): string {
-  const base = state.nextStep === 'call' && state.callNeedsSources ? CALL_NO_SOURCES_HINT : STEP_HINT[state.nextStep];
+export function stepHint(state: Pick<JourneyState, 'nextStep' | 'callNeedsSources'> & Partial<Pick<JourneyState, 'aiConsent' | 'counts'>>): string {
+  const base =
+    state.nextStep === 'call' && state.callNeedsSources
+      ? CALL_NO_SOURCES_HINT
+      : state.nextStep === 'project' && (state.counts?.acceptedInvitations ?? 0) > 0
+        ? PROJECT_FOR_LIVE_HINT
+        : STEP_HINT[state.nextStep];
   return state.aiConsent === false && AI_CONSENT_STEPS.includes(state.nextStep) ? `${AI_CONSENT_HINT} ${base}` : base;
 }
 
@@ -110,7 +119,9 @@ export async function journeyState(candidateId: string): Promise<JourneyState> {
     ai_defense: aiDefense > 0,
   };
   const firstOpen = JOURNEY_STEPS.find((s) => !steps[s]);
-  const next: JourneyStep = hired ? 'hired' : pending > 0 ? 'invitations' : accepted > 0 ? 'live_defense' : (firstOpen ?? 'waiting');
+  // Принятое приглашение без проверенного проекта: компания не предложит слоты (live-defense/service.ts, project_not_submitted) —
+  // сначала проект, а не «живая защита», которую кандидату нечем начать.
+  const next: JourneyStep = hired ? 'hired' : pending > 0 ? 'invitations' : accepted > 0 ? (steps.project ? 'live_defense' : 'project') : (firstOpen ?? 'waiting');
   return {
     steps,
     counts: { sources: sources + uploads, proposed, confirmed, pendingInvitations: pending, acceptedInvitations: accepted },

@@ -109,4 +109,22 @@ describe('llm client: onDelta', () => {
     expect(res.text).toBe('полный');
     expect(got).toEqual(['пол']);
   });
+
+  it('повтор после показанных дельт с onDiscard: показанное убирается, повтор снова стримит', async () => {
+    let n = 0;
+    const log: string[] = [];
+    const impl: LlmProvider['complete'] = async (r) => {
+      n++;
+      if (n === 1) {
+        r.onDelta?.('пол');
+        throw Object.assign(new Error('503'), { status: 503 });
+      }
+      r.onDelta?.('полный');
+      return ok('полный');
+    };
+    const client = createLlmClient({ provider: fake(impl), maxConcurrency: 1, timeoutMs: 1000, maxRetries: 1, backoffMs: () => 0 });
+    const res = await client.forContext().complete({ ...req, onDelta: (t) => log.push(`d:${t}`), onDiscard: () => log.push('discard') });
+    expect(res.text).toBe('полный');
+    expect(log).toEqual(['d:пол', 'discard', 'd:полный']);
+  });
 });

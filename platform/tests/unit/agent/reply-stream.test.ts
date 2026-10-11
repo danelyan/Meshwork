@@ -48,4 +48,50 @@ describe('reply-stream: дельты реплики', () => {
     await s.finish('текст');
     expect(evs).toEqual([]);
   });
+
+  it('стоп посреди дельт модели: показанный кусок — message, его и сохранять', () => {
+    const evs: Ev[] = [];
+    const s = createReplyStream((e) => evs.push(e), undefined, () => 0);
+    s.onDelta('Начало ');
+    s.onDelta('ответа');
+    const id = s.id;
+    expect(s.stop()).toBe('Начало ответа');
+    expect(evs.at(-1)).toEqual({ type: 'message', id, text: 'Начало ответа' });
+  });
+
+  it('стоп без дельт — ничего не сохранять и не слать', () => {
+    const evs: Ev[] = [];
+    const s = createReplyStream((e) => evs.push(e), undefined, () => 0);
+    expect(s.stop()).toBeNull();
+    expect(evs).toEqual([]);
+  });
+
+  it('клиент ушёл (pace): нарезка не ждёт, но message с полным текстом отдаётся и сохраняется', async () => {
+    const evs: Ev[] = [];
+    const pace = new AbortController();
+    pace.abort();
+    const s = createReplyStream((e) => evs.push(e), new AbortController().signal, () => 1000, pace.signal);
+    const t0 = Date.now();
+    expect(await s.finish('раз два три четыре пять шесть')).toBe('раз два три четыре пять шесть');
+    expect(Date.now() - t0).toBeLessThan(500);
+    expect(evs).toEqual([{ type: 'message', id: expect.any(String), text: 'раз два три четыре пять шесть' }]);
+  });
+
+  it('стоп посреди нарезки: message и сохранение — только показанный кусок', async () => {
+    const evs: Ev[] = [];
+    const stop = new AbortController();
+    let n = 0;
+    const s = createReplyStream(
+      (e) => {
+        evs.push(e);
+        if (e.type === 'delta' && ++n === 1) stop.abort();
+      },
+      stop.signal,
+      () => 0,
+    );
+    const saved = await s.finish('раз два три четыре пять шесть семь');
+    expect(saved).toBe('раз два три');
+    expect(evs.filter((e) => e.type === 'delta')).toHaveLength(1);
+    expect(evs.at(-1)).toMatchObject({ type: 'message', text: 'раз два три' });
+  });
 });

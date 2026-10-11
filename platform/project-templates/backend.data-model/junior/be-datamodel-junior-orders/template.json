@@ -1,0 +1,19 @@
+{
+  "id": "be-datamodel-junior-orders",
+  "subcategoryId": "backend.data-model",
+  "specialization": "backend",
+  "grade": "junior",
+  "title": "Схема и запросы: клиенты, товары, заказы (SQLite)",
+  "summary": "Реляционная схема из четырёх таблиц с ограничениями (PK/FK/UNIQUE/NOT NULL/CHECK), добавление данных с понятными ошибками, атомарное создание заказа, выборки с JOIN и агрегацией",
+  "stack": ["python312", "sqlite3", "pytest"],
+  "catalogIds": ["be.sql-schema", "common.sql-queries"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 180,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

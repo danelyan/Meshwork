@@ -8,20 +8,20 @@
 .seen { margin-left: auto; flex: none; padding: 0 5px; border: 1px solid var(--stage-ring); text-transform: none; letter-spacing: 0; white-space: nowrap; }
 .editor { grid-column: 1 / -1; }
 .badge { padding: 0 5px; color: var(--stage-on-accent); background: var(--stage-accent); }
-.text { font-size: var(--fs-sm); line-height: 1.4; color: var(--stage-text); overflow-wrap: anywhere; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.text { font-size: var(--fs); line-height: 1.4; color: var(--stage-text); overflow-wrap: anywhere; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 .actions { display: flex; gap: 10px; }
-.action { padding: 0; background: none; border: 0; font: 500 var(--fs-xs) var(--mono); color: var(--stage-ink-dim); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.action { padding: 0; background: none; border: 0; font: 500 var(--fs-sm) var(--mono); color: var(--stage-ink-dim); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .action:hover:not(:disabled) { color: var(--stage-text); }
 .action:disabled { opacity: 0.5; cursor: default; }
 .editor { display: grid; gap: 6px; }
-.input { width: 100%; padding: 6px 8px; font: inherit; font-size: var(--fs-sm); color: var(--stage-text); background: var(--stage-card); border: 1px solid var(--stage-ring); }
+.input { width: 100%; padding: 6px 8px; font: inherit; font-size: var(--fs-body); color: var(--stage-text); background: var(--stage-card); border: 1px solid var(--stage-ring); }
 .input:focus { outline: 1px solid var(--stage-accent); border-color: var(--stage-accent); }
-.add { margin-top: 12px; padding: 0; background: none; border: 0; font: 600 var(--fs-xs) var(--mono); color: var(--stage-accent); cursor: pointer; }
+.add { margin-top: 12px; padding: 0; background: none; border: 0; font: 600 var(--fs-sm) var(--mono); color: var(--stage-accent); cursor: pointer; }
 .add:hover:not(:disabled) { color: var(--stage-text); }
 .add:disabled { color: var(--stage-ink-faint); cursor: default; }
 .editor + .add, .list + .editor { margin-top: 12px; }
-.note { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--stage-ink-faint); }
-.error { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--stage-text); }
+.note { margin: 8px 0 0; font-size: var(--fs-sm); color: var(--stage-ink-faint); }
+.error { margin: 8px 0 0; font-size: var(--fs-sm); color: var(--stage-text); }
 @media (prefers-reduced-motion: reduce) {
   .item { transition: none; }
 }

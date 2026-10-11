@@ -41,9 +41,9 @@
 .stepLink:hover .stepName { color: var(--stage-text); }
 .marker { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--stage-ring); font: 600 var(--fs-xs) var(--mono); color: var(--stage-text-soft); }
 .stepText { display: grid; gap: 2px; min-width: 0; }
-.stepName { font-weight: 600; font-size: var(--fs-sm); line-height: 1.3; color: var(--stage-text-soft); }
+.stepName { font-weight: 600; font-size: var(--fs); line-height: 1.3; color: var(--stage-text-soft); }
 .short { display: none; }
-.stepNote { font-size: var(--fs-xs); line-height: 1.4; color: var(--stage-ink-faint); overflow-wrap: anywhere; }
+.stepNote { font-size: var(--fs-sm); line-height: 1.4; color: var(--stage-ink-faint); overflow-wrap: anywhere; }
 .step[data-state='done'] { border-top-color: var(--stage-accent-track); }
 .step[data-state='done'] .marker { background: var(--stage-accent-fill); border-color: var(--stage-accent); color: var(--stage-ink); }
 .step[data-state='now'] { border-top-color: var(--stage-accent); }
@@ -59,37 +59,37 @@
 .chevron { display: none; }
 .cardBody { flex: 1; padding: 10px 16px 14px; }
 .empty { display: grid; gap: 10px; justify-items: start; }
-.empty p { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--stage-text-soft); }
-.attach { padding: 7px 14px; font-weight: 600; font-size: var(--fs-sm); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
+.empty p { margin: 0; font-size: var(--fs); line-height: 1.5; color: var(--stage-text-soft); }
+.attach { padding: 7px 14px; font-weight: 600; font-size: var(--fs); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
 .attach:hover { background: var(--stage-ink); }
 .docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .doc { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; }
 .docKind { font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--stage-ink-faint); border: 1px solid var(--avatar-stage-line); padding: 1px 5px; }
-.docName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--stage-text); }
-.docStatus { grid-column: 2; font-size: var(--fs-xs); color: var(--stage-ink-faint); }
-.hint { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--avatar-stage-line); font-size: var(--fs-sm); line-height: 1.5; color: var(--stage-text-soft); }
+.docName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs); color: var(--stage-text); }
+.docStatus { grid-column: 2; font-size: var(--fs-sm); color: var(--stage-ink-faint); }
+.hint { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--avatar-stage-line); font-size: var(--fs); line-height: 1.5; color: var(--stage-text-soft); }
 .hintTitle { font-weight: 600; color: var(--stage-text); }
 .hintTitle::after { content: ' ·'; color: var(--stage-ink-faint); }
 
 /* --- что я знаю: пары «шаг — ответ»; рынок: категории с полосками --- */
-.muted { margin: 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--stage-ink-faint); }
+.muted { margin: 0; font-size: var(--fs); line-height: 1.5; color: var(--stage-ink-faint); }
 .facts { margin: 0; display: grid; gap: 8px; }
 .fact { display: grid; grid-template-columns: minmax(84px, 38%) minmax(0, 1fr); gap: 10px; align-items: baseline; }
-.fact dt { font-size: var(--fs-xs); color: var(--stage-ink-faint); }
-.fact dd { margin: 0; font-size: var(--fs-sm); line-height: 1.4; color: var(--stage-text); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.fact dt { font-size: var(--fs-sm); color: var(--stage-ink-faint); }
+.fact dd { margin: 0; font-size: var(--fs); line-height: 1.4; color: var(--stage-text); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .market { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 /* подпись и число в строку, полоска под ними на всю ширину: читается и в узкой карточке */
 .marketRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'label count' 'bar bar'; gap: 4px 10px; align-items: baseline; }
 .marketLabel { grid-area: label; }
 .bar { grid-area: bar; }
 .marketCount { grid-area: count; }
-.marketLabel { font-size: var(--fs-xs); color: var(--stage-text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.marketLabel { font-size: var(--fs); color: var(--stage-text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar { height: 4px; background: var(--stage-track); }
 .bar > span { display: block; height: 100%; min-width: 2px; background: var(--stage-accent-track); }
-.marketCount { font: 600 var(--fs-xs) var(--mono); text-align: right; color: var(--stage-text-soft); }
+.marketCount { font: 600 var(--fs-sm) var(--mono); text-align: right; color: var(--stage-text-soft); }
 .marketRow[data-mine] .marketLabel, .marketRow[data-mine] .marketCount { color: var(--stage-text); }
 .marketRow[data-mine] .bar > span { background: var(--stage-accent); }
-.marketNote { margin: 10px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--stage-ink-faint); }
+.marketNote { margin: 10px 0 0; font-size: var(--fs-sm); line-height: 1.45; color: var(--stage-ink-faint); }
 
 /* --- низкая колонка (13-14" ноутбук): плотнее отступы, заметки шагов в одну строку, заголовок пути убран --- */
 @container aside (height < 560px) {
@@ -98,7 +98,7 @@
   .title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .step { padding-top: 8px; }
   .stepNote { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .hint { margin-top: 8px; padding-top: 8px; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hint { margin-top: 8px; padding-top: 8px; font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cardToggle { padding: 10px 14px 0; }
   .cardBody { padding: 8px 14px 10px; }
   .marketNote { display: none; }
@@ -113,9 +113,9 @@
   .stepLink { flex-direction: column; align-items: center; gap: 6px; padding: 0; text-align: center; }
   .stepText { justify-items: center; }
   .stepNote, .full { display: none; }
-  .hint { margin-top: 8px; padding-top: 8px; font-size: var(--fs-xs); }
+  .hint { margin-top: 8px; padding-top: 8px; font-size: var(--fs-sm); }
   .short { display: inline; }
-  .stepName { font-size: var(--fs-xs); }
+  .stepName { font-size: var(--fs-sm); }
   .card { order: 3; border-width: 1px 0 0; background: var(--avatar-stage); }
   .card:last-child { border-bottom-width: 1px; }
   .cardToggle { padding: 14px var(--page-pad); cursor: pointer; }

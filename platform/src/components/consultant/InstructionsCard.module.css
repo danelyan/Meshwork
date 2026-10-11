@@ -1,18 +1,18 @@
 /* Карточка «Как мне работать» в правой колонке консультанта: тёмная сцена, только токены. */
 .wrap { display: grid; gap: 10px; }
-.lead { margin: 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--stage-ink-faint); }
+.lead { margin: 0; font-size: var(--fs-sm); line-height: 1.45; color: var(--stage-ink-faint); }
 .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { padding: 5px 10px; font-size: var(--fs-xs); line-height: 1.3; color: var(--stage-text-soft); background: none; border: 1px solid var(--stage-ring); cursor: pointer; }
+.chip { padding: 5px 10px; font-size: var(--fs); line-height: 1.3; color: var(--stage-text-soft); background: none; border: 1px solid var(--stage-ring); cursor: pointer; }
 .chip:hover { color: var(--stage-text); border-color: var(--stage-ink-dim); }
 .chip[aria-pressed='true'] { color: var(--stage-on-accent); background: var(--stage-accent); border-color: var(--stage-accent); }
-.label { font-size: var(--fs-xs); color: var(--stage-ink-faint); }
-.field { width: 100%; box-sizing: border-box; resize: vertical; min-height: 64px; padding: 8px 10px; font: inherit; font-size: var(--fs-sm); line-height: 1.45; color: var(--stage-text); background: var(--stage-track); border: 1px solid var(--avatar-stage-line); }
+.label { font-size: var(--fs-sm); color: var(--stage-ink-faint); }
+.field { width: 100%; box-sizing: border-box; resize: vertical; min-height: 64px; padding: 8px 10px; font: inherit; font-size: var(--fs-body); line-height: 1.45; color: var(--stage-text); background: var(--stage-track); border: 1px solid var(--avatar-stage-line); }
 .field:focus-visible { outline: 2px solid var(--stage-accent); outline-offset: -1px; }
 .field::placeholder { color: var(--stage-ink-dim); }
 .row { display: flex; align-items: center; gap: 10px; }
-.counter { font: 500 var(--fs-xs) var(--mono); color: var(--stage-ink-faint); }
-.status { flex: 1; font-size: var(--fs-xs); color: var(--stage-text-soft); }
-.save { padding: 7px 14px; font-weight: 600; font-size: var(--fs-sm); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
+.counter { font: 500 var(--fs-sm) var(--mono); color: var(--stage-ink-faint); }
+.status { flex: 1; font-size: var(--fs-sm); color: var(--stage-text-soft); }
+.save { padding: 7px 14px; font-weight: 600; font-size: var(--fs); color: var(--stage-on-accent); background: var(--stage-btn); border: 0; cursor: pointer; }
 .save:hover { background: var(--stage-ink); }
 .save:disabled { opacity: 0.6; cursor: default; }
 

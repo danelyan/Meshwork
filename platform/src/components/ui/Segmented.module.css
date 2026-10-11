@@ -12,4 +12,4 @@
 .segmented button:hover:not([aria-pressed='true']) { background: var(--seg-hover); color: var(--seg-text-on); }
 .segmented button[aria-pressed='true'] { background: var(--seg-on); color: var(--seg-on-text); font-weight: 700; }
 .compact { margin-bottom: 12px; }
-.compact button { min-height: 28px; padding: 4px 8px; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compact button { min-height: 28px; padding: 4px 8px; font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

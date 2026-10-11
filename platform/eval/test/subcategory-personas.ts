@@ -59,6 +59,8 @@ const N = Number(argStr('n') ?? 1000);
 const SEED = Number(argStr('seed') ?? 1);
 const SUB_ARG = argStr('sub');
 const SPEC_ARG = argStr('spec') ?? 'ai';
+/** --pad last: прежняя модель профиля (лишние семейства = последнее значение строки), для сравнения с замерами до 11.10. */
+const PAD_LAST = argStr('pad') === 'last';
 if (argStr('senior-cut') !== undefined) GRADE_CUT.senior = Number(argStr('senior-cut'));
 /** Эксперимент калибровки: --a-junior 1.3 / --b-junior-shift −0.2 — подменить a / сдвинуть b Junior-шаблонов (без правки кода). */
 const A_JUNIOR = argStr('a-junior') !== undefined ? Number(argStr('a-junior')) : null;
@@ -143,7 +145,12 @@ interface Outcome {
   probed: boolean;
 }
 
-/** Профиль → P(верно) по id семейства: внутри грейда по возрастанию b. Лишние семейства (банк больше минимума) — как последнее в строке. */
+/**
+ * Профиль → P(верно) по id семейства: внутри грейда по возрастанию b. Строка профиля задана на минимальный пул (6/4/4);
+ * при банке больше минимума значение берётся по относительной позиции семейства (линейная интерполяция по строке).
+ * До 11.10 лишние семейства получали последнее (самое трудное) значение строки: на банке 26–27 семейств персона
+ * становилась слабее задуманной, и честные персоны проваливались из-за модели, а не политики (`--pad last` — прежнее).
+ */
 function knowsFor(pool: readonly SelectableTemplate[], p: Profile, weakIndex: number | null): Map<string, number> {
   const out = new Map<string, number>();
   const rows: Record<Grade, number[]> = { junior: p.j, middle: p.m, senior: p.s };
@@ -151,7 +158,14 @@ function knowsFor(pool: readonly SelectableTemplate[], p: Profile, weakIndex: nu
     const fam = pool.filter((t) => t.grade === g).sort((a, b) => a.b - b.b || a.id.localeCompare(b.id));
     fam.forEach((t, i) => {
       const row = rows[g];
-      let v = row[Math.min(i, row.length - 1)]!;
+      let v: number;
+      if (PAD_LAST || fam.length <= row.length) v = row[Math.min(i, row.length - 1)]!;
+      else {
+        const x = (i * (row.length - 1)) / (fam.length - 1);
+        const lo = Math.floor(x);
+        const hi = Math.min(lo + 1, row.length - 1);
+        v = row[lo]! + (row[hi]! - row[lo]!) * (x - lo);
+      }
       if (p.weak && p.weak.grade === g && weakIndex === i) v = X;
       out.set(t.id, v);
     });

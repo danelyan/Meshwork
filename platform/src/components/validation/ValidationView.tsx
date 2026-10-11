@@ -42,6 +42,8 @@ function AblationBlock({ ab }: { ab: NonNullable<MatchingResults['ablation']> })
         {ab.vacancies} вакансий × {ab.profiles} профилей. Сигнал выключаем по одному, остальная формула прежняя; Δ — разница с полной формулой
         (минус — сигнал помогает), в скобках 95 % интервал (парный бутстреп по вакансиям). Разметку сделал один генератор, а не независимые эксперты, —
         цифры показывают вклад в этом наборе, а не в жизни.
+        {ab.rows.some((r) => r.signal === 'project' && r.measured) &&
+          ' Проекты и созвоны в наборе смоделированы (у ~30 % и ~40 % профилей, с шумом ~10 %): это допущения, а не живые данные, поэтому их строки показывают механику, а не доказанный эффект.'}
       </p>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
@@ -67,60 +69,6 @@ function AblationBlock({ ab }: { ab: NonNullable<MatchingResults['ablation']> })
           </tbody>
         </table>
       </div>
-    </>
-  );
-}
-
-function CalibrationBlock({ cal }: { cal: NonNullable<MatchingResults['calibration']> }) {
-  const r = cal.relevant;
-  return (
-    <>
-      <h3>Калибровка: балл подбора и вероятность</h3>
-      <p className={styles.soft}>
-        Сам балл формулы — не вероятность: в бине «0,4–0,5» подходят ~90 % профилей, в бине «0,0–0,1» — 13 %. Мы пересчитываем балл в вероятность
-        «кандидат релевантен» (изотоническая регрессия, кусочно-линейная таблица в коде). Разметка здесь синтетическая ({cal.profiles} профилей ×{' '}
-        {cal.vacancies} вакансий, {cal.pairsShown} показанных пар, скрытая истина генератора), а не исходы реальных приглашений: цифры показывают,
-        что механика работает, а не что вероятности верны в жизни. Таблица пересчитывается по исходам приглашений (eval/matching/outcomes.ts).
-      </p>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr><th>Бин балла</th><th className={styles.num}>Средний балл</th><th className={styles.num}>Доля релевантных</th><th className={styles.num}>n</th></tr>
-          </thead>
-          <tbody>
-            {r.curveBefore.map((b) => (
-              <tr key={b.lo}>
-                <td>{dec(b.lo)}–{dec(b.hi)}</td>
-                <td className={styles.num}>{b.meanScore === null ? '—' : dec(b.meanScore)}</td>
-                <td className={styles.num}>{b.share === null ? '—' : pct(b.share)}</td>
-                <td className={styles.num}>{b.n}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr><th>Цель</th><th className={styles.num}>Brier до</th><th className={styles.num}>Brier после (кросс-проверка)</th><th className={styles.num}>ECE до</th><th className={styles.num}>ECE после</th></tr>
-          </thead>
-          <tbody>
-            {([['Релевантен (≥ 1)', cal.relevant], ['Сильный (= 2)', cal.strong]] as const).map(([label, b]) => (
-              <tr key={label}>
-                <td>{label}</td>
-                <td className={styles.num}>{dec(b.holdout.brierBefore)}</td>
-                <td className={styles.num}>{dec(b.holdout.brierAfter)}</td>
-                <td className={styles.num}>{dec(b.before.ece)}</td>
-                <td className={styles.num}>{dec(b.afterInSample.ece)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className={styles.soft}>
-        Brier после: калибровка подобрана на половине вакансий, оценена на другой (и наоборот). ECE после — на всех парах, без отложенной выборки,
-        поэтому оптимистична. Для цели «сильный» выигрыша на отложенной половине нет — показываем вероятность только для «релевантен».
-      </p>
     </>
   );
 }
@@ -399,9 +347,8 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
           {matching.legacyExtended && <ExtendedBlock title="Тот же набор: BM25, случайный порядок, интервалы" ext={matching.legacyExtended} />}
           {matching.extended && <ExtendedBlock title="Расширенная синтетика" ext={matching.extended} />}
           {matching.ablation && <AblationBlock ab={matching.ablation} />}
-          {matching.calibration && <CalibrationBlock cal={matching.calibration} />}
           <h3>Как повторить (из platform/, без БД и сети)</h3>
-          <pre className={styles.code}>{'npx tsx eval/matching/run.ts --no-write\nnpx tsx eval/matching/ablation.ts --no-write\nnpx tsx eval/matching/calibration.ts --no-write'}</pre>
+          <pre className={styles.code}>{'npx tsx eval/matching/run.ts --no-write\nnpx tsx eval/matching/ablation.ts --no-write'}</pre>
           <p className={styles.soft}>
             Свой набор вакансий, кандидатов и разметки можно прогнать через то же ранжирование прямо на сайте — страница «Проверить на своих данных» (/evaluate)
             или POST /api/evaluate.

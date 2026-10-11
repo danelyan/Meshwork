@@ -10,17 +10,12 @@ import { catalogFromFile } from '../../src/server/claims/catalog-file';
 import { ABLATION_SIGNALS, dropUncovered, rankCandidates, type AblationSignal, type CandidateEvidence } from '../../src/server/employer/ranking';
 
 import { bootstrapDiff, bootstrapMean, ndcgAtK, precisionAtK, type Interval } from './metrics';
+import { toEvidence } from './evidence';
 import { generateSynthetic, SYN_SEED } from './synthetic';
 
 const REPS = 1000;
 const here = dirname(fileURLToPath(import.meta.url));
 const catalog = new Map(catalogFromFile().map((e) => [e.id, e]));
-const syn = generateSynthetic(SYN_SEED);
-const evidence: CandidateEvidence[] = syn.profiles.map((p) => ({
-  id: p.id, specialization: p.specialization, fspState: p.fspState, category: p.category,
-  claims: p.claims.map(([catalogId, level]) => ({ catalogId, level, statement: catalog.get(catalogId)?.statement ?? catalogId, quote: p.stack.join(', ') })),
-}));
-
 const SIGNAL_LABEL: Record<AblationSignal, string> = {
   coverage: 'покрытие требований вакансии',
   proven: 'доказанность (вес уровня подтверждения)',
@@ -32,47 +27,65 @@ const SIGNAL_LABEL: Record<AblationSignal, string> = {
   project: 'проверенный проект (ADR 0003)',
   calls: 'темы, подтверждённые созвоном (ADR 0003)',
 };
-/** Сигналы без данных в оценочном наборе: профили не несут проектов и созвонов — вклад в этом прогоне не измеряется. */
-const NOT_IN_SET: AblationSignal[] = ['project', 'calls'];
+/** Сигналы без данных в наборе без ступеней (withStages: false): проектов и созвонов там нет. */
+const STAGE_SIGNALS: AblationSignal[] = ['project', 'calls'];
 
 type Per = { p5: number[]; ndcg10: number[] };
-function run(ablate: AblationSignal[]): Per {
-  const per: Per = { p5: [], ndcg10: [] };
-  for (const v of syn.vacancies) {
-    const rel = syn.relevance[v.id] ?? {};
-    const ranked = dropUncovered(rankCandidates(evidence, {
-      specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: v.stack,
-    }, catalog, {}, { ablate })).map((r) => r.candidateId);
-    per.p5.push(precisionAtK(ranked, rel, 5));
-    per.ndcg10.push(ndcgAtK(ranked, rel, 10));
-  }
-  return per;
-}
-
-const full = run([]);
 export interface AblationRow { signal: AblationSignal | 'full'; label: string; p5: Interval; ndcg10: Interval; dP5: Interval | null; dNdcg10: Interval | null; measured: boolean }
-const rows: AblationRow[] = [{ signal: 'full', label: 'полная формула', p5: bootstrapMean(full.p5, REPS, SYN_SEED + 1), ndcg10: bootstrapMean(full.ndcg10, REPS, SYN_SEED + 2), dP5: null, dNdcg10: null, measured: true }];
-ABLATION_SIGNALS.forEach((s, i) => {
-  const a = run([s]);
-  // Δ = без сигнала − полная формула (отрицательная — сигнал помогает); парный бутстреп по вакансиям.
-  rows.push({
-    signal: s, label: SIGNAL_LABEL[s], p5: bootstrapMean(a.p5, REPS, SYN_SEED + 10 + i), ndcg10: bootstrapMean(a.ndcg10, REPS, SYN_SEED + 40 + i),
-    dP5: bootstrapDiff(a.p5, full.p5, REPS, SYN_SEED + 70 + i), dNdcg10: bootstrapDiff(a.ndcg10, full.ndcg10, REPS, SYN_SEED + 100 + i), measured: !NOT_IN_SET.includes(s),
+
+function table(withStages: boolean): { syn: ReturnType<typeof generateSynthetic>; rows: AblationRow[] } {
+  const syn = generateSynthetic(SYN_SEED, { withStages });
+  const evidence: CandidateEvidence[] = syn.profiles.map((p) => toEvidence(p, catalog));
+  const run = (ablate: AblationSignal[]): Per => {
+    const per: Per = { p5: [], ndcg10: [] };
+    for (const v of syn.vacancies) {
+      const rel = syn.relevance[v.id] ?? {};
+      const ranked = dropUncovered(rankCandidates(evidence, {
+        vacancyId: v.id, specialization: v.specialization, grade: v.grade, needs: v.needs.map(([catalogId, weight]) => ({ catalogId, weight })), stack: v.stack,
+      }, catalog, {}, { ablate })).map((r) => r.candidateId);
+      per.p5.push(precisionAtK(ranked, rel, 5));
+      per.ndcg10.push(ndcgAtK(ranked, rel, 10));
+    }
+    return per;
+  };
+  const full = run([]);
+  const rows: AblationRow[] = [{ signal: 'full', label: 'полная формула', p5: bootstrapMean(full.p5, REPS, SYN_SEED + 1), ndcg10: bootstrapMean(full.ndcg10, REPS, SYN_SEED + 2), dP5: null, dNdcg10: null, measured: true }];
+  ABLATION_SIGNALS.forEach((s, i) => {
+    const a = run([s]);
+    // Δ = без сигнала − полная формула (отрицательная — сигнал помогает); парный бутстреп по вакансиям.
+    rows.push({
+      signal: s, label: SIGNAL_LABEL[s], p5: bootstrapMean(a.p5, REPS, SYN_SEED + 10 + i), ndcg10: bootstrapMean(a.ndcg10, REPS, SYN_SEED + 40 + i),
+      dP5: bootstrapDiff(a.p5, full.p5, REPS, SYN_SEED + 70 + i), dNdcg10: bootstrapDiff(a.ndcg10, full.ndcg10, REPS, SYN_SEED + 100 + i), measured: withStages || !STAGE_SIGNALS.includes(s),
+    });
   });
-});
+  return { syn, rows };
+}
 
 const f = (x: number) => x.toFixed(3);
 const d = (i: Interval | null) => (i ? `${i.mean >= 0 ? '+' : ''}${f(i.mean)} [${f(i.lo)}; ${f(i.hi)}]` : '-');
-console.log(`Абляция: ${syn.profiles.length} профилей × ${syn.vacancies.length} вакансий, seed ${SYN_SEED}`);
-console.log('режим                                                P@5     nDCG@10  ΔP@5 [95 %]                ΔnDCG@10 [95 %]');
-for (const r of rows) console.log(`${r.label.padEnd(50)}  ${f(r.p5.mean)}   ${f(r.ndcg10.mean)}    ${d(r.dP5).padEnd(26)} ${d(r.dNdcg10)}${r.measured ? '' : '  (нет данных в наборе)'}`);
+function print(title: string, syn: { profiles: unknown[]; vacancies: unknown[] }, rows: AblationRow[]) {
+  console.log(`${title}: ${syn.profiles.length} профилей × ${syn.vacancies.length} вакансий, seed ${SYN_SEED}`);
+  console.log('режим                                                P@5     nDCG@10  ΔP@5 [95 %]                ΔnDCG@10 [95 %]');
+  for (const r of rows) console.log(`${r.label.padEnd(50)}  ${f(r.p5.mean)}   ${f(r.ndcg10.mean)}    ${d(r.dP5).padEnd(26)} ${d(r.dNdcg10)}${r.measured ? '' : '  (нет данных в наборе)'}`);
+}
+
+const base = table(false);
+const staged = table(true);
+print('Абляция, набор без ступеней (прежний)', base.syn, base.rows);
+console.log('');
+print('Абляция, набор с проектами и созвонами', staged.syn, staged.rows);
 
 if (!process.argv.includes('--no-write')) {
   const path = join(here, 'results.json');
   const prev = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+  const common = { seed: SYN_SEED, profiles: staged.syn.profiles.length, vacancies: staged.syn.vacancies.length, reps: REPS };
+  prev.ablationNoStages = {
+    note: 'Абляция на прежнем наборе (withStages: false): проектов и созвонов нет, строки project/calls помечены measured: false. Остальное как в ablation.',
+    ...common, rows: base.rows,
+  };
   prev.ablation = {
-    note: 'Абляция (скрипт eval/matching/ablation.ts): сигнал выключается через RankOptions.ablate, остальная формула прежняя. Δ = без сигнала − полная формула, парный бутстреп по 24 вакансиям, 1000 повторов, 95 %. Разметка — скрытая истина генератора (одна схема, не независимые эксперты); набор синтетический, проектов и созвонов в нём нет.',
-    seed: SYN_SEED, profiles: syn.profiles.length, vacancies: syn.vacancies.length, reps: REPS, rows,
+    note: `Абляция (скрипт eval/matching/ablation.ts): сигнал выключается через RankOptions.ablate, остальная формула прежняя. Δ = без сигнала − полная формула, парный бутстреп по ${staged.syn.vacancies.length} вакансиям, ${REPS} повторов, 95 %. Разметка - скрытая истина генератора (одна схема, не независимые эксперты). Набор с проектами у ${Math.round(100 * staged.syn.profiles.filter((p) => p.projects?.length).length / staged.syn.profiles.length)} % профилей и созвонами у ${Math.round(100 * staged.syn.profiles.filter((p) => p.callTopics).length / staged.syn.profiles.length)} % (шум ~10 %, допущения агента, не живые данные); прежний набор без ступеней - в ключе ablationNoStages.`,
+    ...common, rows: staged.rows,
   };
   writeFileSync(path, `${JSON.stringify(prev, null, 2)}\n`);
   console.log('\nзаписано: eval/matching/results.json (ключ ablation)');

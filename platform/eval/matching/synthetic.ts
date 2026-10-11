@@ -75,7 +75,33 @@ export interface SynProfile extends DemoProfile {
   text: string;
   /** Только у category_faked: подвид списывания. */
   cheat?: CheatKind;
+  /** Только при withStages (ADR 0003, ступень 2): проверенные проекты под вакансии. Скрытая истина не меняется. */
+  projects?: SynProject[];
+  /** Только при withStages (ступень 1): темы созвона с ИИ-интервьюером. Есть поле — созвон был (темы могут быть пустыми). */
+  callTopics?: SynCallTopic[];
 }
+
+/** Проверенный проект: доля пройденных скрытых тестов под одну вакансию. falseConfirm — шум: тесты прошёл без владения. */
+export interface SynProject { vacancyId: string; score: number; falseConfirm: boolean }
+/** Тема созвона: проверялась ли, подтвердил ли интервьюер (с шумом относительно латентного владения). */
+export interface SynCallTopic { catalogId: string; claimed: boolean; confirmed: boolean; noisy: boolean }
+
+/**
+ * Ступени проверки поверх набора (ADR 0003). Генерируются отдельным ГПСЧ (seed + STAGES_SALT) ПОСЛЕ основного набора и
+ * набора «списанных»: профили, утверждения, латентные навыки и разметка те же, что при withStages: false.
+ */
+export interface StagesOptions {
+  /** Доля профилей хотя бы с одним проектом. */
+  projectShare: number;
+  /** Доля профилей с созвоном. */
+  callShare: number;
+  /** Доля проектов, где тесты «пройдены» без владения (список/нейросеть). */
+  projectNoise: number;
+  /** Доля тем созвона с ошибкой интервьюера (не подтвердил владеющего / подтвердил не владеющего). */
+  callNoise: number;
+}
+export const STAGES_SALT = 9_100_003;
+export const DEFAULT_STAGES: StagesOptions = { projectShare: 0.3, callShare: 0.4, projectNoise: 0.1, callNoise: 0.1 };
 
 export interface SynSet {
   vacancies: SynVacancy[];
@@ -185,7 +211,50 @@ function profFor(e: CatalogEntry, a: number, g: SynGrade, inFocus: boolean, rnd:
   return clamp01(p + (rnd() - 0.5) * 0.3);
 }
 
-export function generateSynthetic(seed = SYN_SEED, opts: { faked?: FakedOptions } = {}): SynSet {
+/**
+ * Проекты и созвоны. Проект: score = доля скрытых тестов; у владеющего (покрытие вакансии по латентным навыкам, без штрафа
+ * грейда) — 0,15 + 0,85 × покрытие ± 0,08; с вероятностью projectNoise проект «пройден» без владения (score 0,7…0,95).
+ * Созвон: до 6 заявленных тем + до 2 незаявленных с высоким латентным владением; интервьюер подтверждает при владении ≥ 0,6,
+ * ошибается в callNoise случаев (подтвердил при владении < 0,45 либо не подтвердил при ≥ 0,6).
+ */
+function addStages(profiles: SynProfile[], vacancies: SynVacancy[], cat: CatalogEntry[], seed: number, o: StagesOptions): void {
+  const rnd = mulberry32(seed + STAGES_SALT);
+  const shuffle = <T,>(xs: T[]): T[] => xs.map((x) => ({ x, k: rnd() })).sort((a, b) => a.k - b.k).map((z) => z.x);
+  for (const p of profiles) {
+    // жребии бросаем для каждого профиля независимо от исхода: набор устойчив к правке долей
+    const hasProject = rnd() < o.projectShare;
+    const hasCall = rnd() < o.callShare;
+    if (hasProject) {
+      const same = vacancies.filter((v) => !p.specialization || v.specialization === p.specialization);
+      const n = 1 + (rnd() < 0.35 ? 1 : 0);
+      const chosen = shuffle(same).slice(0, n);
+      p.projects = chosen.map((v) => {
+        let num = 0, den = 0;
+        for (const [id, w] of v.needs) { num += w * clamp01(((p.latent[id] ?? 0) - TRUTH.mastery[0]) / (TRUTH.mastery[1] - TRUTH.mastery[0])); den += w; }
+        const cov = den ? num / den : 0;
+        const falseConfirm = rnd() < o.projectNoise;
+        const score = falseConfirm ? 0.7 + rnd() * 0.25 : clamp01(0.15 + 0.85 * cov + (rnd() - 0.5) * 0.16);
+        return { vacancyId: v.id, score: Math.round(score * 100) / 100, falseConfirm };
+      });
+    }
+    if (hasCall) {
+      const claimed = new Set(p.claims.map(([id]) => id));
+      const own = shuffle(p.claims.map(([id]) => id)).slice(0, 6);
+      const extra = cat.filter((e) => !claimed.has(e.id)).sort((a, b) => (p.latent[b.id] ?? 0) - (p.latent[a.id] ?? 0)).slice(0, 2).filter((e) => (p.latent[e.id] ?? 0) >= 0.6);
+      p.callTopics = [...own, ...extra.map((e) => e.id)].map((catalogId) => {
+        const l = p.latent[catalogId] ?? 0;
+        const err = rnd() < o.callNoise;
+        let confirmed = l >= 0.6;
+        let noisy = false;
+        if (err && l < 0.45) { confirmed = true; noisy = true; }
+        else if (err && l >= 0.6) { confirmed = false; noisy = true; }
+        return { catalogId, claimed: claimed.has(catalogId), confirmed, noisy };
+      });
+    }
+  }
+}
+
+export function generateSynthetic(seed = SYN_SEED, opts: { faked?: FakedOptions; withStages?: boolean | Partial<StagesOptions> } = {}): SynSet {
   let rnd = mulberry32(seed);
   const pick = <T,>(xs: T[]) => xs[Math.floor(rnd() * xs.length)]!;
   // Записи только для Senior (scripts/catalog-senior.json, 11.10) генератор не берёт: он строит окна по позиции записи,
@@ -325,6 +394,8 @@ export function generateSynthetic(seed = SYN_SEED, opts: { faked?: FakedOptions 
     for (const q of [...quota].sort((a, b) => b.r - a.r)) if (left-- > 0) q.n++;
     for (const q of quota) for (let n = 0; n < q.n; n++) profiles.push(build('category_faked', q.k));
   }
+
+  if (opts.withStages) addStages(profiles, vacancies, cat, seed, { ...DEFAULT_STAGES, ...(opts.withStages === true ? {} : opts.withStages) });
 
   const relevance: SynSet['relevance'] = {};
   for (const v of vacancies) {

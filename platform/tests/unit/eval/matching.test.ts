@@ -86,6 +86,61 @@ describe('eval/matching: синтетический набор', () => {
   });
 });
 
+describe('eval/matching: проекты и созвоны (withStages)', async () => {
+  const { catalogFromFile } = await import('../../../src/server/claims/catalog-file');
+  const { toEvidence } = await import('../../../eval/matching/evidence');
+  const { parseMatchingResults } = await import('../../../src/server/validation/matching-results');
+  const base = generateSynthetic(20261010);
+  const st = generateSynthetic(20261010, { withStages: true });
+  it('withStages: false не меняет набор; с флагом профили, латентные навыки и разметка те же', () => {
+    expect(JSON.stringify(generateSynthetic(20261010, { withStages: false }))).toBe(JSON.stringify(base));
+    expect(base.profiles.some((p) => p.projects || p.callTopics)).toBe(false);
+    expect(st.relevance).toEqual(base.relevance);
+    expect(st.profiles.map((p) => [p.id, p.claims, p.latent])).toEqual(base.profiles.map((p) => [p.id, p.claims, p.latent]));
+  });
+  it('детерминирован с флагом', () => {
+    expect(JSON.stringify(generateSynthetic(20261010, { withStages: true }))).toBe(JSON.stringify(st));
+  });
+  it('доли профилей с проектом и созвоном в допуске, шум ~10 %', () => {
+    const n = st.profiles.length;
+    const withProject = st.profiles.filter((p) => p.projects?.length).length / n;
+    const withCall = st.profiles.filter((p) => p.callTopics).length / n;
+    expect(withProject).toBeGreaterThan(0.22);
+    expect(withProject).toBeLessThan(0.38);
+    expect(withCall).toBeGreaterThan(0.33);
+    expect(withCall).toBeLessThan(0.47);
+    const projects = st.profiles.flatMap((p) => p.projects ?? []);
+    const noisy = projects.filter((x) => x.falseConfirm).length / projects.length;
+    expect(noisy).toBeGreaterThan(0.03);
+    expect(noisy).toBeLessThan(0.2);
+    for (const x of projects) { expect(x.score).toBeGreaterThanOrEqual(0); expect(x.score).toBeLessThanOrEqual(1); }
+    const topics = st.profiles.flatMap((p) => p.callTopics ?? []);
+    expect(topics.length).toBeGreaterThan(100);
+    expect(topics.filter((t) => t.noisy).length / topics.length).toBeLessThan(0.2);
+  });
+  it('слепок для формулы несёт проекты и созвон; без флага их нет', () => {
+    const catalog = new Map(catalogFromFile().map((e) => [e.id, e]));
+    const p = st.profiles.find((x) => x.projects?.length && x.callTopics)!;
+    const ev = toEvidence(p, catalog);
+    expect(ev.projects?.[0]?.vacancyId).toBe(p.projects![0]!.vacancyId);
+    expect(ev.calls?.qualifying?.confirmedCatalogIds.length).toBe(new Set(p.callTopics!.filter((t) => t.confirmed).map((t) => t.catalogId)).size);
+    const plain = toEvidence(base.profiles[0]!, catalog);
+    expect(plain.projects).toBeUndefined();
+    expect(plain.calls).toBeUndefined();
+  });
+  it('results.json читается парсером: ablation с измеренными проектом и созвоном, старые ключи на месте', async () => {
+    const raw = (await import('../../../eval/matching/results.json')).default as Record<string, unknown>;
+    expect(raw.extendedStages).toBeDefined();
+    expect(raw.ablationNoStages).toBeDefined();
+    const r = parseMatchingResults(raw);
+    expect(r.summary.profiles).toBeGreaterThan(0);
+    expect(r.ablation).not.toBeNull();
+    const rows = r.ablation!.rows;
+    expect(rows.find((x) => x.signal === 'project')!.measured).toBe(true);
+    expect(rows.find((x) => x.signal === 'calls')!.measured).toBe(true);
+  });
+});
+
 describe('ranking: режим абляции (RankOptions.ablate)', async () => {
   const { scoreCandidate, ABLATION_SIGNALS } = await import('../../../src/server/employer/ranking');
   const { catalogFromFile } = await import('../../../src/server/claims/catalog-file');

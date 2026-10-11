@@ -1,0 +1,19 @@
+{
+  "id": "eng-sre-senior-resilience",
+  "subcategoryId": "engineering.sre",
+  "specialization": "engineering",
+  "grade": "senior",
+  "title": "Клиент к нестабильной зависимости: breaker, ретраи с бюджетом, load shedding",
+  "summary": "Circuit breaker с окном ошибок и half-open, повторы с экспоненциальной паузой и бюджетом, приём по приоритетам на фейковых часах; DESIGN.md",
+  "stack": ["python312", "pytest"],
+  "catalogIds": ["eng.retries-resilience", "eng.observability", "eng.capacity-planning", "common.unit-tests"],
+  "image": "python312",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 90,
+  "timeBudgetMin": 420,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

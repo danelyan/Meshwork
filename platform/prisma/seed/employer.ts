@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 
 import type { Specialization } from '../../src/lib/directions';
 import { catalogFromFile } from '../../src/server/claims/catalog-file';
+import { resumeFor } from './resumes';
 
 /**
  * Сид lane employer: синтетические демо-кандидаты с подтверждёнными утверждениями
@@ -90,7 +91,8 @@ export const DEMO_NEED_DETAILS: Record<string, { teamDescription: string; stack:
 };
 
 const SOURCE_FOR: Record<Level, { kind: 'resume' | 'github' | 'codeforces'; ref: (id: string) => string }> = {
-  self_reported: { kind: 'resume', ref: () => 'cv-demo.pdf#p1' },
+  // Источник — резюме кандидата (prisma/seed/resumes.ts); имя файла подставляет seedPoolProfiles.
+  self_reported: { kind: 'resume', ref: (id) => `${id}-resume.md#p1` },
   artifact: { kind: 'github', ref: (id) => `github:demo/${id}#README` },
   third_party: { kind: 'codeforces', ref: () => 'codeforces:demo' },
   platform: { kind: 'resume', ref: () => 'platform:defense' },
@@ -116,13 +118,21 @@ export async function seedPoolProfiles(prisma: PrismaClient, profiles: DemoProfi
     });
     await prisma.claim.deleteMany({ where: { candidateId: p.id } });
     await prisma.candidateCategory.deleteMany({ where: { candidateId: p.id } });
+    const resume = resumeFor(p, (id) => {
+      const e = catalog.get(id);
+      if (!e) throw new Error(`seed(employer): нет записи каталога ${id}`);
+      return e.statement;
+    });
     for (const [catalogId, level] of p.claims) {
       const entry = catalog.get(catalogId);
       if (!entry) throw new Error(`seed(employer): нет записи каталога ${catalogId}`);
       const src = SOURCE_FOR[level];
+      // С опорой на резюме цитата — дословная строка резюме; у остальных уровней прежний демо-текст.
+      const quote = level === 'self_reported' ? resume.lines[catalogId] : demoQuote(p, entry.statement);
+      if (!quote) throw new Error(`seed(employer): у ${p.id} нет строки резюме для ${catalogId}`);
       await prisma.claim.create({
         data: {
-          candidateId: p.id, catalogId, statement: entry.statement, level, quote: demoQuote(p, entry.statement),
+          candidateId: p.id, catalogId, statement: entry.statement, level, quote,
           sourceRef: src.ref(p.id), sourceKind: src.kind, confidence: 'high', limits: entry.limits,
           suggestedProof: entry.proof, status: 'confirmed', confirmedAt: now,
         },

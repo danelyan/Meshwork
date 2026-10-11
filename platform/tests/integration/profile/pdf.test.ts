@@ -79,6 +79,19 @@ describe('GET /api/profile/pdf (БД)', () => {
     expect(Buffer.from(await res.arrayBuffer()).length).toBeGreaterThan(1024);
   });
 
+  it('попытка другого грейда или другой подкатегории в окне выдачи - не источник версии', async () => {
+    await prisma.testAttempt.deleteMany({ where: { candidateId: 'owner' } });
+    await prisma.candidateCategory.updateMany({ where: { candidateId: 'owner' }, data: { grade: 'middle', subcategoryId: 'backend.web-api' } });
+    const base = { candidateId: 'owner', specialization: 'backend' as const, status: 'passed' as const, expiresAt: new Date('2026-10-05T11:00:00.000Z'), startedAt: new Date('2026-10-05T09:40:00.000Z') };
+    // Пройденная попытка своего грейда в окне выдачи, но без подкатегории, а категория её хранит - источника нет.
+    await prisma.testAttempt.create({ data: { ...base, id: 'att-mid-v7', grade: 'middle', policyVersion: 'adr-0002-v7', seed: 2, finishedAt: new Date('2026-10-05T09:59:30.000Z') } });
+    expect(await loadCategoryProvenance('owner')).toEqual({ subcategoryId: 'backend.web-api', policyVersion: null });
+    await prisma.testAttempt.update({ where: { id: 'att-mid-v7' }, data: { subcategoryId: 'backend.web-api' } });
+    // Пройденная попытка на другой грейд ровно в момент выдачи не перебивает попытку своего грейда.
+    await prisma.testAttempt.create({ data: { ...base, id: 'att-jun-v6', subcategoryId: 'backend.web-api', grade: 'junior', policyVersion: 'adr-0002-v6', seed: 3, finishedAt: new Date('2026-10-05T10:00:00.000Z') } });
+    expect(await loadCategoryProvenance('owner')).toEqual({ subcategoryId: 'backend.web-api', policyVersion: 'adr-0002-v7' });
+  });
+
   it('категория без попытки в окне выдачи: версия политики не сохранена (null)', async () => {
     await prisma.testAttempt.deleteMany({ where: { candidateId: 'owner' } });
     expect(await loadCategoryProvenance('owner')).toEqual({ subcategoryId: null, policyVersion: null });

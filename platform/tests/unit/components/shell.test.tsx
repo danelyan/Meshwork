@@ -83,11 +83,25 @@ describe('SiteHeader', () => {
     expect(h.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');
     expect(h.getByRole('link', { name: 'Подборка' }).getAttribute('aria-current')).toBeNull();
     cleanup();
-    h = await renderHeader(principal('employer'), '/employer/saved');
-    expect(h.getByRole('link', { name: 'Поиск по базе' }).getAttribute('aria-current')).toBe('page');
+    h = await renderHeader(principal('candidate'), '/interview');
+    expect(h.getByRole('link', { name: 'Консультант' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it('у раздела со своим пунктом в сайдбаре шапка ничего не подсвечивает (не спорит с сайдбаром)', async () => {
+    const roles = (role: 'candidate' | 'employer') => ({ userName: 'Анна', email: 'a@x.ru', roles: { role, otherExists: false, canCreateOther: true, companyName: role === 'employer' ? 'Северный Поток' : null } });
+    for (const path of ['/skills', '/career', '/saved', '/settings', '/interview']) {
+      const h = await renderHeader(principal('candidate'), path, roles('candidate'));
+      expect(h.queryAllByRole('link').filter((a) => a.getAttribute('aria-current') === 'page')).toHaveLength(0);
+      cleanup();
+    }
+    let h = await renderHeader(principal('employer'), '/employer/saved', roles('employer'));
+    expect(h.queryAllByRole('link').filter((a) => a.getAttribute('aria-current') === 'page')).toHaveLength(0);
     cleanup();
-    h = await renderHeader(principal('candidate'), '/skills');
-    expect(h.getByRole('link', { name: 'Профиль' }).getAttribute('aria-current')).toBe('page');
+    h = await renderHeader(principal('employer'), '/employer/needs/n1', roles('employer'));
+    expect(h.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');
+    cleanup();
+    h = await renderHeader(principal('employer'), '/consultant', roles('employer'));
+    expect(h.getByText('для работодателей')).toBeDefined();
   });
 
   it('шапка и сайдбар берут подписи из одного списка', () => {

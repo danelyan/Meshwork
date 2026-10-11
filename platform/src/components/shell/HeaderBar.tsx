@@ -5,14 +5,13 @@ import { usePathname } from 'next/navigation';
 
 import type { HeaderAccount } from '@/server/auth/role-plan';
 
-import { HOME_ANCHORS, activeLinkHref, type NavLink } from './nav';
+import { HOME_ANCHORS, activeLinkHref, navFor, type NavLink } from './nav';
 import { LogoutButton } from './LogoutButton';
 import { Brand } from './Brand';
 import { OnboardingBanner } from './OnboardingBanner';
 import { AccountMenu } from './AccountMenu';
 import { ThemeToggle } from './ThemeToggle';
 import { Notifications } from './Notifications';
-import { dashboardPath } from './DashboardFrame';
 import styles from './shell.module.css';
 
 /**
@@ -22,13 +21,13 @@ import styles from './shell.module.css';
 export function HeaderBar({ signedIn, links, account = null }: { signedIn: boolean; links: NavLink[]; account?: HeaderAccount | null }) {
   const pathname = usePathname();
   const home = pathname === '/';
-  const active = activeLinkHref(pathname, links);
-  const cabinet = dashboardPath(pathname) && !!account?.roles;
+  const role = account?.roles?.role ?? null;
+  const active = activeLinkHref(pathname, links, navFor(role));
   return (
     <>
       <header className={styles.header}>
         <Brand />
-        {cabinet && account?.roles?.role === 'employer' && <span className={styles.employerBadge}>для работодателей</span>}
+        {role === 'employer' && <span className={styles.employerBadge}>для работодателей</span>}
         {links.length > 0 ? (
           <nav className={styles.nav} aria-label="Основная навигация">
             {links.map((l) => (

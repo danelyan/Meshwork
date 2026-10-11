@@ -79,12 +79,17 @@ const TAB_ALIASES: Record<string, string[]> = {
 
 const under = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-/** `href` вкладки, активной на маршруте: прямое совпадение (самое длинное), иначе псевдоним подраздела. */
-export function activeLinkHref(pathname: string, links: NavLink[]): string | undefined {
+/**
+ * `href` вкладки, активной на маршруте: прямое совпадение (самое длинное), иначе псевдоним подраздела.
+ * `sections` — все разделы роли (сайдбар): у раздела со своим пунктом псевдонима нет, иначе шапка и сайдбар
+ * подсвечивали бы разное («Профиль» и «Моя карта» на одном экране).
+ */
+export function activeLinkHref(pathname: string, links: NavLink[], sections: NavLink[] = []): string | undefined {
   const direct = links
     .filter((l) => (l.exact ? pathname === l.href : under(pathname, l.href)))
     .sort((a, b) => b.href.length - a.href.length)[0];
   if (direct) return direct.href;
+  if (sections.some((l) => (l.exact ? pathname === l.href : under(pathname, l.href)))) return undefined;
   const alias = Object.keys(TAB_ALIASES).find((k) => under(pathname, k));
   return alias ? TAB_ALIASES[alias]?.find((t) => links.some((l) => l.href === t)) : undefined;
 }

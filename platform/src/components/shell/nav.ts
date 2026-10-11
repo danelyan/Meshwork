@@ -23,6 +23,7 @@ export const CANDIDATE_NAV: NavItem[] = [
   { href: '/projects', icon: '▤', label: 'Проекты', header: true },
   { href: '/invitations', icon: '✉', label: 'Приглашения', header: true },
   { href: '/career', icon: '◇', label: 'Вакансии' },
+  { href: '/companies', icon: '▣', label: 'Компании' },
   { href: '/profile', icon: '○', label: 'Профиль', header: true },
   { href: '/interview', icon: '▷', label: 'Созвон с ИИ' },
   { href: '/saved', icon: '☆', label: 'Избранное' },

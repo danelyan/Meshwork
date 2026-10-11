@@ -3,7 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { CandidateMatchCard } from '@/components/employer/CandidateMatchCard';
 import { FilterForm } from '@/components/employer/FilterForm';
 import { IncomingInvitations } from '@/components/employer/IncomingInvitations';
-import { InviteForm } from '@/components/employer/InviteForm';
+import { InviteContactProvider } from '@/components/employer/InviteContactContext';
+import { InviteForm, NO_COMPANY_CONTACT_NOTICE } from '@/components/employer/InviteForm';
 import { VacancyForm, type CatalogOption } from '@/components/employer/VacancyForm';
 import type { MatchItem } from '@/server/employer/matching';
 import type { CandidateInvitationView } from '@/server/employer/invitations';
@@ -148,8 +149,29 @@ describe('кабинет работодателя: компоненты', () => 
     expect((screen.getByRole('radio', { name: 'Frontend' }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText(/Стек/) as HTMLInputElement).value).toBe('React');
     expect((screen.getByLabelText('Достижения ФСП') as HTMLInputElement).checked).toBe(true);
-    // без теста - только по явному переключателю, по умолчанию снят (ТЗ 2.1)
-    expect((screen.getByLabelText('Показать и без теста') as HTMLInputElement).checked).toBe(false);
+    // M05: расширение пула — отдельная явная галочка, по умолчанию выключена
+    const pool = screen.getByLabelText('Расширить: кандидаты без категории из теста') as HTMLInputElement;
+    expect(pool.checked).toBe(false);
+    expect(pool.name).toBe('pool');
+    expect(pool.value).toBe('all');
+    cleanup();
+    render(<FilterForm action="/employer/search" filters={{ expandPool: true }} />);
+    expect((screen.getByLabelText('Расширить: кандидаты без категории из теста') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('приглашение без способа связи компании (E05): заметка со ссылкой на «Компанию», кнопка отправки закрыта; с контактом — открыта', () => {
+    const fetchFn = stubFetch({ id: 'inv', status: 'sent' });
+    render(<InviteContactProvider value={null}><InviteForm candidateId="c1" candidateName="Кандидат #A" vacancyId="v1" /></InviteContactProvider>);
+    fireEvent.click(screen.getByRole('button', { name: 'Пригласить: Кандидат #A' }));
+    expect(screen.getByRole('alert').textContent).toContain(NO_COMPANY_CONTACT_NOTICE);
+    expect((screen.getByRole('link', { name: '«Компания»' }) as HTMLAnchorElement).getAttribute('href')).toBe('/employer/company');
+    expect((screen.getByRole('button', { name: 'Отправить приглашение' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(fetchFn).not.toHaveBeenCalled();
+    cleanup();
+    render(<InviteContactProvider value="hr@example.com"><InviteForm candidateId="c1" candidateName="Кандидат #A" vacancyId="v1" /></InviteContactProvider>);
+    fireEvent.click(screen.getByRole('button', { name: 'Пригласить: Кандидат #A' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect((screen.getByRole('button', { name: 'Отправить приглашение' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('форма потребности: требования из каталога, проверка вилки, POST', async () => {

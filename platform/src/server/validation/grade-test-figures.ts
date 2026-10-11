@@ -1,46 +1,46 @@
-// Цифры теста на грейд для /validation. Политика adr-0002-v7 (11.10.2026).
-// SYNTHETIC читается из закоммиченного eval/test/results.json (пишет `eval/test/run.ts --json`): среднее по подкатегориям,
-// модель ошибки «экземпляр» (σ = 0,2). PERSONAS — константы из прогона `eval/test/subcategory-personas.ts` (см. ниже):
-// у него нет JSON-вывода, поэтому после перепрогона обновляйте их вместе с разделом docs/validation-results.md.
+// Цифры теста на грейд для /validation — ЕДИНСТВЕННЫЙ источник чисел страницы.
+// Источник: перемер политики adr-0002-v7 11.10.2026 (docs/validation-results.md, раздел «Перемер политики v7»):
+// сводный JSON — platform/eval/test/results.json (run.ts, 18 подкатегорий); строки по специализациям — тот же run.ts
+// с --spec (средние по подкатегориям специализации); персоны — eval/test/subcategory-personas.ts, среднее по 18 подкатегориям.
+// Перепрогнали eval — обновите этот файл и раздел docs в одном коммите. Все числа — синтетика: популяции θ и персоны
+// заданы агентом, параметры заданий экспертные; на людях не проверено.
 
-import raw from '../../../eval/test/results.json';
+export const GRADE_TEST_DOC = 'docs/validation-results.md, раздел «Перемер политики v7 (11.10)»; platform/eval/test/results.json';
+export const GRADE_TEST_POLICY =
+  'adr-0002-v7: пороги Junior −0,7, Middle −0,1, Senior +0,8; подтверждение при P ≥ 0,8; 7–10 заданий, остановка по SE 0,4, дозадавание до 3; ротация семейств между попытками, индекс честности, общие компетенции в пуле подкатегории';
 
-import { DEFAULT_ITEM_LIMITS, formatItemRange } from '@/lib/test-limits';
-
-import { parseLengthBlock } from './length-sweep';
-
-export const GRADE_TEST_DOC = 'docs/validation-results.md, раздел «Версии политики теста на грейд» и § «Повторяемость на втором банке»';
-export const GRADE_TEST_POLICY = `adr-0002-v7 (11.10): порог Junior −0,7, Middle −0,1, Senior +0,8, порог подтверждения 0,8, ${formatItemRange(DEFAULT_ITEM_LIMITS)} заданий + дозадавание, пул — подкатегория (26–27 семейств)`;
-
-/**
- * Персоны: профили знаний по семействам подкатегории (не легенды людей), одни и те же на каждой подкатегории.
- * Источник: `npx tsx eval/test/subcategory-personas.ts --spec <backend|frontend|ai|engineering> --n 1000 --seed 1`
- * (11.10, adr-0002-v7), 18 подкатегорий; в строках — среднее по подкатегориям, в скобках минимум и максимум.
- */
+/** Персоны по подкатегориям: вымышленные кандидаты с моделью знаний, заданной агентом; seed 1, N = 1000 на персону и заявленный грейд, среднее по 18 подкатегориям. */
 export interface PersonaRow {
   id: string;
   legend: string;
   truth: 'ниже Junior' | 'Junior' | 'Middle' | 'Senior';
-  /** Заявил Junior → подтверждён Junior: среднее, минимум, максимум по подкатегориям. */
-  pJunior: [number, number, number];
+  /** Заявил Junior → подтверждён Junior. */
+  pJunior: number;
   /** Заявил Middle → подтверждён Middle. */
-  pMiddle: [number, number, number];
+  pMiddle: number;
+  /** Заявил Senior → подтверждён Senior. */
+  pSenior: number;
 }
 
 export const PERSONAS: PersonaRow[] = [
-  { id: 'N0', legend: 'новичок: решает половину простых тем наугад', truth: 'ниже Junior', pJunior: [0, 0, 0], pMiddle: [0, 0, 0] },
-  { id: 'N1', legend: 'пограничный новичок: уверенно только базовые темы', truth: 'ниже Junior', pJunior: [0.062, 0.02, 0.2], pMiddle: [0, 0, 0] },
-  { id: 'J', legend: 'Junior: уверенно Junior-темы, Middle-темы наполовину', truth: 'Junior', pJunior: [0.991, 0.97, 1], pMiddle: [0.057, 0.01, 0.15] },
-  { id: 'M', legend: 'Middle: Junior-темы все, Middle-темы почти все', truth: 'Middle', pJunior: [1, 1, 1], pMiddle: [0.991, 0.93, 1] },
-  { id: 'S', legend: 'Senior: все темы Junior и Middle, почти все Senior', truth: 'Senior', pJunior: [1, 1, 1], pMiddle: [1, 1, 1] },
+  { id: 'N0', legend: 'новичок', truth: 'ниже Junior', pJunior: 0.0, pMiddle: 0.0, pSenior: 0.0 },
+  { id: 'N1', legend: 'пограничный новичок', truth: 'ниже Junior', pJunior: 0.06, pMiddle: 0.0, pSenior: 0.0 },
+  { id: 'J', legend: 'Junior', truth: 'Junior', pJunior: 0.99, pMiddle: 0.06, pSenior: 0.0 },
+  { id: 'Jw', legend: 'Junior с одной слабой темой', truth: 'Junior', pJunior: 0.97, pMiddle: 0.08, pSenior: 0.0 },
+  { id: 'JI', legend: 'идеальный Junior (контроль)', truth: 'Junior', pJunior: 1.0, pMiddle: 0.0, pSenior: 0.0 },
+  { id: 'M', legend: 'Middle', truth: 'Middle', pJunior: 1.0, pMiddle: 0.99, pSenior: 0.02 },
+  { id: 'Mw', legend: 'Middle с одной слабой темой', truth: 'Middle', pJunior: 1.0, pMiddle: 0.99, pSenior: 0.03 },
+  { id: 'S', legend: 'Senior', truth: 'Senior', pJunior: 1.0, pMiddle: 1.0, pSenior: 0.99 },
 ];
 
-/** θ-синтетика: N = 2000 на подкатегорию, seed 1, текущая механика (дозадавание включено). Доли — от 0 до 1. */
+/** Разброс по подкатегориям и строки, где ложное подтверждение старшего грейда выше цели 0,10 (11 из 144). */
+export const PERSONA_NOTE =
+  'Честные персоны подтверждают свой грейд не ниже цели во всех 18 подкатегориях (Junior и Middle ≥ 0,90, «с одной слабой темой» ≥ 0,85, Senior ≥ 0,93). Ложное подтверждение старшего грейда выше 0,10 — в 11 строках из 144: худшее 0,22 (ai.mlops, «Junior с одной слабой темой» → Middle), пограничный новичок → Junior до 0,20 (ai.bi-analytics) и 0,12 (backend.data-model), «Middle с одной слабой темой» → Senior 0,11 (backend.web-api). Это свойство банка подкатегории на синтетике, а не измерение на людях.';
+
+/** θ-синтетика: N = 2000 на подкатегорию, seed 1, политика v7; строка — среднее по подкатегориям специализации. Доли — от 0 до 1. */
 export interface SyntheticRow {
-  setting: 'strict' | 'competitor';
-  label: string;
-  /** Подкатегорий в усреднении. */
-  subcategories: number;
+  population: 'persona' | 'legacy';
+  specialization: 'backend' | 'frontend' | 'ai' | 'engineering';
   falseConfirm: number;
   falseReject: number;
   /** Совпадение исхода двух попыток с разными вариантами заданий (test-retest). */
@@ -49,50 +49,21 @@ export interface SyntheticRow {
   kappa: number;
   /** Средняя длина теста, заданий. */
   length: number;
-  /** Ложное подтверждение, если кандидат знает трюк по 30 % шаблонов; в постановке конкурентов не считается. */
-  leak30: number | null;
-  /** AUC θ̂ Middle против Junior и Junior против новичка (в постановке конкурентов Junior/новичок не считается). */
+  /** Ложное подтверждение, если кандидат знает трюк по 30 % шаблонов (атака утечкой). */
+  leak30: number;
+  /** Ложное подтверждение при «лучшей из 3 попыток» с обучением между ними. */
+  bestOf3: number;
+  /** AUC θ̂ Middle против Junior (популяции пересекаются). */
   aucMiddleJunior: number;
-  aucJuniorNovice: number | null;
 }
 
-type SummaryEntry = { mean: number };
-const instance = raw.summary.instance as unknown as Record<string, SummaryEntry>;
-const m = (key: string): number => {
-  const e = instance[key];
-  if (!e) throw new Error(`results.json: нет ${key}`);
-  return e.mean;
-};
-const subs = raw.subcategories as unknown as { byError: { instance: { strict: { auc: { juniorVsNovice: number } } } } }[];
-const aucJuniorNovice = Math.round((subs.reduce((a, x) => a + x.byError.instance.strict.auc.juniorVsNovice, 0) / subs.length) * 1000) / 1000;
-
 export const SYNTHETIC: SyntheticRow[] = [
-  {
-    setting: 'strict',
-    label: 'Строгая: истина — метка популяции',
-    subcategories: subs.length,
-    falseConfirm: m('strict.falsePass'),
-    falseReject: m('strict.falseFail'),
-    retest: m('strict.retest.decisionAgreement'),
-    kappa: m('strict.retest.kappaBinary'),
-    length: m('strict.length.mean'),
-    leak30: m('strict.leak.falsePass'),
-    aucMiddleJunior: m('strict.auc.middleVsJunior'),
-    aucJuniorNovice,
-  },
-  {
-    setting: 'competitor',
-    label: 'Постановка конкурентов: θ ~ N(0; 1)',
-    subcategories: subs.length,
-    falseConfirm: m('competitor.falsePass'),
-    falseReject: m('competitor.falseFail'),
-    retest: m('competitor.retest.decisionAgreement'),
-    kappa: m('competitor.retest.kappaBinary'),
-    length: m('competitor.length.mean'),
-    leak30: null,
-    aucMiddleJunior: m('competitor.aucByBand.middleVsJunior'),
-    aucJuniorNovice: null,
-  },
+  { population: 'persona', specialization: 'backend', falseConfirm: 0.291, falseReject: 0.322, retest: 0.722, kappa: 0.441, length: 8.62, leak30: 0.46, bestOf3: 0.704, aucMiddleJunior: 0.646 },
+  { population: 'persona', specialization: 'frontend', falseConfirm: 0.304, falseReject: 0.31, retest: 0.702, kappa: 0.404, length: 8.51, leak30: 0.482, bestOf3: 0.691, aucMiddleJunior: 0.662 },
+  { population: 'persona', specialization: 'ai', falseConfirm: 0.303, falseReject: 0.314, retest: 0.712, kappa: 0.423, length: 8.32, leak30: 0.461, bestOf3: 0.667, aucMiddleJunior: 0.669 },
+  { population: 'persona', specialization: 'engineering', falseConfirm: 0.285, falseReject: 0.335, retest: 0.703, kappa: 0.402, length: 8.54, leak30: 0.444, bestOf3: 0.647, aucMiddleJunior: 0.656 },
+  { population: 'legacy', specialization: 'backend', falseConfirm: 0.056, falseReject: 0.546, retest: 0.777, kappa: 0.411, length: 8.93, leak30: 0.139, bestOf3: 0.303, aucMiddleJunior: 0.883 },
+  { population: 'legacy', specialization: 'frontend', falseConfirm: 0.069, falseReject: 0.521, retest: 0.775, kappa: 0.425, length: 8.73, leak30: 0.145, bestOf3: 0.288, aucMiddleJunior: 0.886 },
 ];
 
 /** Цели из плана проверки (docs/validation-plan.md) — подпись столбцов. */
@@ -102,19 +73,13 @@ export const TARGETS = {
   retest: '≥ 90 %',
   kappa: '≥ 0,70',
   auc: '≥ 0,90',
-  length: `${formatItemRange(DEFAULT_ITEM_LIMITS)} + до 3`,
+  length: '7–10 + до 3',
 } as const;
 
-/** Команды воспроизведения из platform/ (без LLM, без БД; run.ts ≈ 3 мин, персоны ≈ 1 мин на направление). */
+/** Команды воспроизведения из platform/ (без LLM, без БД; полный прогон ≈ 50 с, персоны ≈ 20 с на специализацию). */
 export const GRADE_TEST_COMMANDS = [
   'npx tsx eval/test/run.ts --n 2000 --json eval/test/results.json',
-  'npx tsx eval/test/subcategory-personas.ts --spec backend --n 1000 --seed 1',
-  'npx tsx eval/test/subcategory-personas.ts --spec frontend --n 1000 --seed 1',
-  'npx tsx eval/test/subcategory-personas.ts --spec ai --n 1000 --seed 1',
-  'npx tsx eval/test/subcategory-personas.ts --spec engineering --n 1000 --seed 1',
-  'npx tsx eval/test/length-sweep.ts   # лимиты длины 7–10 … 12–16, ≈ 4 мин',
-  'npx tsx eval/test/bank-width.ts',
+  'npx tsx eval/test/run.ts --n 2000 --seed 1 --spec backend                      # и frontend, ai, engineering',
+  'npx tsx eval/test/run.ts --n 2000 --seed 1 --spec backend --population legacy',
+  'npx tsx eval/test/subcategory-personas.ts --spec backend --n 1000 --seed 1     # и frontend, ai, engineering',
 ];
-
-/** «Длина теста и надёжность»: lengthSweep и bankWidth из results.json (eval/test/length-sweep.ts, bank-width.ts). */
-export const LENGTH_BLOCK = parseLengthBlock(raw);

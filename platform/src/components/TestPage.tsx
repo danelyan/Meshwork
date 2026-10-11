@@ -19,7 +19,6 @@ import {
 import { GRADE_LABEL, GRADES, isGrade, type Grade } from '@/lib/grades';
 import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, subcategoriesFor, subcategoryLabel, type Specialization } from '@/lib/directions';
 import { formatDate } from '@/lib/labels';
-import { DEFAULT_ITEM_LIMITS, formatItemRange, type ItemLimits } from '@/lib/test-limits';
 
 import { ObjectionButton } from './consent/ObjectionButton';
 import { useBareShell } from './shell/ShellFrame';
@@ -197,12 +196,9 @@ export function JuryResultPlate({ jury }: { jury: JuryResult }) {
 function IntroScreen({
   onStart,
   initial,
-  itemLimits,
 }: {
   onStart: (s: Spec, g: Grade, sub: string | null) => Promise<void>;
   initial: { spec: Spec | null; grade: Grade | null };
-  /** Лимиты основной фазы из policy (с учётом TEST_ITEM_LIMITS) — для текста «N–M коротких заданий». */
-  itemLimits: ItemLimits;
 }) {
   const [spec, setSpec] = useState<Spec>(initial.spec ?? 'backend');
   const [grade, setGrade] = useState<Grade>(initial.grade ?? 'junior');
@@ -258,9 +254,9 @@ function IntroScreen({
         <Kicker>Тест на грейд</Kicker>
         <h1 className={styles.h1}>Тест на грейд<i>.</i></h1>
         <p className={`${ui.muted} ${styles.lead}`}>
-          {formatItemRange(itemLimits)} коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
-          даёт только этот тест; выбор грейда - за вами. Результат - предварительная калибровка: грейд подтверждается на созвоне с ИИ-интервьюером, в проекте и
-          на защите.
+          7–10 коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
+          (направление × грейд) даёт только этот тест; выбор грейда - за вами. Созвон с ИИ, проект и защита - дополнительные проверки опыта: они
+          подтверждают утверждения профиля и видны работодателю, но для категории не обязательны.
         </p>
       </div>
 
@@ -545,8 +541,8 @@ function ResultScreen({
         </p>
         <dl className={styles.facts}>
           <div>
-            <dt>Вероятность, что уровень не ниже {grade}</dt>
-            <dd>{Math.round(r.pPass * 100)} %</dd>
+            <dt>Уверенность в {grade}</dt>
+            <dd>{Math.round(r.pPass * 100)}%</dd>
           </div>
           {attempt.grade !== 'junior' && (
             <div>
@@ -559,9 +555,6 @@ function ResultScreen({
             <dd>{r.answered}</dd>
           </div>
         </dl>
-        <p className={ui.muted} data-testid="confidence-note">
-          Это уверенность теста по вашим ответам, а не вероятность найма.
-        </p>
         <p className={ui.muted}>
           <ObjectionButton subject="grade_test" subjectId={attempt.id} />
         </p>
@@ -578,6 +571,30 @@ function ResultScreen({
                 Пройти подтверждающий тест
               </Button>
             )}
+          </div>
+        )}
+        {r.integrity?.rankingHold && !needsConfirmation && (
+          <div className={styles.offer} data-testid="ranking-hold">
+            <p>
+              <b>Категория записана, но в подборках и поиске компаний пока не учитывается.</b> В этой попытке есть признаки, которые мы просим
+              подтвердить отдельно. Это не обвинение и не снятие грейда: категория в профиле остаётся. Подтвердить её можно двумя способами:
+              короткий подтверждающий тест из 6–8 новых заданий или созвон с ИИ с разбором заданий этой попытки. Не согласны с оценкой -
+              оспорьте её выше, ответит человек.
+            </p>
+            <div className={styles.actions}>
+              {r.integrity.confirmAttemptId ? (
+                <Button variant="cta" href={`/test?attempt=${encodeURIComponent(r.integrity.confirmAttemptId)}`} data-testid="confirm-open">
+                  Открыть подтверждающий тест
+                </Button>
+              ) : (
+                <Button variant="cta" onClick={() => void startConfirm()} loading={pending} data-testid="confirm-start">
+                  Пройти подтверждающий тест
+                </Button>
+              )}
+              <Button href="/interview" data-testid="ranking-hold-call">
+                Созвон с ИИ
+              </Button>
+            </div>
           </div>
         )}
         {r.juniorOffered && !needsConfirmation && (
@@ -632,8 +649,7 @@ function ResultScreen({
   );
 }
 
-/** itemLimits — действующие лимиты длины (страница передаёт activeItemLimits()); без пропа — дефолт policy. */
-export function TestPage({ itemLimits = DEFAULT_ITEM_LIMITS }: { itemLimits?: ItemLimits } = {}) {
+export function TestPage() {
   const params = useSearchParams();
   const router = useRouter();
   const attemptParam = params.get('attempt');
@@ -697,7 +713,7 @@ export function TestPage({ itemLimits = DEFAULT_ITEM_LIMITS }: { itemLimits?: It
     );
   }
   if (!attempt) {
-    return <IntroScreen onStart={start} itemLimits={itemLimits} initial={{ spec: isSpec(initialSpec) ? initialSpec : null, grade: isGrade(initialGrade) ? initialGrade : null }} />;
+    return <IntroScreen onStart={start} initial={{ spec: isSpec(initialSpec) ? initialSpec : null, grade: isGrade(initialGrade) ? initialGrade : null }} />;
   }
   if (attempt.status === 'active' && attempt.current) {
     return (

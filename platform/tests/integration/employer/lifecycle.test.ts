@@ -45,6 +45,7 @@ async function seed() {
     await prisma.user.create({ data: { id: `u-${id}`, name: id, role: 'candidate', candidateId: id } });
   }
   for (const x of ['a', 'b', 'c']) {
+    // E05: без контакта компании (или почты отправителя) приглашение не уходит — фикстура задаёт контакт
     await prisma.company.create({ data: { id: `co-${x}`, name: NAMES[x]!, isDemo: false, contact: `hr-${x}@example.test` } });
     await prisma.user.create({ data: { id: `u-${x}`, name: `HR ${x}`, role: 'employer' } });
     await prisma.employerProfile.create({ data: { id: `p-${x}`, userId: `u-${x}`, companyId: `co-${x}` } });

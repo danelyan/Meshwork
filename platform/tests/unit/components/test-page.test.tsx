@@ -225,9 +225,6 @@ describe('TestPage', () => {
     render(<TestPage />);
     expect((await screen.findByTestId('result-title')).textContent).toBe('Middle подтверждён');
     expect(screen.getByText('категория записана')).toBeDefined();
-    expect(screen.getByText(/Вероятность, что уровень не ниже Middle/)).toBeDefined();
-    expect(screen.getByText('93 %')).toBeDefined();
-    expect(screen.getByTestId('confidence-note').textContent).toMatch(/не вероятность найма/);
   });
 });
 
@@ -286,8 +283,55 @@ describe('TestPage: честность', () => {
 
   const needs = (): AttemptView => {
     const base = finished({ status: 'needs_confirmation', confirmed: false, juniorOffered: false });
-    return { ...base, status: 'needs_confirmation', result: { ...base.result!, integrity: { needsConfirmation: true, confirmGrade: 'middle', confirmAttemptId: null, confirmedBy: null } } };
+    return { ...base, status: 'needs_confirmation', result: { ...base.result!, integrity: { needsConfirmation: true, confirmGrade: 'middle', confirmAttemptId: null, confirmedBy: null, rankingHold: false } } };
   };
+
+  /** Режим silent: категория записана, но выдача работодателя её не учитывает (аудит 11.10, п. 4). */
+  const held = (confirmAttemptId: string | null = null): AttemptView => {
+    const base = finished({ status: 'passed', confirmed: true, juniorOffered: false, offeredGrade: null, explanation: 'Решено 7 из 8. Middle подтверждён.' });
+    return { ...base, status: 'passed', result: { ...base.result!, integrity: { needsConfirmation: false, confirmGrade: null, confirmAttemptId, confirmedBy: null, rankingHold: true } } };
+  };
+
+  it('rankingHold: категория записана, уведомление без уровня и причин, подтверждающий тест и созвон доступны', async () => {
+    const calls = stubFetch((url) => {
+      if (url === '/api/test/attempt/att1') return held();
+      if (url === '/api/test/attempt/att1/confirm-start') return { attemptId: 'att2', resumed: false };
+      if (url === '/api/test/attempt/att2') return { ...active(0), id: 'att2', kind: 'confirm', confirmsAttemptId: 'att1' };
+      return {};
+    });
+    search = 'attempt=att1';
+    render(<TestPage />);
+    expect((await screen.findByTestId('result-title')).textContent).toBe('Middle подтверждён');
+    expect(screen.getByText('категория записана')).toBeDefined();
+    const note = screen.getByTestId('ranking-hold');
+    expect(note.textContent).toContain('в подборках и поиске компаний пока не учитывается');
+    expect(note.textContent).toContain('не обвинение и не снятие грейда');
+    expect(note.textContent).not.toMatch(/списыва|высокий|индекс/i);
+    expect(screen.getByRole('link', { name: 'Созвон с ИИ' }).getAttribute('href')).toBe('/interview');
+    expect(screen.getByTestId('objection-open')).toBeDefined();
+    expect(screen.queryByTestId('confirm-needed')).toBeNull();
+    fireEvent.click(screen.getByTestId('confirm-start'));
+    await waitFor(() => expect(calls.some((c) => c.url === '/api/test/attempt/att1/confirm-start')).toBe(true));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/test?attempt=att2'));
+  });
+
+  it('rankingHold с начатым подтверждающим тестом: ссылка на него вместо кнопки старта', async () => {
+    stubFetch((url) => (url === '/api/test/attempt/att1' ? held('att2') : {}));
+    search = 'attempt=att1';
+    render(<TestPage />);
+    await screen.findByTestId('ranking-hold');
+    expect(screen.queryByTestId('confirm-start')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Открыть подтверждающий тест' }).getAttribute('href')).toBe('/test?attempt=att2');
+  });
+
+  it('без rankingHold у пройденной попытки уведомления нет', async () => {
+    const base = finished({ status: 'passed', confirmed: true, juniorOffered: false, offeredGrade: null });
+    stubFetch((url) => (url === '/api/test/attempt/att1' ? { ...base, status: 'passed', result: { ...base.result!, integrity: { needsConfirmation: false, confirmGrade: null, confirmAttemptId: null, confirmedBy: null, rankingHold: false } } } : {}));
+    search = 'attempt=att1';
+    render(<TestPage />);
+    await screen.findByTestId('result-title');
+    expect(screen.queryByTestId('ranking-hold')).toBeNull();
+  });
 
   it('needs_confirmation: текст и кнопка → confirm-start → переход на новую попытку', async () => {
     const calls = stubFetch((url) => {

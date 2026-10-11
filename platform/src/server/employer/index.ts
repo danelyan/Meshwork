@@ -1,8 +1,7 @@
 export * from './ranking';
 export * from './privacy';
 export * from './weights';
-export * from './compare';
-export { matchForVacancy, searchBank, compareForVacancy } from './matching';
+export { matchForVacancy, searchBank } from './matching';
 export { listVacancies, getVacancy, createVacancy, updateVacancy, setVacancyArchived } from './vacancies';
 export type { VacancyView } from './vacancies';
 export {
@@ -17,6 +16,7 @@ export {
   getCandidateContact,
   setCandidateContact,
   invitationsSentToday,
+  companyInviteContactFor,
 } from './invitations';
 export type { EmployerInvitationView, CandidateInvitationView } from './invitations';
 export { loadEmployerContext } from './context';

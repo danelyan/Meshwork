@@ -10,8 +10,8 @@ import { dropUncovered, rankCandidates, type CandidateEvidence, type MatchFilter
 const LOWER: Record<Grade, Grade | null> = { junior: null, middle: 'junior', senior: 'middle' };
 
 export interface RelaxHint {
-  /** stack — снять метку фильтра; grade — снять фильтр грейда; fsp — снять флаг, includeUntested — показать и без теста; vacancyGrade — грейд потребности на ступень ниже. */
-  kind: 'stack' | 'grade' | 'fsp' | 'includeUntested' | 'vacancyGrade';
+  /** stack — снять метку фильтра; grade — снять фильтр грейда; fsp — снять флаг; expandPool — расширить пул кандидатами без категории; vacancyGrade — грейд потребности на ступень ниже. */
+  kind: 'stack' | 'grade' | 'fsp' | 'expandPool' | 'vacancyGrade';
   /** «Ослабьте „Kafka“». */
   label: string;
   /** Сколько кандидатов добавится к текущей подборке. */
@@ -46,7 +46,7 @@ export function relaxationHints(
   }
   if (filters.grade) options.push({ kind: 'grade', label: `Снимите фильтр «${GRADE_LABEL[filters.grade]}»`, filters: { ...filters, grade: undefined } });
   if (filters.fsp) options.push({ kind: 'fsp', label: 'Снимите «только с ФСП»', filters: { ...filters, fsp: undefined } });
-  if (filters.categoryOnly) options.push({ kind: 'includeUntested', label: 'Покажите и кандидатов без теста', filters: { ...filters, categoryOnly: undefined, includeUntested: true } });
+  if (!filters.expandPool) options.push({ kind: 'expandPool', label: 'Расширьте пул: кандидаты без категории из теста', filters: { ...filters, expandPool: true } });
   const lower = LOWER[target.grade];
   if (lower) options.push({ kind: 'vacancyGrade', label: `Рассмотрите ${GRADE_LABEL[lower]} вместо ${GRADE_LABEL[target.grade]}`, filters: null, grade: lower });
 

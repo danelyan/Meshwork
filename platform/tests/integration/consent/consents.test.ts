@@ -43,7 +43,8 @@ const DATA = path.join(tmpdir(), `fsp-consent-${process.pid}`);
 async function seedPair() {
   await prisma.candidate.create({ data: { id: CAND, name: 'Анна Кандидатова', email: 'anna@example.test', specialization: 'backend', contact: '@anna' } });
   await prisma.user.create({ data: { id: 'u-cand', name: 'Анна', role: 'candidate', candidateId: CAND } });
-  await prisma.company.create({ data: { id: 'co-c', name: 'Компания', isDemo: false, contact: 'hr@co.example.test' } });
+  // E05: приглашение уходит только при способе связи компании — фикстура задаёт контакт
+  await prisma.company.create({ data: { id: 'co-c', name: 'Компания', isDemo: false, contact: 'hr-c@example.test' } });
   await prisma.user.create({ data: { id: 'u-emp', name: 'HR', role: 'employer' } });
   await prisma.employerProfile.create({ data: { id: 'p-emp', userId: 'u-emp', companyId: 'co-c' } });
 }
@@ -153,7 +154,7 @@ describe('согласия (ADR 0005)', () => {
     await seedPair();
     await grantEmployer();
     for (const x of ['b', 'z']) {
-      await prisma.company.create({ data: { id: `co-${x}`, name: `Компания ${x}`, isDemo: false, contact: 'hr@co.example.test' } });
+      await prisma.company.create({ data: { id: `co-${x}`, name: `Компания ${x}`, isDemo: false } });
       await prisma.user.create({ data: { id: `u-emp-${x}`, name: `HR ${x}`, role: 'employer' } });
       await prisma.employerProfile.create({ data: { id: `p-emp-${x}`, userId: `u-emp-${x}`, companyId: `co-${x}` } });
       await prisma.consent.createMany({ data: (['employer_offer', 'employer_data_obligation'] as const).map((kind) => ({ userId: `u-emp-${x}`, kind, version: consentVersion(kind) })) });

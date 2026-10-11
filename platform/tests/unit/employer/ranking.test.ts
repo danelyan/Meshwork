@@ -1,16 +1,17 @@
 import { catalogFromFile } from '@/server/claims/catalog-file';
 import { contactEmail, dedupeClaims, publicSourceType, pseudonym, toCandidateCard } from '@/server/employer/privacy';
 import {
+  CATEGORY_NONE_TEXT,
   categoryNeeds,
   dropUncovered,
   matchStack,
   passesFilters,
-  withTestedDefault,
   rankCandidates,
   scoreCandidate,
   type CandidateEvidence,
   type MatchTarget,
 } from '@/server/employer/ranking';
+import { relaxationHints } from '@/server/employer/relax';
 import { InvitationInput, VacancyInput, filtersToQuery, parseFilters } from '@/server/employer/schemas';
 import { CATEGORY_BASE, CATEGORY_MULT_EXACT, FSP_BOOST, SPEC_MISMATCH_PENALTY } from '@/server/employer/weights';
 
@@ -18,6 +19,8 @@ import { maxPrecisionAtK, ndcgAtK, precisionAtK } from '../../../eval/matching/m
 import { fixtureCatalog } from '../../helpers/recommend-fixtures';
 
 const catalog = fixtureCatalog();
+/** Тесты формулы ранжируют и кандидатов без категории — расширенный пул (основной режим — describe «только подтверждённые категории»). */
+const POOL = { expandPool: true } as const;
 const target: MatchTarget = {
   specialization: 'backend',
   grade: 'middle',
@@ -45,7 +48,7 @@ describe('ранжирование работодателя', () => {
   it('доказанное выше «со слов» при одинаковом наборе требований', () => {
     const proven = cand('a', [['be.idempotency', 'artifact'], ['be.transactions', 'artifact']]);
     const said = cand('b', [['be.idempotency', 'self_reported'], ['be.transactions', 'self_reported']]);
-    const r = rankCandidates([said, proven], target, catalog);
+    const r = rankCandidates([said, proven], target, catalog, POOL);
     expect(r.map((x) => x.candidateId)).toEqual(['a', 'b']);
     expect(r[0]!.provenCount).toBe(2);
     expect(r[1]!.explanation.summary).toContain('доказанного артефактами нет');
@@ -60,7 +63,7 @@ describe('ранжирование работодателя', () => {
     expect(r.explanation.proven).toEqual(['Утверждение be.idempotency']);
     expect(r.explanation.missing).toEqual(['Утверждение be.message-queue', 'Утверждение be.sql-indexes']);
     expect(r.explanation.fsp).toBe('есть подтверждённые достижения');
-    expect(r.explanation.category).toMatch(/тест не пройден/);
+    expect(r.explanation.category).toBe(CATEGORY_NONE_TEXT);
     expect(r.explanation.stackMatched).toEqual(['Go']);
   });
 
@@ -107,7 +110,7 @@ describe('ранжирование работодателя', () => {
       subcategoryId: 'backend.web-api',
       category: { specialization: 'backend', grade: 'middle', subcategoryId: 'backend.integrations' },
     });
-    const ranked = rankCandidates([strongNeighbour, weakOwn, byTest], t, catalog);
+    const ranked = rankCandidates([strongNeighbour, weakOwn, byTest], t, catalog, POOL);
     expect(ranked.map((r) => [r.candidateId, r.subcategoryFit])).toEqual([
       ['t', 'exact'],
       ['o', 'exact'],
@@ -119,7 +122,7 @@ describe('ранжирование работодателя', () => {
     expect(n.explanation.summary).toContain('подкатегория: соседняя');
     expect(ranked[0]!.explanation.subcategory).toBe('Интеграции');
     // Без подкатегории у потребности — порядок только по баллу, пометки нет.
-    expect(rankCandidates([strongNeighbour, weakOwn], target, catalog)[0]!.explanation.subcategory).toBe('');
+    expect(rankCandidates([strongNeighbour, weakOwn], target, catalog, POOL)[0]!.explanation.subcategory).toBe('');
     expect(passesFilters(byTest, { subcategory: 'backend.integrations' })).toBe(true);
     expect(passesFilters(byTest, { subcategory: 'backend.web-api' })).toBe(false);
   });
@@ -127,8 +130,8 @@ describe('ранжирование работодателя', () => {
   it('детерминированно: равный балл — по id', () => {
     const a = cand('b', [['be.idempotency', 'artifact']]);
     const b = cand('a', [['be.idempotency', 'artifact']]);
-    const r1 = rankCandidates([a, b], target, catalog).map((x) => x.candidateId);
-    const r2 = rankCandidates([b, a], target, catalog).map((x) => x.candidateId);
+    const r1 = rankCandidates([a, b], target, catalog, POOL).map((x) => x.candidateId);
+    const r2 = rankCandidates([b, a], target, catalog, POOL).map((x) => x.candidateId);
     expect(r1).toEqual(['a', 'b']);
     expect(r2).toEqual(r1);
   });
@@ -141,10 +144,10 @@ describe('ранжирование работодателя', () => {
     expect(passesFilters(c, { stack: ['go', 'PostgreSQL'] })).toBe(true);
     expect(passesFilters(c, { stack: ['Go', 'Rust'] })).toBe(false);
     expect(passesFilters(c, { fsp: true })).toBe(false);
-    // по умолчанию только с категорией по тесту (ТЗ 2.1); без теста - явный переключатель
-    expect(passesFilters(cand('u', []), withTestedDefault({}))).toBe(false);
-    expect(passesFilters(c, withTestedDefault({}))).toBe(true);
-    expect(passesFilters(cand('u', []), withTestedDefault({ includeUntested: true }))).toBe(true);
+    // M05: по умолчанию только с категорией; без категории — только при явном расширении пула
+    expect(passesFilters(c, {})).toBe(true);
+    expect(passesFilters(cand('b', []), {})).toBe(false);
+    expect(passesFilters(cand('b', []), { expandPool: true })).toBe(true);
     expect(matchStack(c.claims, ['GO', 'kafka'])).toEqual(['GO']);
   });
 
@@ -163,7 +166,7 @@ describe('подборка под потребность: категория и�
     const catOnly = cand('cat', [], { category: mid });
     const zero = cand('z', [['be.background-jobs', 'self_reported']]);
     const one = cand('o', [['be.idempotency', 'self_reported']]);
-    const ranked = rankCandidates([catOnly, zero, one], target, catalog);
+    const ranked = rankCandidates([catOnly, zero, one], target, catalog, POOL);
     expect(dropUncovered(ranked).map((x) => x.candidateId)).toEqual(expect.arrayContaining(['cat', 'o']));
     expect(dropUncovered(ranked).map((x) => x.candidateId)).not.toContain('z');
   });
@@ -183,7 +186,7 @@ describe('подборка под потребность: категория и�
     const both = cand('both', [['be.idempotency', 'self_reported']], { category: mid });
     const catOnly = cand('cat', [], { category: mid });
     const claimsOnly = cand('claims', [['be.idempotency', 'self_reported']]);
-    const r = rankCandidates([claimsOnly, catOnly, both], { ...target, stack: [] }, catalog);
+    const r = rankCandidates([claimsOnly, catOnly, both], { ...target, stack: [] }, catalog, POOL);
     expect(r.map((x) => x.candidateId)).toEqual(['both', 'claims', 'cat']);
     // только категория выше кандидата без категории с практически нулевым покрытием
     const tiny = cand('tiny', [['be.sql-indexes', 'self_reported']]);
@@ -194,7 +197,7 @@ describe('подборка под потребность: категория и�
     // категория с частичным покрытием не обгоняет сильное покрытие без категории
     const strong = cand('strong', [['be.idempotency', 'artifact'], ['be.transactions', 'artifact'], ['be.message-queue', 'artifact'], ['be.sql-indexes', 'artifact']]);
     const partial = cand('partial', [['be.idempotency', 'self_reported']], { category: mid });
-    const r2 = rankCandidates([partial, strong], { ...target, stack: [] }, catalog);
+    const r2 = rankCandidates([partial, strong], { ...target, stack: [] }, catalog, POOL);
     expect(r2[0]!.candidateId).toBe('strong');
   });
 
@@ -203,6 +206,35 @@ describe('подборка под потребность: категория и�
     expect(r.categoryMatch).toBe(true);
     expect(r.covered).toBe(0);
     expect(r.explanation.summary).toMatch(/^Категория Backend · Middle подтверждена тестом; требования потребности не доказаны утверждениями\./);
+  });
+});
+
+describe('основной режим подбора — только подтверждённые категории (M05, аудит 11.10)', () => {
+  const mid = { specialization: 'backend' as const, grade: 'middle' as const };
+  const withCat = cand('cat', [['be.idempotency', 'artifact']], { category: mid });
+  const noCat = cand('nocat', [['be.idempotency', 'artifact'], ['be.transactions', 'artifact']]);
+
+  it('без фильтров кандидат без категории из теста в выдачу не попадает; расширение пула — явный флаг с пометкой в объяснении', () => {
+    expect(rankCandidates([withCat, noCat], target, catalog).map((r) => r.candidateId)).toEqual(['cat']);
+    const expanded = rankCandidates([withCat, noCat], target, catalog, { expandPool: true });
+    expect(expanded.map((r) => r.candidateId)).toEqual(['nocat', 'cat']);
+    const extra = expanded.find((r) => r.candidateId === 'nocat')!;
+    expect(extra.explanation.category).toBe(CATEGORY_NONE_TEXT);
+    expect(extra.explanation.summary).toContain('расширенный пул');
+    expect(expanded.find((r) => r.candidateId === 'cat')!.explanation.category).toBe('Backend · Middle (тест)');
+  });
+
+  it('подсказка ослабления: «расширьте пул» с прибавкой; в расширенном пуле подсказки нет', () => {
+    const hints = relaxationHints([withCat, noCat], target, catalog, {});
+    expect(hints).toEqual([{ kind: 'expandPool', label: 'Расширьте пул: кандидаты без категории из теста', gain: 1, filters: { expandPool: true } }]);
+    expect(relaxationHints([withCat, noCat], target, catalog, { expandPool: true }).map((h) => h.kind)).not.toContain('expandPool');
+  });
+
+  it('query: pool=all включает расширение и возвращается в ссылку; прежний category=1 — no-op', () => {
+    expect(parseFilters({ pool: 'all' }).filters).toEqual({ expandPool: true });
+    expect(parseFilters({ category: '1' }).filters).toEqual({});
+    expect(parseFilters({ pool: 'nope' }).filters).toEqual({});
+    expect(filtersToQuery({ specialization: 'backend', expandPool: true })).toBe('spec=backend&pool=all');
   });
 });
 

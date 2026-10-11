@@ -15,21 +15,27 @@ on:
 permissions:
   contents: read
 
-# Деплои идут по одному и по порядку; начатый не прерывается.
+# Новый запуск отменяет предыдущий, пока тот собирает образы (job build): сборка работающий стенд
+# не трогает. Начатый перезапуск (job release) не отменяется — GitHub не прерывает job и шаги,
+# у которых условие if остаётся истинным, — и новый запуск ждёт его конца.
 concurrency:
   group: deploy-stand
-  cancel-in-progress: false
+  cancel-in-progress: true
+
+env:
+  DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+  DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+  DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+  COMPOSE: docker compose --progress plain -f docker-compose.yml -f docker-compose.prod.yml
+  # Сборка и перезапуск на сервере берут один замок: клиент прежней сборки, если он ещё жив,
+  # не пересечётся с новым запуском.
+  DEPLOY_LOCK: /tmp/fsp-deploy.lock
 
 jobs:
-  deploy:
-    name: Deploy to stand
+  build:
+    name: Build images
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    env:
-      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
-      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-      APP_URL: ${{ vars.APP_URL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -52,16 +58,50 @@ jobs:
             --exclude='/.env' --exclude='/node_modules' --exclude='/.next' \
             platform/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
 
-      # Сборка падает — прежние контейнеры продолжают работать. Кеш сборки растёт примерно
-      # на 1 ГБ за деплой, поэтому после каждого урезается до 3 ГБ.
-      - name: Build and restart
+      # Сборка падает — прежние контейнеры продолжают работать. -tt: при отмене запуска обрыв
+      # соединения завершает клиент сборки на сервере (SIGHUP), BuildKit снимает сборку и образы
+      # не перетегирует.
+      - name: Build images
+        run: |
+          ssh -tt "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' \
+            && flock -w 600 '$DEPLOY_LOCK' $COMPOSE build" < /dev/null
+
+  release:
+    name: Migrate and restart
+    needs: build
+    # always() держит job и его шаги при отмене запуска: миграции и пересоздание контейнеров
+    # доходят до конца. Отмена во время сборки сюда не попадает — результат build не success.
+    if: ${{ always() && needs.build.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - name: Set up SSH
+        id: ssh
+        if: ${{ always() }}
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # Образы уже собраны job build, здесь только миграции, сид и пересоздание контейнеров.
+      # Кеш сборки растёт примерно на 1 ГБ за деплой, поэтому после каждого урезается до 3 ГБ.
+      - name: Migrate and restart
+        id: restart
+        if: ${{ always() && steps.ssh.outcome == 'success' }}
         run: |
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd '$DEPLOY_PATH' \
-            && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans \
+            && flock -w 600 '$DEPLOY_LOCK' $COMPOSE up -d --no-build --remove-orphans \
             && docker image prune -f \
             && docker builder prune -f --max-used-space 3gb"
 
       - name: Check health
+        if: ${{ always() && steps.restart.outcome == 'success' }}
         run: |
           curl --fail --silent --show-error --max-time 10 \
             --retry 20 --retry-delay 6 --retry-all-errors \

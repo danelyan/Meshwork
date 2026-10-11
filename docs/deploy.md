@@ -53,14 +53,19 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | `SESSION_SECRET` | `openssl rand -hex 32` |
 | `DEMO_LOGIN` | `true`, пока стенд показывается жюри |
 | `RUNNER_TOKEN` | Для автопроверки проектов (сервис `runner`): `openssl rand -hex 32`. Не задан — `runner` отвечает 503, остальной стенд работает |
-| `SITE_PASSWORD` | Необязательно: пароль на сайт (без логина, страница `/site-access`). На стенде сейчас задан SHA-256 пароля в `docker-compose.prod.yml` (`SITE_PASSWORD_SHA256`, важнее `.env`): включается и снимается коммитом, без входа на сервер. Пароль оставлен (решение владельца 11.10 15:30), жюри получает его в [документе сдачи](submission/fsp-career.md) |
+| `SITE_PASSWORD` | Необязательно: пароль на сайт (без логина, страница `/site-access`). На стенде сейчас задан SHA-256 пароля в `docker-compose.prod.yml` (`SITE_PASSWORD_SHA256`, важнее `.env`): включается и снимается коммитом, без входа на сервер. Перед показом жюри строку удалить |
 | `FSP_OIDC_ISSUER`, `FSP_OIDC_CLIENT_SECRET`, `FSP_API_URL`, `FSP_OIDC_DEMO_HINT` | Необязательно: вход и привязка ФСП ID через симулятор команды на Keycloak (`https://fsp-russia2.ru/auth/realms/fsp-id`, API — `https://fsp-russia2.ru/api/v1`) вместо встроенного мока. Секрет клиента `fsp-career` — в `.env` сервера симулятора (`FSP_CAREER_CLIENT_SECRET`). `FSP_OIDC_DEMO_HINT` — подсказка у кнопок, чем войти (демо-логин и пароль со стартовой страницы симулятора). Не заданы issuer или секрет — работает встроенный мок. Это симулятор, не сервис ФСП |
 
 `DATABASE_URL` задаёт Compose. Почта: без `SMTP_HOST`/`SMTP_PORT` в `.env` письма идут в Mailpit стенда; для реальных ящиков задать `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (`MAIL_PROVIDER=smtp`). Лимит созвонов с ИИ-интервьюером `CALL_DAILY_LIMIT` (за 24 часа на кандидата, дефолт в коде 5) на стенде ставим `0` — без лимита: жюри проходит созвон на демо-аккаунтах повторно. Языковая модель и вход через Яндекс ID включаются своими переменными; после правки `.env` — `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`.
 
 ## Автодеплой
 
-[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) запускается при push в `main`, если изменился `platform/`, и вручную (Actions → Deploy stand → Run workflow). Шаги: выгрузка `platform/` по rsync, `docker compose up -d --build`, проверка `GET /api/health`. Если сборка упала, прежние контейнеры продолжают работать, а запуск в Actions красный.
+[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) запускается при push в `main`, если изменился `platform/`, и вручную (Actions → Deploy stand → Run workflow). Два этапа:
+
+- `build` — выгрузка `platform/` по rsync и `docker compose build` на сервере. Работающий стенд это не затрагивает, поэтому новый push отменяет сборку предыдущего запуска (в Actions он помечен как отменённый); прерванная сборка образы не подменяет.
+- `release` — `docker compose up -d` (миграции, сид, пересоздание контейнеров) и проверка `GET /api/health`. Начатый перезапуск не отменяется, следующий запуск ждёт его конца.
+
+Если сборка упала, прежние контейнеры продолжают работать, а запуск в Actions красный.
 
 Настройки репозитория (Settings → Secrets and variables → Actions):
 
@@ -102,8 +107,9 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 | Создан | 10 октября 2026 года скриптом [`fsp-sim/scripts/selectel-server.sh`](../fsp-sim/scripts/selectel-server.sh) через API Selectel (диск из образа → сервер → группа безопасности на порту → плавающий адрес) |
 | Подготовка | [`fsp-sim/scripts/bootstrap-server.sh`](../fsp-sim/scripts/bootstrap-server.sh) от root: Docker Engine, пользователь `deploy`, `/opt/fsp/fsp-sim`, swap 2 ГБ, ufw |
 | Деплой | Вручную: `DEPLOY_HOST=deploy@111.88.114.206 SSH_OPTS='-i ~/.ssh/fsp-id' bash scripts/deploy.sh` из `fsp-sim/` — rsync каталога и `docker compose up -d --build`, затем проверка health. GitHub Actions этот каталог не выкладывает |
-| `.env` | `/opt/fsp/fsp-sim/.env` (600): `PUBLIC_URL`, `REDIRECT_FROM`, пароли администратора Keycloak и базы, `FSP_CAREER_CLIENT_SECRET` (сгенерированы на сервере, в репозитории нет); `FSP_PARTNER_DEMO_SECRET` и `FSP_DEMO_PASSWORD` — значения по умолчанию из `.env.example` (публичные демо-данные) |
-| Обновить реалм | Импорт идёт только в пустую базу: `docker compose down -v && docker compose up -d --build` на сервере (сбросит сессии) |
+| `.env` | `/opt/fsp/fsp-sim/.env` (600): `PUBLIC_URL`, `REDIRECT_FROM`, пароли администратора Keycloak и базы, `FSP_CAREER_CLIENT_SECRET`, `FSP_REGISTRY_ADMIN_SECRET` (сгенерированы на сервере, в репозитории нет); `FSP_PARTNER_DEMO_SECRET` и `FSP_DEMO_PASSWORD` — значения по умолчанию из `.env.example` (публичные демо-данные) |
+| Обновить реалм | Импорт идёт только в пустую базу. Пересоздать только базу Keycloak, не трогая том с сертификатами: `docker compose rm -sf keycloak db && docker volume rm fsp-sim_db-data && docker compose up -d --build` (сбросит сессии ФСП ID). Пользователей-спортсменов API сверяет с реестром сам при старте |
+| Данные | Тома Docker: `db-data` — база Keycloak, `api-state` — ручные правки песочницы стартовой страницы, `caddy-data` — сертификаты. Резервных копий нет |
 | Журналы | `docker compose logs -f keycloak`, `docker compose logs -f api` в `/opt/fsp/fsp-sim` |
 
 Issuer токенов привязан к `PUBLIC_URL`: при смене домена симулятора вместе с `PUBLIC_URL` меняются `FSP_OIDC_ISSUER` и `FSP_API_URL` в `.env` стенда, иначе вход и привязка ФСП ID на стенде перестают работать.

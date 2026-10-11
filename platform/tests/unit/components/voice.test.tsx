@@ -55,6 +55,17 @@ describe('голосовой ввод: Web Speech API (распознаёт бр
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('hold по умолчанию: удержание кнопки пишет, отпускание останавливает', () => {
+    vi.stubGlobal('webkitSpeechRecognition', FakeRecognition);
+    localStorage.setItem('fsp.voice.ok', '1');
+    render(<Harness />);
+    const btn = screen.getByTestId('voice-button');
+    fireEvent.pointerDown(btn, { button: 0, pointerId: 1, pointerType: 'mouse' });
+    expect(FakeRecognition.last!.start).toHaveBeenCalled();
+    fireEvent.pointerUp(btn);
+    expect(FakeRecognition.last!.stop).toHaveBeenCalled();
+  });
+
   it('нет доступа к микрофону — понятная ошибка', () => {
     vi.stubGlobal('webkitSpeechRecognition', FakeRecognition);
     localStorage.setItem('fsp.voice.ok', '1');

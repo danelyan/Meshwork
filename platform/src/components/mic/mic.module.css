@@ -1,0 +1,9 @@
+.pop { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 8; width: min(300px, 86vw); display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; text-align: left; color: var(--ink, #111); background: var(--glass-strong, #fff); border: 1px solid var(--line, #ccc); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); font-size: var(--fs-sm, 14px); line-height: 1.45; }
+.below { bottom: auto; top: calc(100% + 8px); }
+.pop small { color: var(--muted, #666); font-size: var(--fs-xs, 12px); }
+.options { display: flex; flex-direction: column; gap: 6px; }
+.option { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.gear { display: none; place-items: center; width: 24px; height: 24px; background: none; border: 0; color: var(--muted, #666); cursor: pointer; }
+@media (pointer: coarse) { .gear { display: inline-grid; } }
+/* Кнопка записи: касание — не прокрутка, долгое нажатие — не выделение и не системное меню. */
+.pressable { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }

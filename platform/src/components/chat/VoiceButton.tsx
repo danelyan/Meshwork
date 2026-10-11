@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 
+import { MIC_HINT } from '../mic/micMode';
+import micStyles from '../mic/mic.module.css';
+import { MicGear, MicSettings } from '../mic/MicSettings';
+import { useMicPress } from '../mic/useMicPress';
 import { Spinner, cx } from '../ui';
 
 import styles from './thread.module.css';
@@ -45,6 +49,25 @@ export function VoiceButton({ value, onChange, disabled }: { value: string; onCh
     const joined = base ? `${base} ${text}` : text;
     onChange(final ? `${joined} `.trimStart() : joined);
   });
+  const recording = v.state === 'recording';
+  const begin = () => {
+    setAsking(false);
+    rememberConsent();
+    setBase(value.trimEnd());
+    v.start();
+  };
+  const press = useMicPress({
+    recording,
+    onStart: () => {
+      v.clearError();
+      if (!consentGiven()) return setAsking((a) => !a);
+      begin();
+    },
+    onStop: () => {
+      v.clearError();
+      v.stop();
+    },
+  });
   if (!v.ready || v.hidden) return null;
 
   if (v.mode === 'off') {
@@ -55,36 +78,25 @@ export function VoiceButton({ value, onChange, disabled }: { value: string; onCh
     );
   }
 
-  const recording = v.state === 'recording';
-  const begin = () => {
-    setAsking(false);
-    rememberConsent();
-    setBase(value.trimEnd());
-    v.start();
-  };
-  const click = () => {
-    v.clearError();
-    if (recording) return v.stop();
-    if (!consentGiven()) return setAsking((a) => !a);
-    begin();
-  };
   const note = PROVIDER_NOTE[v.mode];
 
   return (
     <span className={styles.voiceWrap}>
       <button
         type="button"
-        className={cx(styles.iconBtn, recording && styles.recording)}
-        onClick={click}
+        className={cx(styles.iconBtn, micStyles.pressable, recording && styles.recording)}
+        {...press.buttonProps}
         disabled={(disabled && !recording) || v.state === 'processing'}
         aria-pressed={recording}
         aria-label={recording ? 'Остановить запись' : 'Надиктовать голосом'}
-        title={recording ? 'Остановить запись' : `Надиктовать голосом. ${note}`}
+        title={recording ? 'Остановить запись' : `${MIC_HINT[press.mode]}. ${note} Правая кнопка мыши — настройки.`}
         style={v.level !== null ? ({ '--level': v.level.toFixed(2) } as React.CSSProperties) : undefined}
         data-testid="voice-button"
       >
         {v.state === 'processing' ? <Spinner /> : recording ? <StopIcon /> : <MicIcon />}
       </button>
+      <MicGear onClick={press.openMenu} />
+      {press.menuOpen && <MicSettings onClose={press.closeMenu} />}
       {asking && (
         <span className={styles.voicePop} role="dialog" aria-label="Голосовой ввод">
           <span>Микрофон нужен, чтобы надиктовать сообщение: текст появится в поле, ты его поправишь и отправишь сам.</span>
@@ -101,7 +113,7 @@ export function VoiceButton({ value, onChange, disabled }: { value: string; onCh
       )}
       {(recording || v.state === 'processing' || v.error) && (
         <span className={cx(styles.voiceStatus, v.error && styles.voiceError)} role={v.error ? 'alert' : 'status'}>
-          {v.error ?? (recording ? `Запись ${mmss(v.elapsed)} · ${v.mode === 'browser' ? 'распознаёт браузер' : 'Yandex SpeechKit'} · нажми ещё раз, чтобы закончить` : 'Распознаю…')}
+          {v.error ?? (recording ? `Запись ${mmss(v.elapsed)} · ${v.mode === 'browser' ? 'распознаёт браузер' : 'Yandex SpeechKit'} · ${press.mode === 'hold' ? 'отпусти, чтобы закончить' : 'нажми ещё раз, чтобы закончить'}` : 'Распознаю…')}
         </span>
       )}
     </span>

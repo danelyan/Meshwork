@@ -18,7 +18,8 @@ export type TelemetryEvent =
   | { k: 'scroll'; what: 'auto' | 'away' | 'back' }
   | { k: 'flake'; what: 'blink' | 'replaced' | 'discard' | 'remount' | 'reveal-jump'; id?: string; detail?: string };
 
-export type Stamped = TelemetryEvent & { t: number; turn: number };
+/** `n` — сквозной номер (ключ строки в панели), `t` — performance.now(), `turn` — номер хода. */
+export type Stamped = TelemetryEvent & { n: number; t: number; turn: number };
 
 export interface TurnStats {
   turn: number;
@@ -27,7 +28,7 @@ export interface TurnStats {
   ttft?: number;
   firstEvent?: number;
   doneMs?: number;
-  status: 'running' | 'done' | 'error' | 'stop';
+  status: 'idle' | 'running' | 'done' | 'error' | 'stop';
   frames: number;
   heartbeats: number;
   bytes: number;
@@ -67,6 +68,7 @@ let paused = false;
 const ring: (Stamped | undefined)[] = new Array(CAP);
 let head = 0;
 let count = 0;
+let seqNo = 0;
 let turnNo = 0;
 let stats: TurnStats = emptyStats(0, 0);
 let lastFrameAt = 0;
@@ -76,7 +78,7 @@ let notifyTimer: ReturnType<typeof setTimeout> | null = null;
 let version = 0;
 
 function emptyStats(turn: number, start: number): TurnStats {
-  return { turn, start, status: 'running', frames: 0, heartbeats: 0, bytes: 0, deltas: 0, discards: 0, cls: 0, longtasks: 0, renders: 0, flakes: 0, maxLag: 0, maxLagMs: 0, showCps: 0, inCps: 0 };
+  return { turn, start, status: turn ? 'running' : 'idle', frames: 0, heartbeats: 0, bytes: 0, deltas: 0, discards: 0, cls: 0, longtasks: 0, renders: 0, flakes: 0, maxLag: 0, maxLagMs: 0, showCps: 0, inCps: 0 };
 }
 
 /** Одна проверка — для горячих путей (кадр rAF, рендер). */
@@ -85,6 +87,7 @@ export const telemetryOn = () => enabled;
 export function track(e: TelemetryEvent): void {
   if (!enabled || paused) return;
   const s = e as Stamped;
+  s.n = ++seqNo;
   s.t = now();
   s.turn = turnNo;
   ring[head] = s;
@@ -325,12 +328,15 @@ export function createStreamSampler(id: string): StreamSampler {
   let lastAcc = 0;
   let lastShown = 0;
   let maxShown = 0;
+  let ema = 0;
   const emit = (acc: number, shown: number, t: number) => {
     const dt = lastT < 0 ? 0 : (t - lastT) / 1000;
     const showCps = dt > 0 ? Math.round((shown - lastShown) / dt) : 0;
     const inCps = dt > 0 ? Math.round((acc - lastAcc) / dt) : 0;
     const lag = Math.max(0, acc - shown);
-    const lagMs = showCps > 0 ? Math.round((lag / showCps) * 1000) : 0;
+    // Отставание в мс — по сглаженной скорости показа: раскрытие идёт по словам, мгновенная скорость скачет.
+    ema = ema ? ema * 0.6 + showCps * 0.4 : showCps;
+    const lagMs = ema > 0 ? Math.round((lag / ema) * 1000) : 0;
     lastT = t;
     lastAcc = acc;
     lastShown = shown;
@@ -414,7 +420,8 @@ interface LayoutShiftEntry extends PerformanceEntry {
 }
 
 function describe(node: Node | null | undefined): string {
-  if (!node || node.nodeType !== 1) return '#text';
+  if (!node) return '?';
+  if (node.nodeType !== 1) return node.parentElement ? `${describe(node.parentElement)}>#text` : '#text';
   const el = node as Element;
   const cls = typeof el.className === 'string' ? el.className.split(' ')[0] : '';
   return `${el.tagName.toLowerCase()}${cls ? `.${cls.replace(/_[A-Za-z0-9]{5}$/, '')}` : ''}`;
@@ -428,8 +435,10 @@ function startObservers() {
       for (const entry of list.getEntries() as LayoutShiftEntry[]) {
         if (entry.hadRecentInput) continue;
         const nodes = (entry.sources ?? []).map((s) => s.node).filter(Boolean) as Node[];
-        // Сдвиги внутри самой панели телеметрии в замер не попадают.
-        if (nodes.length && nodes.every((n) => (n.nodeType === 1 ? (n as Element) : n.parentElement)?.closest('[data-telemetry-panel]'))) continue;
+        if (entry.value < 0.00005) continue;
+        // Сдвиги самой панели телеметрии (строки лога) в замер не попадают: значение общее на все источники,
+        // поэтому запись с любым источником внутри панели отбрасывается целиком.
+        if (nodes.some((n) => (n.nodeType === 1 ? (n as Element) : n.parentElement)?.closest('[data-telemetry-panel]'))) continue;
         track({ k: 'layout', value: Math.round(entry.value * 10000) / 10000, sources: nodes.slice(0, 3).map(describe).join(' ') || undefined });
       }
     });
@@ -463,6 +472,7 @@ export function __resetTelemetry() {
   ring.fill(undefined);
   head = 0;
   count = 0;
+  seqNo = 0;
   spans.clear();
   stats = emptyStats(0, 0);
 }

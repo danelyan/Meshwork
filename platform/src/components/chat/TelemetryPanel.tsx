@@ -32,6 +32,7 @@ const LABEL: Record<Kind, string> = {
   flake: 'флейк',
 };
 const ROWS = 200;
+const STATUS = { idle: 'ждёт', running: 'идёт', done: 'готов', error: 'ошибка', stop: 'стоп' } as const;
 
 const ms = (v?: number) => (v === undefined ? '—' : v >= 1000 ? `${(v / 1000).toFixed(2)}с` : `${Math.round(v)}мс`);
 
@@ -70,7 +71,10 @@ export function TelemetryPanel() {
   const s = turnStats();
   const all = events();
   const turnStarts = useMemo(() => new Map<number, number>(), []);
-  for (const e of all) if (e.k === 'turn' && e.phase === 'start') turnStarts.set(e.turn, e.t);
+  for (const e of all) {
+    if (e.k === 'turn' && e.phase === 'start') turnStarts.set(e.turn, e.t);
+    else if (!turnStarts.has(e.turn)) turnStarts.set(e.turn, e.t);
+  }
   const rows = all.filter((e) => !hidden.has(e.k)).slice(-ROWS).reverse();
   const spans = itemSpans().slice(-60).reverse();
   const paused = isPaused();
@@ -121,7 +125,7 @@ export function TelemetryPanel() {
         <header className={styles.head}>
           <span className={styles.title}>
             <span className={styles.dot} data-live={s.status === 'running' || undefined} aria-hidden="true" />
-            Телеметрия · ход {s.turn || '—'} · {s.status === 'running' ? 'идёт' : s.status}
+            Телеметрия · ход {s.turn || '—'} · {STATUS[s.status]}
           </span>
           <span className={styles.actions}>
             <button type="button" onClick={() => setPaused(!paused)} aria-pressed={paused}>
@@ -139,7 +143,8 @@ export function TelemetryPanel() {
           <Stat k="до done" v={ms(s.doneMs)} />
           <Stat k="приход" v={`${s.inCps} зн/с`} />
           <Stat k="показ" v={`${s.showCps} зн/с`} />
-          <Stat k="max lag" v={`${s.maxLag} зн · ${ms(s.maxLagMs)}`} />
+          <Stat k="max lag" v={`${s.maxLag} зн`} />
+          <Stat k="max lag, время" v={ms(s.maxLagMs)} />
           <Stat k="кадры" v={`${s.frames} · hb ${s.heartbeats}`} />
           <Stat k="дельты" v={`${s.deltas} · discard ${s.discards}`} />
           <Stat k="CLS хода" v={s.cls.toFixed(4)} bad={s.cls > 0.05} />
@@ -168,7 +173,7 @@ export function TelemetryPanel() {
             </div>
             <ol className={styles.log}>
               {rows.map((e) => (
-                <li key={`${e.t}-${e.k}`} className={styles.row} data-k={e.k}>
+                <li key={e.n} className={styles.row} data-k={e.k}>
                   <span className={styles.time}>+{((e.t - (turnStarts.get(e.turn) ?? e.t)) / 1000).toFixed(3)}s</span>
                   <span className={styles.tag} data-k={e.k}>{LABEL[e.k]}</span>
                   <span className={styles.text}>{describe(e)}</span>

@@ -20,7 +20,7 @@
 .chip:focus-visible, .panel button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .panel {
-  width: min(460px, calc(100vw - 32px)); height: 40vh; min-height: 280px; resize: vertical; overflow: hidden;
+  width: min(480px, calc(100vw - 32px)); height: 52vh; min-height: 340px; max-height: calc(100vh - 200px); resize: vertical; overflow: hidden;
   display: grid; grid-template-rows: auto auto auto 1fr;
   background: var(--glass-strong); border: 1px solid var(--border-soft);
   backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
@@ -46,8 +46,8 @@
 .dot[data-live] { background: var(--blue); animation: pulse 1.2s var(--ease) infinite; }
 
 .stats {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px 12px; margin: 0;
-  padding: 10px 12px; border-bottom: 1px solid var(--border-faint); font-variant-numeric: tabular-nums;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 12px; margin: 0;
+  padding: 8px 12px; border-bottom: 1px solid var(--border-faint); font-variant-numeric: tabular-nums;
 }
 .stat { display: grid; gap: 2px; min-width: 0; }
 .stat dt { text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-size: 10px; }

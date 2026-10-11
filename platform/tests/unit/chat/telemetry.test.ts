@@ -89,7 +89,7 @@ describe('шина телеметрии чата', () => {
     expect(events().some((e) => e.k === 'flake')).toBe(false);
     diffItems(b, c);
     expect(events().filter((e) => e.k === 'flake')).toHaveLength(1);
-    expect(itemSpans()[0].updates).toBe(2);
+    expect(itemSpans()[0]?.updates).toBe(2);
   });
 
   it('сэмплер стрима: не чаще 200 мс, скорость и отставание; откат показа — reveal-jump', () => {

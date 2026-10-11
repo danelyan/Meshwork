@@ -2,6 +2,8 @@
 
 import { type ReactNode, useRef } from 'react';
 
+import { TelemetryMount } from '@/components/chat/TelemetryMount';
+
 import { AsideProvider } from '../consultant/aside-refresh';
 import { SceneAside } from '../consultant/SceneAside';
 import { SceneStats } from '../consultant/SceneStats';
@@ -43,6 +45,8 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
   const scene = (
     <CompanionVoiceProvider autoEnable>
       <AsideProvider initial={aside}>
+      {/* Телеметрия чата (docs/platform.md): без флага ничего не рисует; вне сцен — fixed не зависит от их раскладки. */}
+      <TelemetryMount />
       {variant === 'portrait' && (
         <div className={styles.portraitScene} data-testid="scene-portrait">
           <div className={styles.conversation}>

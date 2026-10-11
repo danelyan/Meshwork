@@ -24,7 +24,9 @@
 .userBubble { animation: send 0.3s var(--ease) backwards; transform-origin: 100% 100%; }
 .userBubble { max-width: min(520px, 85%); padding: var(--chat-bubble-pad, 10px 14px); font-size: var(--chat-message-size, inherit); background: var(--blue); color: var(--on-ink); line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
 .userBubble[data-quiet='true'] { background: var(--surface-ghost); color: var(--muted); border: 1px solid var(--border-faint); }
-.userAction { background: none; border: 0; padding: 2px 0; font: 500 var(--fs-xs) var(--mono); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.userAction { background: none; border: 0; min-height: 32px; padding: 6px 0 6px 16px; font: 500 var(--fs-xs) var(--mono); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+/* сенсорный экран: подпись та же, зона нажатия около 44px */
+@media (pointer: coarse) { .userAction { min-height: 44px; padding: 12px 0 12px 20px; } }
 .userAction:hover:not(:disabled) { color: var(--ink); }
 
 /* «печатает»: три точки */

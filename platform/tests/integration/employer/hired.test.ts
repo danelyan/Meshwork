@@ -93,6 +93,8 @@ describe('lane hired: отметка найма (БД)', () => {
     await respond(jsonRequest('/x', 'POST', { action: 'decline' }, candCookie(PAY.id)), params(sent));
     expect((await markHired(sent)).status).toBe(409);
 
+    // lane lifecycle: после отказа — пауза 14 дней; сдвигаем отказ в прошлое, чтобы пригласить снова.
+    await prisma.invitation.update({ where: { id: sent }, data: { respondedAt: new Date(Date.now() - 15 * 86_400_000) } });
     const id = await accepted();
     expect((await markHired(id, OTHER)).status).toBe(404);
     expect((await prisma.invitation.findUniqueOrThrow({ where: { id } })).status).toBe('accepted');

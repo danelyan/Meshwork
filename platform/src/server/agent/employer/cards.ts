@@ -58,7 +58,7 @@ export const AssistantCandidateSchema = z
     missing: z.array(z.string()),
     stackMatched: z.array(z.string()),
     summary: z.string(),
-    invitation: z.enum(['sent', 'viewed', 'accepted', 'declined', 'hired', 'withdrawn']).nullable(),
+    invitation: z.enum(['sent', 'viewed', 'accepted', 'declined', 'hired', 'withdrawn', 'closed_hired']).nullable(),
   })
   .strict();
 

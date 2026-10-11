@@ -1,5 +1,6 @@
 import { prisma } from '@/server/db';
 import { errors } from '@/server/errors';
+import { HIRED_ELSEWHERE_REASON } from '@/server/employer/invitations';
 import type { SessionPrincipal } from '@/server/session';
 
 export type NotificationItem = { id: string; text: string; detail: string; href: string; at: string; unread: boolean };
@@ -36,9 +37,30 @@ export async function notifications(s: SessionPrincipal & { userId: string }): P
     const items = rows.map((r) => ({ id: r.id, text: r.status === 'declined' ? 'Кандидат отклонил приглашение' : 'Кандидат принял приглашение', detail: r.vacancy?.title ?? 'Приглашение без вакансии', href: '/employer/invitations', at: r.respondedAt!.toISOString(), unread: r.respondedAt! > read }));
     const profile = await prisma.employerProfile.findUnique({ where: { id: s.employerProfileId }, select: { companyId: true } });
     const live = profile ? await liveEvents({ companyId: profile.companyId, audience: 'employer' }, read, through, '/employer/invitations') : { items: [], unread: 0 };
-    return merge(items, unread, live, through);
+    const closed = profile ? await closedByHire(profile.companyId, read, through) : { items: [], unread: 0 };
+    return merge([...items, ...closed.items], unread + closed.unread, live, through);
   }
   return { items: [], unread: 0, through: through.toISOString() };
+}
+
+/**
+ * lane lifecycle: кандидат нанят другой компанией — приглашения и самоотклики этой компании закрыты (closedAt).
+ * Имя нанявшей компании не раскрывается.
+ */
+async function closedByHire(companyId: string, read: Date, through: Date) {
+  const iw = { companyId, status: 'closed_hired' as const, closedAt: { not: null, lte: through } };
+  const aw = { vacancy: { companyId }, status: 'closed' as const, closeReason: HIRED_ELSEWHERE_REASON, closedAt: { not: null, lte: through } };
+  const [invs, iUnread, apps, aUnread] = await Promise.all([
+    prisma.invitation.findMany({ where: iw, orderBy: { closedAt: 'desc' }, take: 20, select: { id: true, closedAt: true, vacancy: { select: { title: true } } } }),
+    prisma.invitation.count({ where: { ...iw, closedAt: { gt: read, lte: through } } }),
+    prisma.application.findMany({ where: aw, orderBy: { closedAt: 'desc' }, take: 20, select: { id: true, closedAt: true, vacancy: { select: { id: true, title: true } } } }),
+    prisma.application.count({ where: { ...aw, closedAt: { gt: read, lte: through } } }),
+  ]);
+  const items: NotificationItem[] = [
+    ...invs.map((r) => ({ id: `closed-${r.id}`, text: HIRED_ELSEWHERE_REASON, detail: `Приглашение закрыто · ${r.vacancy?.title ?? 'без вакансии'}`, href: '/employer/invitations', at: r.closedAt!.toISOString(), unread: r.closedAt! > read })),
+    ...apps.map((r) => ({ id: `closed-app-${r.id}`, text: HIRED_ELSEWHERE_REASON, detail: `Отклик закрыт · ${r.vacancy.title}`, href: `/employer/needs/${r.vacancy.id}`, at: r.closedAt!.toISOString(), unread: r.closedAt! > read })),
+  ];
+  return { items, unread: iUnread + aUnread };
 }
 
 /** lane live-slots (ADR 0008 п. 3–4, 6): события живой защиты — предложены слоты, выбрано время, не подошло, отмена. */

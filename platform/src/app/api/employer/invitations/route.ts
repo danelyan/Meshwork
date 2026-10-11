@@ -17,7 +17,8 @@ export const GET = withErrors(async (req: Request) => {
   return Response.json({ invitations, limit: { perDay: sanction.limit, base: DAILY_INVITATION_LIMIT, sentToday: sent, sanction } });
 });
 
-/** POST `{ candidateId, vacancyId?, message, salaryFrom, salaryTo }` — пригласить (вилка обязательна, to ≥ from). */
+/** POST `{ candidateId, vacancyId?, message, salaryFrom, salaryTo }` — пригласить (вилка обязательна, to ≥ from).
+ * 409 `invite_cooldown` (`details.nextAt`) — 14 дней после отказа кандидата или отзыва компанией. */
 export const POST = withErrors(async (req: Request) => {
   assertSameOrigin(req);
   const { employerProfileId } = requireEmployer(req);

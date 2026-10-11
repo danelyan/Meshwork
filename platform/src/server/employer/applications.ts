@@ -17,7 +17,10 @@ import { consentRequired, disclosedApplicationIds, userIdForCandidate } from '..
 import { consentVersion } from '../consent/texts';
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
+import { notifyInBackground } from '../mail';
 import { loadCatalog } from '../recommend/evidence';
+
+import { notifyAtsStatusChanged } from './ats-webhook';
 
 import { DAILY_APPLICATION_LIMIT, type ApplicationInput } from './application-schemas';
 import { dedupeClaims, toCandidateCard, type CandidateCard } from './privacy';
@@ -49,6 +52,10 @@ export interface EmployerApplicationView {
   createdAt: string;
   viewedAt: string | null;
   respondedAt: string | null;
+  /** lane lifecycle: закрыт системой (status = closed) — когда и почему. */
+  closed?: { at: string; reason: string } | null;
+  /** lane lifecycle: приглашение, созданное при принятии отклика (слоты живой защиты, отметка найма — там). */
+  invitationId?: string | null;
   candidate: CandidateCard;
 }
 
@@ -125,7 +132,8 @@ export async function listVacancyApplications(companyId: string, vacancyId: stri
   const rows = await prisma.application.findMany({
     where: { vacancyId },
     select: {
-      id: true, status: true, message: true, createdAt: true, viewedAt: true, respondedAt: true,
+      id: true, status: true, message: true, createdAt: true, viewedAt: true, respondedAt: true, closedAt: true, closeReason: true,
+      invitation: { select: { id: true } },
       candidate: {
         select: {
           id: true, name: true, email: true, contact: true, specialization: true, fspState: true,
@@ -147,6 +155,8 @@ export async function listVacancyApplications(companyId: string, vacancyId: stri
       createdAt: r.createdAt.toISOString(),
       viewedAt: r.viewedAt?.toISOString() ?? null,
       respondedAt: r.respondedAt?.toISOString() ?? null,
+      closed: r.closedAt ? { at: r.closedAt.toISOString(), reason: r.closeReason ?? '' } : null,
+      invitationId: r.invitation?.id ?? null,
       candidate: toCandidateCard(
         { id: c.id, name: c.name, email: c.email, contact: c.contact, specialization: c.specialization, fspState: c.fspState, category: c.categories[0] ?? null, claims: dedupeClaims(c.claims, catalog) },
         applicationContactsOpen(r.status, disclosed.has(r.id)),
@@ -155,18 +165,60 @@ export async function listVacancyApplications(companyId: string, vacancyId: stri
   });
 }
 
-/** Ответ работодателя. Чужой отклик — 404; уже отвеченный — 409. Условный update — без гонки двойного ответа. */
-export async function respondApplication(companyId: string, applicationId: string, action: 'accept' | 'decline') {
-  const app = await prisma.application.findFirst({ where: { id: applicationId, vacancy: { companyId } }, select: { id: true } });
+/**
+ * Ответ работодателя. Чужой отклик — 404; уже отвеченный — 409. Условный update — без гонки двойного ответа.
+ * lane lifecycle: accept в той же транзакции создаёт приглашение `accepted` (та же компания и вакансия, вилка вакансии,
+ * sourceApplicationId) — дальше тот же путь, что у приглашения: слоты живой защиты, отметка найма. Раскрытие не
+ * создаётся заново: действующее согласие кандидата по отклику получает в context ещё и invitationId — одна запись,
+ * отзыв по applicationId или по invitationId прекращает раскрытие для обоих. Отозванное до принятия согласие не
+ * переносится — компания видит псевдоним. Лимит 20 приглашений в сутки такое приглашение не расходует.
+ */
+export async function respondApplication(companyId: string, applicationId: string, action: 'accept' | 'decline', employerProfileId?: string) {
+  const app = await prisma.application.findFirst({
+    where: { id: applicationId, vacancy: { companyId } },
+    select: { id: true, candidateId: true, message: true, vacancy: { select: { id: true, salaryFrom: true, salaryTo: true } } },
+  });
   if (!app) throw errors.notFound('Отклик не найден');
   const status: ApplicationStatus = action === 'accept' ? 'accepted' : 'declined';
   const now = new Date();
-  const r = await prisma.application.updateMany({
-    where: { id: applicationId, status: { in: OPEN } },
-    data: { status, respondedAt: now },
+  const invitationId = await prisma.$transaction(async (tx) => {
+    const r = await tx.application.updateMany({
+      where: { id: applicationId, status: { in: OPEN } },
+      data: { status, respondedAt: now },
+    });
+    if (r.count === 0) throw errors.conflict('На отклик уже ответили');
+    await tx.application.updateMany({ where: { id: applicationId, viewedAt: null }, data: { viewedAt: now } });
+    if (status !== 'accepted') return null;
+    const inv = await tx.invitation.create({
+      data: {
+        companyId,
+        employerProfileId: employerProfileId ?? null,
+        candidateId: app.candidateId,
+        vacancyId: app.vacancy.id,
+        salaryFrom: app.vacancy.salaryFrom,
+        salaryTo: app.vacancy.salaryTo,
+        message: 'Компания приняла ваш отклик на вакансию.',
+        status: 'accepted',
+        viewedAt: now,
+        respondedAt: now,
+        sourceApplicationId: applicationId,
+      },
+      select: { id: true },
+    });
+    await linkDisclosureToInvitation(tx, app.candidateId, applicationId, inv.id);
+    return inv.id;
   });
-  if (r.count === 0) throw errors.conflict('На отклик уже ответили');
-  await prisma.application.updateMany({ where: { id: applicationId, viewedAt: null }, data: { viewedAt: now } });
-  return { id: applicationId, status };
+  if (invitationId) void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
+  return { id: applicationId, status, invitationId };
+}
+
+/** Действующее раскрытие по отклику дополняется invitationId (та же запись согласия; отзыв по любому id — для обоих). */
+async function linkDisclosureToInvitation(tx: Prisma.TransactionClient, candidateId: string, applicationId: string, invitationId: string): Promise<void> {
+  const rows = await tx.consent.findMany({ where: { kind: 'identity_disclosure', revokedAt: null, user: { candidateId } }, select: { id: true, context: true } });
+  for (const r of rows) {
+    const ctx = (r.context ?? {}) as Record<string, unknown>;
+    if (ctx.applicationId !== applicationId) continue;
+    await tx.consent.update({ where: { id: r.id }, data: { context: { ...ctx, invitationId } as Prisma.InputJsonObject } });
+  }
 }
 

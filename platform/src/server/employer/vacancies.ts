@@ -5,6 +5,7 @@ import { prisma } from '../db';
 import { errors } from '../errors';
 import type { Grade, Specialization } from '../types';
 
+import { closeVacancyPipelines } from './invitations';
 import type { VacancyInput } from './schemas';
 
 export interface VacancyView {
@@ -130,8 +131,19 @@ export async function updateVacancy(companyId: string, id: string, input: Vacanc
   return toView(v);
 }
 
-export async function setVacancyArchived(companyId: string, id: string, archived: boolean): Promise<VacancyView> {
+/**
+ * Закрыть / вернуть потребность. lane lifecycle: при закрытии (`userId` передан) открытые приглашения на неё
+ * отзываются, открытые самоотклики закрываются с причиной «Вакансия закрыта»; принятые приглашения не трогаются —
+ * их число в `closed.acceptedInvitations`.
+ */
+export async function setVacancyArchived(
+  companyId: string,
+  id: string,
+  archived: boolean,
+  userId?: string,
+): Promise<VacancyView & { closed?: { withdrawnInvitations: number; acceptedInvitations: number; closedApplications: number } }> {
   await getVacancy(companyId, id);
   const v = await prisma.vacancy.update({ where: { id }, data: { archivedAt: archived ? new Date() : null }, select });
-  return toView(v);
+  if (!archived || !userId) return toView(v);
+  return { ...toView(v), closed: await closeVacancyPipelines({ companyId, userId }, id) };
 }

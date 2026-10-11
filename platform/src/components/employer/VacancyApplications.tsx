@@ -51,6 +51,8 @@ export function VacancyApplications({ vacancyId }: { vacancyId: string }) {
           <h3>{card.displayName}</h3>
           <p>{card.category?.label ?? 'Без категории из теста'}{card.fsp.hasAchievements && ' · ФСП'} · отклик {APPLICATION_STATUS_LABEL[a.status]} {formatDate(a.createdAt)}</p>
           {a.message && <p>{a.message}</p>}
+          {a.closed && <p className={styles.meta} role="status">Отклик закрыт: {a.closed.reason}.</p>}
+          {a.invitationId && <p className={styles.meta}>Отклик принят - создано приглашение: <a href="/employer/invitations">слоты живой защиты и отметка найма</a>.</p>}
           <div className={styles.claims}>{card.claims.map((claim) => <span key={claim.catalogId} className={styles.claim}><LevelBadge level={claim.level} />{claim.statement}</span>)}</div>
           {card.contacts ? <div className={styles.contacts}><strong>{card.contacts.name}</strong><span>{card.contacts.contact ?? NO_CANDIDATE_CONTACT}</span></div>
             : a.status === 'accepted' ? <p className={styles.meta}>Кандидат отозвал раскрытие: имя и контакты скрыты.</p>

@@ -85,7 +85,11 @@ describe('lane invite-cancel: отзыв приглашения работода
     expect((await withdraw(INV.sent!, 'Ещё раз')).status).toBe(409);
     // Счётчик лимита — по createdAt всех приглашений компании, отозванное в нём остаётся.
     expect(await prisma.invitation.count({ where: { companyId: 'co-a', createdAt: { gt: new Date(Date.now() - 86_400_000) } } })).toBe(before);
-    // После отзыва компания может пригласить снова (открытого приглашения нет), это новое приглашение в лимите.
+    // lane lifecycle: после отзыва — пауза 14 дней (409 invite_cooldown), по её истечении можно пригласить снова.
+    const blocked = await inviteRoute(post({ candidateId: 'c1', message: 'Вернулись к вакансии, приглашаем снова', salaryFrom: 200000, salaryTo: 250000 }, EMP_A));
+    expect(blocked.status).toBe(409);
+    expect((await blocked.json()).error).toMatchObject({ code: 'invite_cooldown', details: { nextAt: expect.any(String) } });
+    await prisma.invitation.update({ where: { id: INV.sent! }, data: { withdrawnAt: new Date(Date.now() - 15 * 86_400_000) } });
     const again = await inviteRoute(post({ candidateId: 'c1', message: 'Вернулись к вакансии, приглашаем снова', salaryFrom: 200000, salaryTo: 250000 }, EMP_A));
     expect(again.status).toBe(201);
   });

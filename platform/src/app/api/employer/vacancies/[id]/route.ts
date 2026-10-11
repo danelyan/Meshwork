@@ -26,12 +26,15 @@ export const PUT = withErrors(async (req: Request, { params }: Ctx) => {
   return Response.json(await updateVacancy(ctx.companyId, id, input));
 });
 
-/** PATCH `{ archived }` — закрыть / вернуть потребность. */
+/**
+ * PATCH `{ archived }` — закрыть / вернуть потребность. Закрытие отзывает открытые приглашения на неё и закрывает
+ * открытые самоотклики (причина «Вакансия закрыта»); принятые приглашения остаются, их число — в `closed`.
+ */
 export const PATCH = withErrors(async (req: Request, { params }: Ctx) => {
   assertSameOrigin(req);
-  const { employerProfileId } = requireEmployer(req);
+  const { employerProfileId, userId } = requireEmployer(req);
   const { id } = await params;
   const { archived } = VacancyPatch.parse(await req.json().catch(() => ({})));
   const ctx = await loadEmployerContext(employerProfileId);
-  return Response.json(await setVacancyArchived(ctx.companyId, id, archived));
+  return Response.json(await setVacancyArchived(ctx.companyId, id, archived, userId));
 });

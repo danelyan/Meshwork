@@ -9,6 +9,7 @@ export const APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {
   viewed: 'просмотрен',
   accepted: 'принят',
   declined: 'отклонён',
+  closed: 'закрыт',
 };
 
 export const applyApi = (vacancyId: string, message: string, disclosureVersion: string) =>
@@ -17,7 +18,7 @@ export const myApplicationsApi = () => request<{ applications: CandidateApplicat
 export const vacancyApplicationsApi = (vacancyId: string) =>
   request<{ applications: EmployerApplicationView[] }>(`/api/employer/vacancies/${encodeURIComponent(vacancyId)}/applications?view=1`);
 export const answerApplicationApi = (id: string, action: 'accept' | 'decline') =>
-  request<{ id: string; status: ApplicationStatus }>(`/api/employer/applications/${encodeURIComponent(id)}`, {
+  request<{ id: string; status: ApplicationStatus; invitationId?: string | null }>(`/api/employer/applications/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ action }),

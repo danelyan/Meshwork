@@ -125,17 +125,19 @@ export function CallPanel() {
   // События созвона: реплики из других вкладок и (позже) работодателя в комнате.
   const id = call?.id;
   const reply = useReplySpeech(voice, id);
+  const onDelta = reply.onDelta;
   const markSpeechEnd = reply.markSpeechEnd;
   useEffect(() => {
     if (!id) return;
     return subscribeCallEvents(id, (ev) => {
+      if (ev.type === 'utterance_delta') onDelta(ev.afterIndex, ev.n, ev.text);
       if (ev.type === 'utterance') setTranscript((t) => merge(t, [ev.entry]));
       if (ev.type === 'snapshot' && ev.call.transcript) {
         const tr = ev.call.transcript;
         setTranscript((t) => merge(t, tr));
       }
     });
-  }, [id]);
+  }, [id, onDelta]);
 
   // Новая реплика ИИ — озвучить один раз (ключ = созвон + номер реплики), по предложениям (useReplySpeech).
   const speakEntry = reply.speakEntry;

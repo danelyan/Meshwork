@@ -12,6 +12,7 @@ import { type EvalTopic, evaluateCall, notProbedItem } from './evaluator';
 import { nextCallQuestion } from './interviewer';
 import { CALL_LIMITS, type PlanTurn } from './plan';
 import { evaluateOwnership, nextReviewQuestion, ownershipSentence, reviewDialog, reviewRemaining, reviewStepDue, type ReviewItem } from './test-review';
+import type { InterviewerStream } from './stream';
 import type { CallKind, CallVerdict, QuestionLevel, TranscriptEntry } from './types';
 
 export interface DriverSession {
@@ -40,7 +41,8 @@ export interface CallDriver {
   /** Проверка перед стартом (например, сабмит проекта принадлежит кандидату). */
   assertCanStart?(candidateId: string, projectSubmissionId: string | null): Promise<void>;
   /** maxQuestions — потолок обычных вопросов на этот созвон (сервис урезает его под этап разбора теста). */
-  nextQuestion(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; force?: { topic: string; level: QuestionLevel }; maxQuestions?: number }): Promise<DriverQuestion>;
+  /** stream — потоковый режим (CALL_STREAMING): драйвер, который его не умеет, просто игнорирует. */
+  nextQuestion(session: DriverSession, llm: LlmProvider, opts?: { signal?: AbortSignal; force?: { topic: string; level: QuestionLevel }; maxQuestions?: number; stream?: InterviewerStream }): Promise<DriverQuestion>;
   /** Сколько реплик этапа «разбор задания теста» ещё впереди (0 — этапа нет). Нужен для общего лимита реплик ИИ. */
   reviewRemaining?(session: DriverSession): Promise<number>;
   /**
@@ -133,6 +135,7 @@ const qualifying: CallDriver = {
       { specialization: ctx.specialization, claimedGrade: ctx.claimedGrade, topics: ctx.topics, turns, limits, ...(opts.force ? { force: opts.force } : {}) },
       llm,
       opts.signal,
+      opts.stream,
     );
     return { text: q.question, meta: q.meta, done: q.done };
   },

@@ -144,9 +144,11 @@ export function createOpenAiChatProvider(cfg: OpenAiChatConfig): LlmProvider {
       let raw: ChatBody;
       try {
         const body = toChatBody(req, cfg.model, cfg);
-        if (req.onDelta && !req.schema && (cfg.stream ?? true)) {
+        // Поток: текстовые дельты (без схемы) или сырой JSON по схеме (onJsonDelta, интервьюер созвона).
+        const sink = req.schema ? req.onJsonDelta : req.onDelta;
+        if (sink && (cfg.stream ?? true)) {
           const params = { ...body, stream: true, stream_options: { include_usage: true } } as unknown as OpenAI.Chat.ChatCompletionCreateParamsStreaming;
-          raw = await collectStream(await client.chat.completions.create(params, { signal }), req.onDelta);
+          raw = await collectStream(await client.chat.completions.create(params, { signal }), sink);
         } else {
           raw = (await client.chat.completions.create(body as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming, { signal })) as unknown as ChatBody;
         }

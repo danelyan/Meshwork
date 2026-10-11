@@ -85,6 +85,7 @@ export const interviewDriver: CallDriver = {
       },
       llm,
       opts.signal,
+      opts.stream,
     );
     return { text: q.question, meta: q.meta, done: q.done };
   },

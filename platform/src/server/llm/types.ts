@@ -71,6 +71,12 @@ export interface CompleteRequest {
    * JSON-схемы (там текст — служебный JSON, показывать его нельзя).
    */
   onDelta?: (text: string) => void;
+  /**
+   * Сырые куски JSON-ответа по мере генерации — при `schema` (лейн call-speed: интервьюер созвона режет вопрос
+   * на предложения до конца ответа). Только openai-chat со `stream`; остальные провайдеры и план В его
+   * игнорируют, вызывающий получает обычный результат целиком. Начавшийся поток клиент LLM не ретраит.
+   */
+  onJsonDelta?: (chunk: string) => void;
 }
 
 export interface CompleteResult {

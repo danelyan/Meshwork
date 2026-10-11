@@ -7,7 +7,8 @@ import { z } from 'zod';
 
 import type { Grade } from '../../lib/grades';
 import { retellsProfile } from '../call/evaluator';
-import { heuristicSignal, INTERVIEWER_TIMEOUT_MS, withRefusal } from '../call/plan';
+import { asksForAnswer, heuristicSignal, INTERVIEWER_TIMEOUT_MS, REFUSAL_LINE, REFUSED_RE, withRefusal } from '../call/plan';
+import { type InterviewerStream, QuestionGate } from '../call/stream';
 import { contextBlock } from '../call/prompt-utils';
 import { ANSWER_SIGNALS, type AiUtteranceMeta, type AnswerSignal, type QuestionLevel } from '../call/types';
 import { responseJsonSchema } from '../llm/schema';
@@ -153,12 +154,40 @@ function metaOf(p: PlannedInterviewQuestion, routed: AnswerSignal | null, extra:
   return { topic: p.competency.title, catalogId: null, level: p.level, routedBy: routed, competencyId: p.competency.id, block: p.block, ...extra };
 }
 
-export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmProvider, signal?: AbortSignal): Promise<NextInterviewQuestion> {
+/** Ворота потокового режима (call/stream.ts): компетенцию по плану проверяем до первого предложения. */
+function interviewGate(input: InterviewerInput, titles: readonly string[], stream: InterviewerStream, onPlan: (p: { planned: PlannedInterviewQuestion; meta: AiUtteranceMeta }) => void): QuestionGate {
+  const lastAnswer = input.turns[input.turns.length - 1]?.answer ?? null;
+  let closingTurn = false;
+  return new QuestionGate({
+    field: 'question',
+    ready(f) {
+      if (typeof f.competencyId !== 'string') return 'wait';
+      if (input.turns.length && typeof f.answerSignal !== 'string') return 'wait';
+      const routed: AnswerSignal | null = input.turns.length ? (f.answerSignal as AnswerSignal) : null;
+      const planned = plannedFor(input, routed);
+      if (f.competencyId.trim() !== planned.competency.id) return 'stop';
+      // План закончился (summary), а минимум набран — сервис заменит вопрос итогом: заранее не озвучиваем.
+      if (planned.done && stream.closable) return 'stop';
+      closingTurn = planned.done;
+      onPlan({ planned, meta: metaOf(planned, routed, input.force ? { probe: 'inconclusive', fallback: false } : {}) });
+      return 'ok';
+    },
+    textOk: (q) => /[а-яё]/i.test(q) && !retellsProfile(q, input.resumeFacts, titles),
+    lead: (first) => (!closingTurn && asksForAnswer(lastAnswer) && !REFUSED_RE.test(first) ? REFUSAL_LINE : null),
+    onSentence: stream.onSentence,
+  });
+}
+
+export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmProvider, signal?: AbortSignal, stream?: InterviewerStream): Promise<NextInterviewQuestion> {
   const lastAnswer = input.turns[input.turns.length - 1]?.answer ?? null;
   const titles = Object.values(input.plan).flat().map((c) => c.title);
+  let streamPlan: { planned: PlannedInterviewQuestion; meta: AiUtteranceMeta } | null = null;
+  const gate = stream ? interviewGate(input, titles, stream, (p) => (streamPlan = p)) : null;
   let correction: string | undefined;
   try {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    // В потоковом режиме повтор — только пока ничего не прозвучало (gate.started).
+    for (let attempt = 0; attempt < 2 && !gate?.started; attempt++) {
+      gate?.reset();
       const res = await llm.complete(
         {
           purpose: 'interview_interviewer', timeoutMs: INTERVIEWER_TIMEOUT_MS,
@@ -167,6 +196,7 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
           schema: { name: 'interview_question', jsonSchema: JSON_SCHEMA },
           temperature: 0.4,
           maxTokens: 500,
+          ...(gate ? { onJsonDelta: (c: string) => gate.push(c) } : {}),
         },
         signal,
       );
@@ -188,8 +218,16 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
         correction = RETELL_CORRECTION;
         continue;
       }
-      if (planned.done) return { question: out.question.trim(), meta: metaOf(planned, routed), done: true };
-      return { question: withRefusal(out.question.trim(), lastAnswer), meta: metaOf(planned, routed, input.force ? { probe: 'inconclusive', fallback: false } : {}), done: false };
+      const composed = gate?.compose(out.question, '');
+      if (planned.done) {
+        if (composed?.usedChosen) return { question: composed.text, meta: metaOf(planned, routed), done: true };
+        if (gate?.started) break;
+        return { question: out.question.trim(), meta: metaOf(planned, routed), done: true };
+      }
+      const meta = metaOf(planned, routed, input.force ? { probe: 'inconclusive', fallback: false } : {});
+      if (composed?.usedChosen) return { question: composed.text, meta, done: false };
+      if (gate?.started) break; // прозвучало не то, что вышло в итоге — собираем ниже из прозвучавшего
+      return { question: withRefusal(out.question.trim(), lastAnswer), meta, done: false };
     }
   } catch (err) {
     if (signal?.aborted) throw err;
@@ -198,11 +236,17 @@ export async function nextInterviewQuestion(input: InterviewerInput, llm: LlmPro
   const routed = input.turns.length ? heuristicSignal(lastAnswer) : null;
   const planned = plannedFor(input, routed);
   const first = input.turns.length === 0;
-  return {
-    question: withRefusal(templateInterviewQuestion(planned.competency, planned.block === 'summary' ? 'test' : planned.block, planned.level, first), lastAnswer),
-    meta: metaOf(planned, routed, { fallback: true, ...(input.force ? { probe: 'inconclusive' as const } : {}) }),
-    done: planned.done,
-  };
+  const template = templateInterviewQuestion(planned.competency, planned.block === 'summary' ? 'test' : planned.block, planned.level, first);
+  const fbMeta = metaOf(planned, routed, { fallback: true, ...(input.force ? { probe: 'inconclusive' as const } : {}) });
+  // Часть вопроса уже прозвучала: реплика = прозвучавшее (+ шаблон без второй вводной, если вопроса в нём нет).
+  if (gate?.started) {
+    const c = gate.compose(null, template)!;
+    const sp = streamPlan as { planned: PlannedInterviewQuestion; meta: AiUtteranceMeta } | null;
+    console.warn('[interview] interviewer stream cut:', c.cut ? 'heard question kept' : 'template appended');
+    if (c.cut && sp) return { question: c.text, meta: { ...sp.meta, streamCut: true }, done: false };
+    return { question: c.text, meta: { ...fbMeta, streamCut: true }, done: false };
+  }
+  return { question: withRefusal(template, lastAnswer), meta: fbMeta, done: planned.done };
 }
 
 export { INTERVIEW_LIMITS };

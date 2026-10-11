@@ -174,10 +174,23 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
     // После неудачной попытки, успевшей что-то показать, повтор идёт без дельт: итог придёт событием message.
     let streamed = false;
     const userDelta = planB || req.schema ? undefined : req.onDelta;
-    const { onDelta: _drop, ...bare } = req;
+    // Сырой JSON по схеме (интервьюер созвона): поток уже ушёл кандидату — повтор дал бы другой текст.
+    const jsonDelta = planB || !req.schema ? undefined : req.onJsonDelta;
+    let jsonStreamed = false;
+    const { onDelta: _drop, onJsonDelta: _dropJson, ...bare } = req;
     void _drop;
-    const reqFor = (): CompleteRequest =>
-      userDelta && !streamed
+    void _dropJson;
+    const reqFor = (): CompleteRequest => {
+      if (jsonDelta) {
+        return {
+          ...bare,
+          onJsonDelta: (t) => {
+            jsonStreamed = true;
+            jsonDelta(t);
+          },
+        };
+      }
+      return userDelta && !streamed
         ? {
             ...bare,
             onDelta: (t) => {
@@ -186,6 +199,7 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
             },
           }
         : bare;
+    };
     let attempts = 0;
     let lastErr: unknown;
     try {
@@ -215,7 +229,7 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
           return result;
         } catch (err) {
           lastErr = err;
-          if (attempts > opts.maxRetries || !isRetryable(err) || signal?.aborted) break;
+          if (attempts > opts.maxRetries || !isRetryable(err) || signal?.aborted || jsonStreamed) break;
           // Retry-After провайдера важнее своей экспоненты (но не дольше RETRY_AFTER_CAP_MS).
           const wait = opts.backoffMs ? backoff(attempts) : (retryAfterMs(err) ?? backoff(attempts));
           await sleep(wait, signal);

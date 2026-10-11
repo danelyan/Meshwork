@@ -4,9 +4,10 @@
 import { responseJsonSchema } from '../llm/schema';
 import type { ChatMessage, LlmProvider } from '../llm/types';
 import { retellsProfile } from './evaluator';
-import { CALL_LIMITS, coverage, type PlanTurn, type TopicSeed, heuristicSignal, planNext, routeLevel, saysDontKnow, startLevel, templateQuestion, withRefusal, INTERVIEWER_TIMEOUT_MS } from './plan';
+import { CALL_LIMITS, coverage, type PlanTurn, type TopicSeed, asksForAnswer, heuristicSignal, planNext, REFUSAL_LINE, REFUSED_RE, routeLevel, saysDontKnow, startLevel, templateQuestion, withRefusal, withRefusal as withRefusalLine, INTERVIEWER_TIMEOUT_MS } from './plan';
 import { contextBlock, loadCallPrompt } from './prompt-utils';
 import { CallInterviewerOutput } from './schemas';
+import { type InterviewerStream, QuestionGate } from './stream';
 import type { AiUtteranceMeta, AnswerSignal, QuestionLevel } from './types';
 import type { Grade } from '../../lib/grades';
 
@@ -124,14 +125,57 @@ export function resolveLevel(input: InterviewerInput, topic: string, signal: Ans
   return routeLevel(last.level, signal);
 }
 
-export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider, signal?: AbortSignal): Promise<NextCallQuestion> {
+/**
+ * Ворота потокового режима для квалифицирующего созвона (stream.ts): те же правила темы, что ниже по полному
+ * ответу, но по полям, пришедшим до вопроса. `onMeta` получает meta темы, когда ворота открылись.
+ */
+function callGate(input: InterviewerInput, stream: InterviewerStream, onMeta: (meta: AiUtteranceMeta) => void): QuestionGate {
+  const lastAnswer = input.turns[input.turns.length - 1]?.answer ?? null;
+  const banned = profileTexts(input.topics);
+  const titles = input.topics.map((t) => t.topic);
+  const cov = coverage(input.topics, input.turns, input.limits.maxQuestions);
+  const coverOpen = cov.unprobed.length > 0 && input.turns.length < input.limits.maxQuestions;
+  const last = input.turns[input.turns.length - 1];
+  return new QuestionGate({
+    field: 'question',
+    ready(f) {
+      if (typeof f.topic !== 'string') return 'wait';
+      if (input.turns.length && typeof f.answerSignal !== 'string') return 'wait';
+      const known = input.topics.find((t) => t.topic === (f.topic as string).trim() || (typeof f.catalogId === 'string' && f.catalogId && t.catalogId === f.catalogId));
+      const topic = known?.topic ?? (f.topic as string).trim();
+      if (input.force && topic !== input.force.topic) return 'stop';
+      if (!input.force && cov.mustSwitch && !cov.unprobed.includes(topic)) return 'stop';
+      if (!input.force && last && saysDontKnow(last.answer) && topic === last.topic && input.topics.some((t) => t.topic !== last.topic)) return 'stop';
+      // done меняет судьбу вопроса: при открытом покрытии «достаточно» по уже спрошенной теме → шаблон; без
+      // покрытия и при closable «достаточно» → итог. Пока done не пришёл, в этих случаях ждём.
+      const doneMatters = !input.force && (coverOpen ? !cov.unprobed.includes(topic) : stream.closable);
+      if (doneMatters) {
+        if (typeof f.done !== 'boolean') return 'wait';
+        if (f.done) return 'stop';
+      }
+      const routed: AnswerSignal | null = input.turns.length ? (f.answerSignal as AnswerSignal) : null;
+      const level = input.force ? input.force.level : resolveLevel(input, topic, routed ?? 'none');
+      onMeta({ topic, catalogId: known?.catalogId ?? null, level, routedBy: routed, ...(input.force ? { probe: 'inconclusive' as const } : {}) });
+      return 'ok';
+    },
+    textOk: (q) => /[а-яё]/i.test(q) && !retellsProfile(q, banned, titles),
+    lead: (first) => (asksForAnswer(lastAnswer) && !REFUSED_RE.test(first) ? REFUSAL_LINE : null),
+    onSentence: stream.onSentence,
+  });
+}
+
+export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider, signal?: AbortSignal, stream?: InterviewerStream): Promise<NextCallQuestion> {
   const lastAnswer = input.turns[input.turns.length - 1]?.answer ?? null;
   const banned = profileTexts(input.topics);
   const cov = coverage(input.topics, input.turns, input.limits.maxQuestions);
+  let streamMeta: AiUtteranceMeta | null = null;
+  const gate = stream ? callGate(input, stream, (m) => (streamMeta = m)) : null;
   let correction: string | undefined;
   try {
     // Вторая попытка — только если модель пересказала профиль (n-грамма ≥ 4 слов из утверждения/резюме).
-    for (let attempt = 0; attempt < 2; attempt++) {
+    // В потоковом режиме — только пока ничего не прозвучало (gate.started).
+    for (let attempt = 0; attempt < 2 && !gate?.started; attempt++) {
+      gate?.reset();
       const res = await llm.complete(
         {
           purpose: 'call_interviewer', timeoutMs: INTERVIEWER_TIMEOUT_MS,
@@ -140,6 +184,7 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
           schema: { name: 'call_question', jsonSchema: JSON_SCHEMA },
           temperature: 0.4,
           maxTokens: 500,
+          ...(gate ? { onJsonDelta: (c: string) => gate.push(c) } : {}),
         },
         signal,
       );
@@ -171,16 +216,32 @@ export async function nextCallQuestion(input: InterviewerInput, llm: LlmProvider
       const coverOpen = cov.unprobed.length > 0 && input.turns.length < input.limits.maxQuestions;
       if (!input.force && out.done && coverOpen && !cov.unprobed.includes(topic)) break;
       const level = input.force ? input.force.level : resolveLevel(input, topic, routed ?? 'none');
-      return {
-        question: withRefusal(out.question.trim(), lastAnswer),
-        meta: { topic, catalogId: known?.catalogId ?? null, level, routedBy: routed, ...(input.force ? { probe: 'inconclusive' as const } : {}) },
-        done: input.force || coverOpen ? false : out.done,
-      };
+      const meta: AiUtteranceMeta = { topic, catalogId: known?.catalogId ?? null, level, routedBy: routed, ...(input.force ? { probe: 'inconclusive' as const } : {}) };
+      const done = input.force || coverOpen ? false : out.done;
+      const composed = gate?.compose(out.question, '');
+      if (composed?.usedChosen) return { question: composed.text, meta, done };
+      if (gate?.started) break; // прозвучало не то, что вышло в итоге — собираем ниже из прозвучавшего
+      return { question: withRefusal(out.question.trim(), lastAnswer), meta, done };
     }
   } catch (err) {
     if (signal?.aborted) throw err;
     console.warn('[call] interviewer fallback:', err instanceof Error ? err.message : err);
   }
+  // Часть вопроса уже прозвучала: реплика = прозвучавшее (+ шаблон, если в нём ещё нет вопроса).
+  if (gate?.started) {
+    // Вводная-отказ уже прозвучала (или не нужна) — к шаблону её не добавляем второй раз.
+    const fb = templateFallback(input, lastAnswer, false);
+    const c = gate.compose(null, fb.question)!;
+    console.warn('[call] interviewer stream cut:', c.cut ? 'heard question kept' : 'template appended');
+    if (c.cut && streamMeta) return { question: c.text, meta: { ...(streamMeta as AiUtteranceMeta), streamCut: true }, done: false };
+    return { question: c.text, meta: { ...fb.meta, streamCut: true }, done: false };
+  }
+  return templateFallback(input, lastAnswer);
+}
+
+/** Вопрос из шаблона без модели (сбой, мусор, нарушение правил темы). */
+function templateFallback(input: InterviewerInput, lastAnswer: string | null, refuse = true): NextCallQuestion {
+  const withRefusal = (q: string, a: string | null) => (refuse ? withRefusalLine(q, a) : q);
   const routed = input.turns.length ? heuristicSignal(lastAnswer) : null;
   if (input.force) {
     const seed = input.topics.find((t) => t.topic === input.force!.topic) ?? { topic: input.force.topic, catalogId: null, claimStatement: null, resumeFact: null };

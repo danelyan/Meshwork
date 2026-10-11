@@ -350,8 +350,22 @@ export async function submitTurn(
     await closeOrReview();
   } else {
     publishCall(sessionId, { type: 'ai_state', state: 'thinking' });
+    // Потоковый режим: предложения вопроса уходят по SSE до конца генерации (stream.ts). closable — этот ход
+    // может закрыть созвон ответом модели «достаточно» (тогда вопрос заранее не озвучивается).
+    const afterIndex = saved.entry.index;
+    const stream = getEnv().CALL_STREAMING
+      ? {
+          closable: !probe && answered >= driver.limits.minQuestions,
+          onSentence: (text: string, n: number) => {
+            timing.firstSentenceMs ??= Date.now() - genStarted;
+            timing.sentences = n + 1;
+            publishCall(sessionId, { type: 'utterance_delta', afterIndex, n, text });
+          },
+        }
+      : undefined;
+    timing.streaming = Boolean(stream);
     try {
-      const q = await driver.nextQuestion(driverSession(saved.row, transcript), llm, probe ? { force: probe } : { maxQuestions: regularCap });
+      const q = await driver.nextQuestion(driverSession(saved.row, transcript), llm, { ...(probe ? { force: probe } : { maxQuestions: regularCap }), ...(stream ? { stream } : {}) });
       if (!probe && answered >= driver.limits.minQuestions && q.done) {
         await closeOrReview();
       } else {

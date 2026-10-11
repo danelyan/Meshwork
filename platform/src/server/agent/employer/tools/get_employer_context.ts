@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { invitationsSentToday, listVacancies, loadEmployerContext } from '@/server/employer';
-import { DAILY_INVITATION_LIMIT } from '@/server/employer/weights';
+import { getSetting } from '@/server/admin/settings';
 
 import type { EmployerTool } from './shared';
 
@@ -33,10 +33,11 @@ export const getEmployerContext: EmployerTool = {
   input: Input,
   output: Output,
   async handler(ctx) {
-    const [emp, vacancies, sent] = await Promise.all([
+    const [emp, vacancies, sent, dailyLimit] = await Promise.all([
       loadEmployerContext(ctx.employerProfileId),
       listVacancies(ctx.companyId),
       invitationsSentToday(ctx.companyId),
+      getSetting('employer.dailyInvitationLimit'),
     ]);
     const active = vacancies.filter((v) => !v.archived);
     return {
@@ -53,7 +54,7 @@ export const getEmployerContext: EmployerTool = {
         invitations: v.invitations,
       })),
       archivedNeeds: vacancies.length - active.length,
-      invitations: { sentLast24h: sent, limit: DAILY_INVITATION_LIMIT, left: Math.max(0, DAILY_INVITATION_LIMIT - sent) },
+      invitations: { sentLast24h: sent, limit: dailyLimit, left: Math.max(0, dailyLimit - sent) },
     };
   },
 };

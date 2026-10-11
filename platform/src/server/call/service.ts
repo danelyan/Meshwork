@@ -3,6 +3,7 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '../db';
+import { getSetting } from '../admin/settings';
 import { getEnv } from '../env';
 import { AppError, errors } from '../errors';
 import type { LlmProvider } from '../llm/types';
@@ -214,9 +215,9 @@ export async function startCall(candidateId: string, body: StartCallBody, llm: L
   // Пауза между созвонами одного вида (демо-кандидаты освобождены); активный созвон выше продолжается без проверки.
   await assertCooldownPassed(candidateId, body.kind);
 
-  const dailyLimit = getEnv().CALL_DAILY_LIMIT;
+  const dailyLimit = await getSetting('call.dailyLimit');
   // Демо-кандидаты общие (жюри и команда входят под одним и тем же): суточный лимит на них не действует,
-  // иначе пятый созвон за день у всех разом упирается в 429 (на стенде CALL_DAILY_LIMIT не задан → 5).
+  // иначе пятый созвон за день у всех разом упирается в 429 (по умолчанию 5: env CALL_DAILY_LIMIT или настройка call.dailyLimit).
   const demo = dailyLimit > 0 && (await prisma.candidate.findUnique({ where: { id: candidateId }, select: { isDemo: true } }))?.isDemo === true;
   if (dailyLimit > 0 && !demo) {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);

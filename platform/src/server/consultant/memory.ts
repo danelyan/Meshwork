@@ -4,6 +4,7 @@ import { assertBudget } from '@/server/agent/budget';
 import { assertEmployerBudget } from '@/server/agent/employer/store';
 import { hasCurrentConsent } from '@/server/auth/consent';
 import { prisma } from '@/server/db';
+import { getSetting } from '@/server/admin/settings';
 import { getEnv } from '@/server/env';
 import { errors } from '@/server/errors';
 import { completeJson } from '@/server/llm/json-output';
@@ -261,7 +262,7 @@ export async function rememberFromTurn(args: RememberArgs): Promise<string[]> {
   if (!(await ownerConsented(owner))) return [];
   const existing = (await listMemory(owner)).map((m) => m.text);
   if (existing.length >= MEMORY_LIMIT) return [];
-  const budget = args.dailyTokenBudget ?? getEnv().LLM_DAILY_TOKEN_BUDGET;
+  const budget = args.dailyTokenBudget ?? (await getSetting('llm.dailyTokenBudget'));
   const now = args.now ?? new Date();
   if ('candidateId' in owner) await assertBudget(owner.candidateId, budget, now);
   else await assertEmployerBudget(owner.employerProfileId, budget, now);

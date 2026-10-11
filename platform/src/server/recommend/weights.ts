@@ -16,6 +16,8 @@ export const ADJACENT_FACTOR = 0.5;
 
 /** ПРЕДЛОЖЕНИЕ (R-C-09): интервал смены грейда, дней. Интервал ТЗ оставляет на выбор команды. */
 export const GRADE_CHANGE_INTERVAL_DAYS = 30;
+/** ПРЕДЛОЖЕНИЕ (R-C-09, решение владельца 09.10): пересдача того же грейда, дней. Живёт здесь, чтобы реестр настроек не зависел от test/service. */
+export const RETAKE_SAME_GRADE_DAYS = 14;
 
 /**
  * Пороги покрытия сигнатуры Middle (claims-catalog § 7). MIDDLE_THRESHOLD = 0,25 — решение

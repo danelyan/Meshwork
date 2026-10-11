@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 
 import type { Grade as PrismaGrade, Prisma, ProjectSubmissionStatus } from '@prisma/client';
 
+import { getSetting } from '../admin/settings';
 import { githubHeaders } from '../collector/github';
 import { getText } from '../collector/http-json';
 import { maskContacts } from '../collector/mask';
@@ -125,18 +126,19 @@ export function templateView(t: LoadedTemplate): TemplateView {
   };
 }
 
-export function listTemplateViews(filter: { specialization?: string; grade?: string } = {}): TemplateView[] {
+export function listTemplateViews(filter: { specialization?: string; grade?: string; hidden?: readonly string[] } = {}): TemplateView[] {
+  const hidden = new Set(filter.hidden ?? []);
   return getTemplates()
-    .filter((t) => (!filter.specialization || t.manifest.specialization === filter.specialization) && (!filter.grade || t.manifest.grade === filter.grade))
+    .filter((t) => !hidden.has(t.manifest.id) && (!filter.specialization || t.manifest.specialization === filter.specialization) && (!filter.grade || t.manifest.grade === filter.grade))
     .map(templateView);
 }
 
 /** Порядок подкатегорий направления (lib/directions): без подкатегории берём шаблон первой — Web API, UI-приложение …, а не первой по алфавиту. */
 const SUB_ORDER = new Map(SUBCATEGORIES.map((s) => [s.id, s.order]));
 
-function pickTemplate(spec: string, grade: string, subcategoryId?: string | null): LoadedTemplate | null {
+function pickTemplate(spec: string, grade: string, subcategoryId?: string | null, hidden: ReadonlySet<string> = new Set()): LoadedTemplate | null {
   const all = getTemplates()
-    .filter((t) => t.manifest.specialization === spec)
+    .filter((t) => t.manifest.specialization === spec && !hidden.has(t.manifest.id))
     .sort((x, y) => (SUB_ORDER.get(x.manifest.subcategoryId) ?? 99) - (SUB_ORDER.get(y.manifest.subcategoryId) ?? 99) || x.manifest.id.localeCompare(y.manifest.id));
   return (
     all.find((t) => t.manifest.grade === grade && (!subcategoryId || t.manifest.subcategoryId === subcategoryId)) ??
@@ -211,7 +213,10 @@ export async function upsertProjectTask(
   if (existing && existing._count.submissions > 0) {
     throw errors.conflict('Задание уже сдают: перегенерация поменяла бы условие у тех, кто сдал. Создай новую потребность.');
   }
-  const template = input.templateId ? getTemplate(input.templateId) : pickTemplate(vacancy.specialization, vacancy.grade, input.subcategoryId ?? vacancy.subcategoryId);
+  // Снятые с публикации шаблоны (админка, catalog.hiddenProjectTemplates) выбрать нельзя; уже созданные задания не затрагиваются.
+  const hidden = new Set(await getSetting('catalog.hiddenProjectTemplates'));
+  if (input.templateId && hidden.has(input.templateId)) throw new AppError('bad_request', 'Этот шаблон проекта снят с публикации', 400);
+  const template = input.templateId ? getTemplate(input.templateId) : pickTemplate(vacancy.specialization, vacancy.grade, input.subcategoryId ?? vacancy.subcategoryId, hidden);
   if (!template) throw new AppError('bad_request', 'Нет шаблона проекта под это направление и грейд', 400);
 
   const catalog = await loadCatalog();

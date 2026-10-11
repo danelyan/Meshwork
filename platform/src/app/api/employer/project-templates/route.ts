@@ -1,3 +1,4 @@
+import { getSetting } from '@/server/admin/settings';
 import { withErrors } from '@/server/errors';
 import { listTemplateViews } from '@/server/project/service';
 import { requireEmployer } from '@/server/session';
@@ -10,5 +11,5 @@ export const GET = withErrors(async (req: Request) => {
   const url = new URL(req.url);
   const specialization = url.searchParams.get('specialization') ?? undefined;
   const grade = url.searchParams.get('grade') ?? undefined;
-  return Response.json({ templates: listTemplateViews({ specialization, grade }) });
+  return Response.json({ templates: listTemplateViews({ specialization, grade, hidden: await getSetting('catalog.hiddenProjectTemplates') }) });
 });

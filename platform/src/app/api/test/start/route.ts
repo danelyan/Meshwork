@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { SPECIALIZATIONS } from '@/lib/directions';
 import { withErrors } from '@/server/errors';
 import { requireCandidate } from '@/server/session';
-import { checkEligibility, describeIntervals, describeRetake, startAttempt } from '@/server/test';
+import { checkEligibility, describeIntervals, describeRetake, intervals, startAttempt } from '@/server/test';
 import { GRADES } from '@/lib/grades';
 
 export const dynamic = 'force-dynamic';
@@ -32,5 +32,6 @@ export const GET = withErrors(async (req: Request) => {
   const url = new URL(req.url);
   const q = Body.parse({ specialization: url.searchParams.get('specialization'), grade: url.searchParams.get('grade'), subcategoryId: url.searchParams.get('subcategoryId') });
   const eligibility = await checkEligibility(candidateId, q.specialization, q.grade, new Date(), q.subcategoryId ?? undefined);
-  return Response.json({ ...eligibility, rules: describeIntervals(), retakeAfter: describeRetake() });
+  const iv = await intervals();
+  return Response.json({ ...eligibility, rules: describeIntervals(iv), retakeAfter: describeRetake(iv) });
 });

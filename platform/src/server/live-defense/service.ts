@@ -303,7 +303,7 @@ export async function chooseSlot(candidateId: string, invitationId: string, inpu
     else {
       throw new AppError('recording_consent_required', 'Живая защита записывается: подтвердите согласие на запись', 409, {
         version: CALL_RECORDING_CONSENT_VERSION,
-        paragraphs: callRecordingConsentText(),
+        paragraphs: await callRecordingConsentText(),
       });
     }
   }

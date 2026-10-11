@@ -1,10 +1,11 @@
+import { getSetting } from '../admin/settings';
 import type { CatalogEntry } from '../claims/types';
 import { prisma } from '../db';
 import type { Grade, Specialization } from '../types';
 
 import { assertCandidate, loadCatalog } from './evidence';
 import { NO_CONFIRMED_REASON, type TestRecommendation } from './types';
-import { GRADE_CHANGE_INTERVAL_DAYS, gradeWeight, MIDDLE_IF_SURE_THRESHOLD, MIDDLE_THRESHOLD } from './weights';
+import { gradeWeight, MIDDLE_IF_SURE_THRESHOLD, MIDDLE_THRESHOLD } from './weights';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -88,11 +89,12 @@ export async function recommendTest(candidateId: string, now: Date = new Date())
   let allowed = true;
   let nextAllowedAt: string | undefined;
   if (last && last.grade !== grade) {
-    const next = new Date(last.confirmedAt.getTime() + GRADE_CHANGE_INTERVAL_DAYS * DAY_MS);
+    const changeDays = await getSetting('test.gradeChangeIntervalDays');
+    const next = new Date(last.confirmedAt.getTime() + changeDays * DAY_MS);
     if (now < next) {
       allowed = false;
       nextAllowedAt = next.toISOString();
-      reason += ` Грейд можно сменить не чаще раза в ${GRADE_CHANGE_INTERVAL_DAYS} дней.`;
+      reason += ` Грейд можно сменить не чаще раза в ${changeDays} дней.`;
     }
   }
   return { specialization, grade, reason, allowed, ...(nextAllowedAt ? { nextAllowedAt } : {}) };

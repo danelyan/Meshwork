@@ -1,6 +1,7 @@
 // Г2 — запись созвона (ADR 0003, п. 4; ADR 0005): `Consent.kind = call_recording`, версия — CALL_RECORDING_CONSENT_VERSION.
 // Решение по отзыву (ADR 0005): после отзыва новые созвоны идут в текстовом режиме без записи голоса
 // (сервер не принимает аудио), а сохранённые записи удаляются сразу (consent/service.revokeConsent).
+import { getSetting } from '../admin/settings';
 import { errors } from '../errors';
 import { consentTextFor, grantConsent, stateOf, userIdForCandidate } from '../consent/service';
 import { CALL_RECORDING_CONSENT_PARAGRAPHS, CALL_RECORDING_CONSENT_VERSION } from '../consent/texts';
@@ -8,7 +9,7 @@ import { CALL_RECORDING_CONSENT_PARAGRAPHS, CALL_RECORDING_CONSENT_VERSION } fro
 export { CALL_RECORDING_CONSENT_PARAGRAPHS, CALL_RECORDING_CONSENT_VERSION, userIdForCandidate };
 
 /** Текст Г2 для показа перед созвоном — с фактическим сроком хранения аудио (env). */
-export const callRecordingConsentText = (): readonly string[] => consentTextFor('call_recording').paragraphs;
+export const callRecordingConsentText = async (): Promise<readonly string[]> => consentTextFor('call_recording', await getSetting('call.recordingRetentionDays')).paragraphs;
 
 /**
  * Режим записи: `audio` — согласие действует; `text` — кандидат отозвал согласие, созвон без записи голоса;

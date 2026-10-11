@@ -1,4 +1,5 @@
 import { prisma, type Prisma } from '@/server/db';
+import { getSetting } from '@/server/admin/settings';
 import { getEnv } from '@/server/env';
 import { errors } from '@/server/errors';
 import { getLlm } from '@/server/llm/client';
@@ -17,7 +18,6 @@ import { CONSULTANT_PROMPT, CONSULTANT_PROMPT_VERSION } from './prompt';
 import { toolSpecs } from './spec';
 import { withWebSearchGate } from './web-search/tool';
 import { tools as defaultTools } from './tools';
-import { journeyPromptBlock, journeyState } from './journey';
 import { loadMemoryBlock } from '@/server/consultant/memory';
 import { settingsForTurn } from '@/server/consultant/settings';
 import { preferencesBlock } from '@/server/consultant/skills';
@@ -48,20 +48,18 @@ export async function runTurn(
   if (!conv) throw errors.notFound('Разговор не найден');
 
   const now = opts.now ?? (() => new Date());
-  const budget = opts.dailyTokenBudget ?? getEnv().LLM_DAILY_TOKEN_BUDGET;
+  const budget = opts.dailyTokenBudget ?? (await getSetting('llm.dailyTokenBudget'));
   const demo = !opts.llm && isDemoMode();
   const llm =
     opts.llm ?? getLlm({ candidateId, conversationId, onQueue: (position) => emit({ type: 'queue', position }) });
   const registry = withWebSearchGate(opts.tools ?? defaultTools);
   const specs = toolSpecs(registry);
-  const ctx: ToolContext = { candidateId, conversationId, emit, llm, ...(signal ? { signal } : {}), ...(opts.pace ? { pace: opts.pace } : {}) };
+  const ctx: ToolContext = { candidateId, conversationId, emit, llm, ...(signal ? { signal } : {}) };
 
   // Онбординг брошен («Настроить позже»): консультант напоминает: продолжим здесь же, кнопкой вверху ленты.
   // Ход из самой ленты онбординга (вопрос, шаг «Документы») — не брошен, напоминать не о чем.
   const resume = input.onboarding ? null : await pendingOnboarding(candidateId).catch(() => null);
   // Свои инструкции и скиллы кандидата: блок-данные хода, ниже правил платформы (prompts/consultant.md <preferences>).
-  // Стадия кандидата кодом, а не вызовом инструмента (модель часто не зовёт get_onboarding_status). Не для онбординг-aside.
-  const journey = input.onboarding ? null : await journeyState(candidateId).then(journeyPromptBlock).catch(() => null);
   const preferences = preferencesBlock(await settingsForTurn(candidateId));
 
   await ensurePromptVersion(conversationId);
@@ -81,14 +79,16 @@ export async function runTurn(
   // Свободный вопрос посреди онбординга без модели (заглушка, демо): честная заготовка и возврат к шагу.
   if (input.onboarding && !pipeline && (demo || (!opts.llm && getEnv().LLM_PROVIDER === 'stub'))) {
     const text = asideCannedReply(input.onboarding);
-    await finishAndSave(conversationId, createReplyStream(emit, signal, undefined, opts.pace), text);
+    await saveMessage(conversationId, { role: 'assistant', content: text });
+    await createReplyStream(emit, signal).finish(text);
     return;
   }
   if (demo) {
     // Демо без ключей: модели нет, ответ — шаблоны по данным платформы (не сбой, без «упрощённого режима»).
     let text = await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
     if (resume && !(await remindedResume(conversationId))) text = `${text}\n${resumeLine()}`;
-    await finishAndSave(conversationId, createReplyStream(emit, signal, undefined, opts.pace), text);
+    await saveMessage(conversationId, { role: 'assistant', content: text });
+    await createReplyStream(emit, signal).finish(text);
     return;
   }
 
@@ -104,7 +104,7 @@ export async function runTurn(
   // Бюджет истории; после ошибки «не влезло в контекст» — один повтор с втрое меньшим.
   let historyChars = HISTORY_TOTAL_MAX_CHARS;
   // Реплика стримится дельтами (если провайдер умеет), итог — message с тем же id.
-  const reply = createReplyStream(emit, signal, undefined, opts.pace);
+  const reply = createReplyStream(emit, signal);
 
   try {
     for (;;) {
@@ -113,15 +113,13 @@ export async function runTurn(
       const canCall = calls < MAX_TOOL_CALLS_PER_TURN;
       const req = {
         purpose: 'consultant' as const,
-        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume, memory, journey, preferences }),
+        system: buildSystem({ now: now(), pipeline, toolsExhausted: !canCall, onboarding: input.onboarding, resume, memory, preferences }),
         messages: withQuestionReminder(fitHistory(messages, historyChars), input.text),
         tools: specs,
         toolChoice: canCall ? ('auto' as const) : ('none' as const),
         maxTokens: TURN_MAX_TOKENS,
         temperature: 0.3,
         onDelta: reply.onDelta,
-        // Повтор попытки после показанных дельт: показанный кусок убрать, повтор стримится заново.
-        onDiscard: reply.discard,
       };
       let res;
       try {
@@ -157,16 +155,11 @@ export async function runTurn(
       }
 
       const text = (res.text ?? '').trim() || EMPTY_REPLY;
-      await finishAndSave(conversationId, reply, text);
+      await saveMessage(conversationId, { role: 'assistant', content: text });
+      await reply.finish(text);
       return;
     }
   } catch (err) {
-    // Стоп (кнопка или таймаут хода) посреди дельт: показанный кусок — ответ ассистента.
-    if (signal?.aborted) {
-      const partial = reply.stop();
-      if (partial) await saveMessage(conversationId, { role: 'assistant', content: partial });
-      return;
-    }
     reply.discard();
     if (signal?.aborted || (err instanceof LlmError && err.code === 'aborted')) return;
     if (err instanceof BudgetExceededError) return degrade(ctx, input, pipeline, 'budget_exceeded');
@@ -181,20 +174,8 @@ async function degrade(ctx: ToolContext, input: TurnInput, pipeline: PipelineRes
     input.onboarding && !pipeline
       ? asideCannedReply(input.onboarding)
       : await fallbackReply({ candidateId: ctx.candidateId, text: input.text, reason, ...(pipeline ? { pipeline } : {}) });
-  await finishAndSave(ctx.conversationId, createReplyStream(ctx.emit, ctx.signal, undefined, ctx.pace), text);
-}
-
-/**
- * Сохранить реплику до отдачи, затем отдать: F5 в первые секунды хода уже видит ответ в истории
- * (нарезка готового текста идёт секунды). Стоп посреди нарезки — в БД остаётся показанный кусок;
- * стоп до первого куска — запись убирается.
- */
-async function finishAndSave(conversationId: string, reply: ReturnType<typeof createReplyStream>, text: string) {
-  const id = await saveMessage(conversationId, { role: 'assistant', content: text });
-  const shown = await reply.finish(text);
-  if (shown === text) return;
-  if (shown) await prisma.message.update({ where: { id }, data: { content: shown } });
-  else await prisma.message.delete({ where: { id } });
+  await saveMessage(ctx.conversationId, { role: 'assistant', content: text });
+  await createReplyStream(ctx.emit, ctx.signal).finish(text);
 }
 
 /**
@@ -223,14 +204,11 @@ export function buildSystem(args: {
   resume?: OnboardingStepBrief | null;
   /** Блок памяти о собеседнике (memoryPromptBlock) или null. */
   memory?: string | null;
-  /** Блок пути кандидата (journeyPromptBlock) или null; в онбординг-aside не передаётся. */
-  journey?: string | null;
   /** Предпочтения кандидата (preferencesBlock): только стиль и фокус ответа. */
   preferences?: string | null;
 }): string {
   const parts = [CONSULTANT_PROMPT.trim(), `## Контекст хода\nСегодня ${MSK.format(args.now)} (МСК).`, EXTERNAL_NOTE];
   if (args.memory) parts.push(args.memory);
-  if (args.journey && !args.onboarding) parts.push(args.journey);
   // Ход конвейера из шага «Документы» — свои инструкции ниже; правило «коротко и вернуть к шагу» не к нему.
   if (args.onboarding) parts.push(args.pipeline ? IN_ONBOARDING_NOTE : asideNote(args.onboarding));
   else if (args.resume) parts.push(resumeNote(args.resume));
@@ -274,9 +252,8 @@ export async function ensurePromptVersion(conversationId: string): Promise<void>
   await prisma.message.create({ data: { conversationId, role: 'system', content: marker } });
 }
 
-async function saveMessage(conversationId: string, m: ChatMessage): Promise<string> {
-  const { id } = await prisma.message.create({
-    select: { id: true },
+async function saveMessage(conversationId: string, m: ChatMessage): Promise<void> {
+  await prisma.message.create({
     data: {
       conversationId,
       role: m.role,
@@ -286,5 +263,4 @@ async function saveMessage(conversationId: string, m: ChatMessage): Promise<stri
     },
   });
   await prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } });
-  return id;
 }

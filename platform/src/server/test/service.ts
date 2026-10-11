@@ -2,13 +2,14 @@
 // Грейд считает только код (IRT + генераторы), LLM не участвует: те же ответы → тот же итог.
 import type { Prisma, TestAttempt, TestItem } from '@prisma/client';
 
+import { getSetting } from '../admin/settings';
 import { PLATFORM_UPGRADABLE } from '../claims/levels';
 import { prisma } from '../db';
 import { getEnv } from '../env';
 import { assertAiAssessmentConsent } from '../consent/service';
 import { publicIntegrity } from '../employer/test-integrity';
 import { AppError, errors } from '../errors';
-import { GRADE_CHANGE_INTERVAL_DAYS } from '../recommend/weights';
+import { RETAKE_SAME_GRADE_DAYS } from '../recommend/weights';
 import type { Grade, Specialization } from '../types';
 
 import { checkAnswer, MAX_ANSWER_CHARS } from './answers';
@@ -61,7 +62,6 @@ import {
   type Step,
 } from './policy';
 import { juryResult } from './jury';
-import { rankingHoldOf } from './ranking-hold';
 import { createRng, deriveSeed, randomSeed } from './rng';
 import type {
   AnsweredItemView,
@@ -97,7 +97,7 @@ const COMMON_IDS = new Set(COMMON_GENERATORS.map((g) => g.id));
  * (GRADE_CHANGE_INTERVAL_DAYS), пересдача того же грейда — через 14 дней.
  * В демо-режиме (TEST_DEMO_INTERVALS=true) — минуты, чтобы жюри увидело правило и повтор.
  */
-export const RETAKE_SAME_GRADE_DAYS = 14;
+export { RETAKE_SAME_GRADE_DAYS };
 export const DEMO_GRADE_CHANGE_MIN = 2;
 export const DEMO_RETAKE_MIN = 1;
 /** Незавершённая попытка живёт сутки: вкладку можно закрыть и вернуться (R-C-07). */
@@ -110,23 +110,28 @@ export interface Intervals {
   demo: boolean;
   gradeChangeMs: number;
   retakeMs: number;
+  /** Боевые интервалы в днях (настройки платформы test.*): в демо-режиме показываются в подписи «на проде». */
+  gradeChangeDays: number;
+  retakeDays: number;
 }
 
-export function intervals(demo: boolean = getEnv().TEST_DEMO_INTERVALS): Intervals {
+/** Интервалы смены грейда и пересдачи: дни из настроек платформы (умолчание - константы кода), в демо - минуты. */
+export async function intervals(demo: boolean = getEnv().TEST_DEMO_INTERVALS): Promise<Intervals> {
+  const [gradeChangeDays, retakeDays] = await Promise.all([getSetting('test.gradeChangeIntervalDays'), getSetting('test.retakeSameGradeDays')]);
   return demo
-    ? { demo, gradeChangeMs: DEMO_GRADE_CHANGE_MIN * MIN_MS, retakeMs: DEMO_RETAKE_MIN * MIN_MS }
-    : { demo, gradeChangeMs: GRADE_CHANGE_INTERVAL_DAYS * DAY_MS, retakeMs: RETAKE_SAME_GRADE_DAYS * DAY_MS };
+    ? { demo, gradeChangeMs: DEMO_GRADE_CHANGE_MIN * MIN_MS, retakeMs: DEMO_RETAKE_MIN * MIN_MS, gradeChangeDays, retakeDays }
+    : { demo, gradeChangeMs: gradeChangeDays * DAY_MS, retakeMs: retakeDays * DAY_MS, gradeChangeDays, retakeDays };
 }
 
 /** Через сколько можно пересдать тот же грейд: «1 мин» в демо-режиме, «14 дней» на проде (экран правил перед тестом). */
-export function describeRetake(iv: Intervals = intervals()): string {
-  return iv.demo ? `${DEMO_RETAKE_MIN} мин` : `${RETAKE_SAME_GRADE_DAYS} дней`;
+export function describeRetake(iv: Intervals): string {
+  return iv.demo ? `${DEMO_RETAKE_MIN} мин` : `${iv.retakeDays} дней`;
 }
 
-export function describeIntervals(iv: Intervals = intervals()): string {
+export function describeIntervals(iv: Intervals): string {
   return iv.demo
-    ? `Демо-режим: смена грейда - через ${DEMO_GRADE_CHANGE_MIN} мин, пересдача того же грейда - через ${DEMO_RETAKE_MIN} мин (на проде - ${GRADE_CHANGE_INTERVAL_DAYS} и ${RETAKE_SAME_GRADE_DAYS} дней).`
-    : `Смена грейда - не чаще раза в ${GRADE_CHANGE_INTERVAL_DAYS} дней, пересдача того же грейда - через ${RETAKE_SAME_GRADE_DAYS} дней.`;
+    ? `Демо-режим: смена грейда - через ${DEMO_GRADE_CHANGE_MIN} мин, пересдача того же грейда - через ${DEMO_RETAKE_MIN} мин (на проде - ${iv.gradeChangeDays} и ${iv.retakeDays} дней).`
+    : `Смена грейда - не чаще раза в ${iv.gradeChangeDays} дней, пересдача того же грейда - через ${iv.retakeDays} дней.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +202,7 @@ export async function checkEligibility(
   }
   const reason = unavailableReason(spec, sub);
   if (reason) return { allowed: false, code: 'no_test', reason, subcategoryId: sub };
-  const iv = intervals();
+  const iv = await intervals();
   const [category, lastSame] = await Promise.all([
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' } }),
     prisma.testAttempt.findFirst({
@@ -346,7 +351,11 @@ async function pushNextItem(attempt: AttemptWithItems, theta: number, phase: Att
   const confirm = attempt.kind === 'confirm';
   const seenBefore = confirm ? new Set<string>() : await seenInPreviousAttempts(attempt);
   const source = confirm ? await confirmSourceOf(attempt, byId) : null;
-  const selectFrom = source ? confirmSelectionPool(pool, source.templateIds, new Set(shown.map((t) => t.id))) : phasePool(pool, phase, attempt.grade);
+  // Шаблоны, снятые с публикации в админке (catalog.hiddenTaskTemplates), в новые задания не выдаются;
+  // уже показанные остаются в пуле выше - иначе оценка идущих попыток потеряла бы ответы.
+  const hidden = new Set(await getSetting('catalog.hiddenTaskTemplates'));
+  const candidates = hidden.size ? pool.filter((t) => !hidden.has(t.id)) : pool;
+  const selectFrom = source ? confirmSelectionPool(candidates, source.templateIds, new Set(shown.map((t) => t.id))) : phasePool(candidates, phase, attempt.grade);
   const next = selectNext(selectFrom, { shown, theta, seed: deriveSeed(attempt.seed, 1000 + index), seenBefore });
   if (!next) return null;
   const generator = byId.get(next.id)!.generator;
@@ -407,7 +416,7 @@ export async function startAttempt(
   const unprocessable = elig.code === 'no_test' || elig.code === 'subcategory_required';
   if (!elig.allowed) throw new AppError(elig.code!, elig.reason!, unprocessable ? 422 : 409, { nextAllowedAt: elig.nextAllowedAt });
 
-  const iv = intervals();
+  const iv = await intervals();
   const attempt = await prisma.testAttempt.create({
     data: {
       candidateId,
@@ -434,12 +443,9 @@ export async function startAttempt(
  */
 export async function startConfirmAttempt(candidateId: string, sourceAttemptId: string, now: Date = new Date(), opts: { seed?: number } = {}): Promise<StartResult> {
   const src = await loadAttempt(candidateId, sourceAttemptId);
+  if (src.status !== 'needs_confirmation') throw new AppError('confirm_not_needed', 'Эта попытка не требует подтверждения.', 409);
   const integrity = storedIntegrity(src.integrity);
   if (integrity?.confirmedBy) throw new AppError('already_confirmed', 'Грейд по этой попытке уже подтверждён.', 409);
-  // Режим silent: категория выдана, но выдача работодателя её не учитывает (ranking-hold.ts) - подтверждающий тест
-  // снимает это так же, как в режиме confirm.
-  const held = src.status === 'passed' && (await rankingHoldOf(candidateId))?.attemptId === src.id;
-  if (src.status !== 'needs_confirmation' && !held) throw new AppError('confirm_not_needed', 'Эта попытка не требует подтверждения.', 409);
   await prisma.testAttempt.updateMany({ where: { candidateId, status: 'active', expiresAt: { lte: now } }, data: { status: 'abandoned', finishedAt: now } });
   const active = await prisma.testAttempt.findFirst({ where: { candidateId, status: 'active' } });
   if (active) {
@@ -505,24 +511,19 @@ function explainResult(a: AttemptWithItems, d: Parameters<typeof explainDecision
   return explainDecision(d, a.grade, answered, correct);
 }
 
-/**
- * Что кандидат видит об индексе. Уровня и причин нет никогда. Режим silent: null, кроме попыток, уже ждущих
- * подтверждающего теста, и попытки, чью категорию выдача работодателя пока не учитывает (rankingHold, аудит 11.10):
- * о таком ограничении кандидату говорят прямо и дают способ его снять.
- */
-export function integrityView(a: Pick<TestAttempt, 'status'>, integrity: StoredIntegrity | null, confirmAttemptId: string | null, rankingHold = false): IntegrityView | null {
+function integrityView(a: AttemptWithItems, integrity: StoredIntegrity | null, confirmAttemptId: string | null): IntegrityView | null {
   if (!integrity) return null;
-  if (!integrityBlocks() && a.status !== 'needs_confirmation' && !integrity.confirmedBy && confirmAttemptId === null && !rankingHold) return null;
+  // Режим silent: кандидату об индексе ничего (null), кроме попыток, уже ждущих подтверждающего теста.
+  if (!integrityBlocks() && a.status !== 'needs_confirmation' && !integrity.confirmedBy && confirmAttemptId === null) return null;
   return {
     needsConfirmation: a.status === 'needs_confirmation' && !integrity.confirmedBy,
     confirmGrade: integrity.confirmGrade ?? null,
     confirmAttemptId,
     confirmedBy: integrity.confirmedBy ?? null,
-    rankingHold,
   };
 }
 
-function resultView(a: AttemptWithItems, byId: Map<string, SelectableTemplate & { generator: TaskGenerator }>, confirmAttemptId: string | null = null, rankingHold = false): AttemptResult | null {
+function resultView(a: AttemptWithItems, byId: Map<string, SelectableTemplate & { generator: TaskGenerator }>, confirmAttemptId: string | null = null): AttemptResult | null {
   if (a.status === 'active' || a.theta === null || a.pPass === null || a.pJunior === null || a.se === null) return null;
   const answered = a.items.filter((i) => i.correct !== null);
   const correct = answered.filter((i) => i.correct).length;
@@ -562,12 +563,12 @@ function resultView(a: AttemptWithItems, byId: Map<string, SelectableTemplate & 
     confirmedCatalogIds: [...new Set(items.filter((i) => i.correct).flatMap((i) => i.catalogIds))].sort(),
     items,
     finishedAt: (a.finishedAt ?? new Date()).toISOString(),
-    integrity: integrityView(a, integrity, confirmAttemptId, rankingHold),
+    integrity: integrityView(a, integrity, confirmAttemptId),
   };
 }
 
 /** Слой жюри на итоге (JURY_INSIGHTS): разбор индекса и что видят кандидат и работодатель. */
-async function juryOf(a: AttemptWithItems, rankingHold: boolean): Promise<JuryResult | null> {
+async function juryOf(a: AttemptWithItems): Promise<JuryResult | null> {
   const integrity = storedIntegrity(a.integrity);
   if (!integrity) return null;
   const issued = a.status === 'passed';
@@ -580,7 +581,7 @@ async function juryOf(a: AttemptWithItems, rankingHold: boolean): Promise<JuryRe
       employer = publicIntegrity(a.integrity, Boolean(integrity.confirmedBy));
     }
   }
-  return juryResult(integrity, employer, issued, rankingHold ? 'уведомление: категория записана, в подборке и поиске не учитывается до подтверждающего теста или созвона' : undefined);
+  return juryResult(integrity, employer, issued);
 }
 
 async function view(a: AttemptWithItems): Promise<AttemptView> {
@@ -596,15 +597,12 @@ async function view(a: AttemptWithItems): Promise<AttemptView> {
     : a.status === 'active'
       ? stepOf(a, byId)
       : { phase: 'main' as const, maxItems: MAX_ITEMS };
-  // Режим silent: категория выдана, но выдача работодателя её не учитывает - кандидату об этом говорят (ranking-hold.ts).
-  const rankingHold = !confirm && a.status === 'passed' && (await rankingHoldOf(a.candidateId))?.attemptId === a.id;
-  // Подтверждающая попытка показывается и после снятия ограничения: кандидат видит, чем подтвердил категорию.
   const confirmAttempt =
-    !confirm && (a.status === 'needs_confirmation' || rankingHold || Boolean(storedIntegrity(a.integrity)?.confirmedBy))
+    !confirm && a.status === 'needs_confirmation'
       ? await prisma.testAttempt.findFirst({ where: { candidateId: a.candidateId, kind: 'confirm', confirmsAttemptId: a.id }, orderBy: { startedAt: 'desc' }, select: { id: true } })
       : null;
-  const result = resultView(a, byId, confirmAttempt?.id ?? null, rankingHold);
-  const jury = result && getEnv().JURY_INSIGHTS ? await juryOf(a, rankingHold) : null;
+  const result = resultView(a, byId, confirmAttempt?.id ?? null);
+  const jury = result && getEnv().JURY_INSIGHTS ? await juryOf(a) : null;
   return {
     id: a.id,
     specialization: a.specialization,
@@ -728,9 +726,7 @@ async function finalizeConfirm(a: AttemptWithItems, now: Date): Promise<AttemptW
   if (!source) throw errors.notFound('Исходная попытка не найдена');
   const est = estimateTheta([...source.clean, ...own]);
   const index = assessAttempt(observationsOf(a.items, byId), est.theta, parseSignals(a.signals));
-  // Собственный индекс подтверждающей попытки учитывается в любом режиме: в silent она снимает ограничение выдачи
-  // (ranking-hold.ts), и high у неё самой не должен это ограничение снимать (Codex-ревью 11.10).
-  const d = decideConfirm(source.clean, own, a.grade, index.level);
+  const d = decideConfirm(source.clean, own, a.grade, integrityBlocks() ? index.level : 'low');
   const integrity: StoredIntegrity = { ...index, blocking: d.blockedByRisk, confirmGrade: null, confirmedBy: null, computedAt: now.toISOString() };
   const ops: Prisma.PrismaPromise<unknown>[] = [
     prisma.testAttempt.update({
@@ -742,15 +738,10 @@ async function finalizeConfirm(a: AttemptWithItems, now: Date): Promise<AttemptW
     const srcIntegrity = { ...(source.integrity ?? riskFallback(now)), confirmedBy: a.id };
     const flagged = new Set(source.integrity?.flaggedItems ?? []);
     const cleanSourceItems = source.attempt.items.filter((i) => !flagged.has(i.index));
-    // Режим silent: исходная попытка уже выдала категорию - вторую не создаём, confirmedBy снимает ограничение выдачи.
-    if (source.attempt.status !== 'passed') {
-      ops.push(
-        prisma.candidateCategory.create({
-          data: { candidateId: a.candidateId, specialization: a.specialization, subcategoryId: a.subcategoryId, grade: a.grade, source: 'test', confirmedAt: now },
-        }),
-      );
-    }
     ops.push(
+      prisma.candidateCategory.create({
+        data: { candidateId: a.candidateId, specialization: a.specialization, subcategoryId: a.subcategoryId, grade: a.grade, source: 'test', confirmedAt: now },
+      }),
       prisma.testAttempt.update({ where: { id: source.attempt.id }, data: { integrity: asJson(srcIntegrity) } }),
       ...upgradeClaims(a.candidateId, [...new Set([...solvedCatalogIdsOf(a.items, byId), ...solvedCatalogIdsOf(cleanSourceItems, byId)])]),
     );
@@ -825,14 +816,11 @@ export async function confirmJunior(candidateId: string, attemptId: string, now:
 
 /** История попыток (R-C-07), новые сверху. */
 export async function listAttempts(candidateId: string): Promise<AttemptSummary[]> {
-  const [rows, hold] = await Promise.all([
-    prisma.testAttempt.findMany({
-      where: { candidateId },
-      orderBy: { startedAt: 'desc' },
-      include: { items: { select: { correct: true } } },
-    }),
-    rankingHoldOf(candidateId),
-  ]);
+  const rows = await prisma.testAttempt.findMany({
+    where: { candidateId },
+    orderBy: { startedAt: 'desc' },
+    include: { items: { select: { correct: true } } },
+  });
   return rows.map((a) => ({
     id: a.id,
     specialization: a.specialization,
@@ -846,7 +834,6 @@ export async function listAttempts(candidateId: string): Promise<AttemptSummary[
     juniorConfirmedAt: a.juniorConfirmedAt?.toISOString() ?? null,
     kind: kindOf(a),
     confirmsAttemptId: a.confirmsAttemptId,
-    rankingHold: hold?.attemptId === a.id,
     startedAt: a.startedAt.toISOString(),
     finishedAt: a.finishedAt?.toISOString() ?? null,
   }));

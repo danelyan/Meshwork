@@ -172,6 +172,27 @@ async function seedInvitation(prisma: PrismaClient, id: string, candidateId: str
     hiredAt: status === 'hired' ? new Date(created.getTime() + 5 * 86_400_000) : null,
   };
   await prisma.invitation.upsert({ where: { id }, update: base, create: { id, ...base } });
+  // Принятое приглашение раскрывает имя и контакт только при согласии identity_disclosure с context.invitationId
+  // (consent/service.disclosedInvitationIds) — без него работодатель на демо видит «контакт откроется после принятия».
+  // Согласие живёт у User, а он у демо-персоны появляется только при первом входе (auth/users.ensureDemoCandidateUser) —
+  // поэтому сид заводит пользователя сам, теми же полями; вход потом найдёт его по candidateId и ничего не перепишет.
+  if (status !== 'sent') {
+    const c = await prisma.candidate.findUniqueOrThrow({ where: { id: candidateId }, select: { name: true, email: true } });
+    const user = await prisma.user.upsert({
+      where: { candidateId },
+      update: {},
+      create: { name: c.name, email: c.email, role: 'candidate', isDemo: true, onboardedAt: created, candidateId },
+      select: { id: true },
+    });
+    for (const kind of ['pd_processing', 'ai_assessment', 'employer_visibility'] as const) {
+      const version = CONSENT_TEXTS[kind].version;
+      const has = await prisma.consent.count({ where: { userId: user.id, kind, version, revokedAt: null } });
+      if (!has) await prisma.consent.create({ data: { userId: user.id, kind, version, acceptedAt: created } });
+    }
+    const kind = 'identity_disclosure' as const;
+    const has = await prisma.consent.count({ where: { userId: user.id, kind, revokedAt: null, context: { path: ['invitationId'], equals: id } } });
+    if (!has) await prisma.consent.create({ data: { userId: user.id, kind, version: CONSENT_TEXTS[kind].version, acceptedAt: base.respondedAt!, context: { invitationId: id } } });
+  }
 }
 
 /**

@@ -61,7 +61,8 @@ export function DevicePreflight({ withCamera, cameraJoinsCall, onReady, onTextOn
   const [deviceId, setDeviceId] = useState('');
   const [tone, setTone] = useState<'idle' | 'played' | 'failed'>('idle');
   const [cam, setCam] = useState<'off' | 'starting' | 'on' | 'denied'>('off');
-  const [wantCam, setWantCam] = useState(false);
+  // В созвоне с Кирой камера по умолчанию включена (владелец 11.10: разрешение должно запрашиваться сразу); в комнате — по желанию.
+  const [wantCam, setWantCam] = useState(Boolean(withCamera && cameraJoinsCall));
 
   const stream = useRef<MediaStream | null>(null);
   const camStream = useRef<MediaStream | null>(null);
@@ -299,7 +300,7 @@ export function DevicePreflight({ withCamera, cameraJoinsCall, onReady, onTextOn
           <label className={styles.check}>
             <input type="checkbox" checked={wantCam} onChange={(e) => setWantCam(e.target.checked)} data-testid="call-devices-camera" />
             {cameraJoinsCall
-              ? 'Включить камеру в созвоне (по умолчанию выключена; видео записывается вместе с аудио)'
+              ? 'Камера в созвоне (видео записывается вместе с аудио; сними галочку, чтобы говорить без видео)'
               : 'Проверить камеру (по умолчанию выключена, включается в комнате отдельно)'}
           </label>
           {cam === 'starting' && <span className={styles.note}>Ждём разрешения камеры…</span>}

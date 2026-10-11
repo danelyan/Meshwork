@@ -158,7 +158,7 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(screen.getByText(/Короткий сигнал/)).toBeTruthy();
   });
 
-  it('камера — только с withCamera, по умолчанию выключена', async () => {
+  it('камера — только с withCamera; без cameraJoinsCall по умолчанию выключена', async () => {
     gum.mockResolvedValue(fakeStream().stream);
     const { unmount } = render(<DevicePreflight {...props()} />);
     expect(screen.queryByTestId('call-devices-camera')).toBeNull();
@@ -170,24 +170,26 @@ describe('DevicePreflight — проверка устройств перед с�
     expect(gum.mock.calls[0]![0].video).toBeUndefined();
   });
 
-  it('cameraJoinsCall: без галочки onReady({ camera: false }); с галочкой и разрешением — camera: true', async () => {
+  it('cameraJoinsCall: галочка по умолчанию стоит, камеру просим сразу → onReady({ camera: true }); снята — camera: false', async () => {
     gum.mockImplementation(async () => fakeStream().stream);
     const p = props();
     const { unmount } = render(<DevicePreflight {...p} withCamera cameraJoinsCall />);
-    expect(screen.getByText(/Включить камеру в созвоне/)).toBeTruthy();
+    expect(screen.getByText(/Камера в созвоне/)).toBeTruthy();
+    expect((screen.getByTestId('call-devices-camera') as HTMLInputElement).checked).toBe(true);
     await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
+    await waitFor(() => expect(gum.mock.calls.some((c) => c[0].video)).toBe(true));
+    await act(async () => undefined);
     fireEvent.click(screen.getByTestId('call-devices-go'));
-    expect(p.onReady).toHaveBeenCalledWith({ camera: false });
+    expect(p.onReady).toHaveBeenCalledWith({ camera: true });
     unmount();
 
     const p2 = props();
     render(<DevicePreflight {...p2} withCamera cameraJoinsCall />);
     await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
-    fireEvent.click(screen.getByTestId('call-devices-camera'));
-    await waitFor(() => expect(gum.mock.calls.some((c) => c[0].video)).toBe(true));
+    fireEvent.click(screen.getByTestId('call-devices-camera')); // снять галочку
     await act(async () => undefined);
     fireEvent.click(screen.getByTestId('call-devices-go'));
-    expect(p2.onReady).toHaveBeenCalledWith({ camera: true });
+    expect(p2.onReady).toHaveBeenCalledWith({ camera: false });
   });
 
   it('cameraJoinsCall: камера запрещена (NotAllowedError) — подсказка «без видео», onReady({ camera: false })', async () => {
@@ -198,7 +200,6 @@ describe('DevicePreflight — проверка устройств перед с�
     const p = props();
     render(<DevicePreflight {...p} withCamera cameraJoinsCall />);
     await waitFor(() => expect(screen.getByTestId('call-devices').dataset.mic).toBe('granted'));
-    fireEvent.click(screen.getByTestId('call-devices-camera'));
     expect((await screen.findByTestId('call-devices-camera-denied')).textContent).toContain('без видео');
     fireEvent.click(screen.getByTestId('call-devices-go'));
     expect(p.onReady).toHaveBeenCalledWith({ camera: false });

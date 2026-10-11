@@ -1,4 +1,4 @@
-// Камера в созвоне с Кирой (kind=qualifying): по умолчанию выключена, включается галочкой на шаге проверки устройств
+// Камера в созвоне с Кирой (kind=qualifying): по умолчанию включена (разрешение запрашивается на шаге проверки устройств), галочка снимается
 // или кнопкой в панели; отказ в доступе — созвон идёт без видео; сегменты уходят на POST /api/call/{id}/video до finish.
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
@@ -155,22 +155,24 @@ async function toDevices() {
 }
 
 describe('CallPanel — камера в созвоне с Кирой', () => {
-  it('по умолчанию выключена: галочка не стоит, после старта камеру не просим, кнопка «Камера» есть', async () => {
+  it('галочка снята: после старта камеру не просим, кнопка «Камера» есть', async () => {
     await toDevices();
     const box = screen.getByTestId('call-devices-camera') as HTMLInputElement;
+    expect(box.checked).toBe(true); // по умолчанию включена — разрешение запрашивается сразу
+    await waitFor(() => expect(videoCalls()).toHaveLength(1));
+    fireEvent.click(box);
     expect(box.checked).toBe(false);
     fireEvent.click(screen.getByTestId('call-devices-go'));
     expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
-    expect(videoCalls()).toHaveLength(0);
+    expect(videoCalls()).toHaveLength(1); // только превью на шаге устройств, в созвоне не просили
     expect(screen.queryByTestId('call-camera-preview')).toBeNull();
     const btn = screen.getByTestId('call-camera');
     expect(btn.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('галочка на шаге устройств → камера включается в созвоне, превью; finish сначала отправляет сегмент видео', async () => {
+  it('камера по умолчанию → превью на шаге устройств, камера включается в созвоне; finish сначала отправляет сегмент видео', async () => {
     await toDevices();
-    fireEvent.click(screen.getByTestId('call-devices-camera'));
-    await waitFor(() => expect(videoCalls()).toHaveLength(1)); // превью на шаге проверки
+    await waitFor(() => expect(videoCalls()).toHaveLength(1)); // превью на шаге проверки (галочка стоит по умолчанию)
     fireEvent.click(screen.getByTestId('call-devices-go'));
     expect(await screen.findByTestId('call-camera-preview')).toBeTruthy();
     expect(videoCalls()).toHaveLength(2);
@@ -192,6 +194,7 @@ describe('CallPanel — камера в созвоне с Кирой', () => {
 
   it('включение кнопкой в панели; отказ в разрешении (NotAllowedError) — подсказка, созвон идёт без видео', async () => {
     await toDevices();
+    fireEvent.click(screen.getByTestId('call-devices-camera')); // снять галочку: созвон начинается без камеры
     fireEvent.click(screen.getByTestId('call-devices-go'));
     expect(await screen.findByText('Привет! Что такое индекс?')).toBeTruthy();
     camDenied = true;

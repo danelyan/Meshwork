@@ -31,12 +31,8 @@ export type ProjectContext = SpecContext | ComposeContext | EvaluateContext;
 
 export const CONTEXT_TAG = 'project_context';
 
-/**
- * JSON внутри тега: `<` и `>` экранируются как \u003c / \u003e (как в call/prompt-utils.ts) — файлы репозитория и
- * журнал ИИ кандидата не могут закрыть тег и открыть свой блок, а JSON остаётся валидным (parseContextBlock).
- */
 export function contextBlock(ctx: ProjectContext): string {
-  return `<${CONTEXT_TAG}>\n${JSON.stringify(ctx).replace(/</g, '\\u003c').replace(/>/g, '\\u003e')}\n</${CONTEXT_TAG}>`;
+  return `<${CONTEXT_TAG}>\n${JSON.stringify(ctx)}\n</${CONTEXT_TAG}>`;
 }
 
 export function parseContextBlock(text: string): ProjectContext | null {
@@ -75,7 +71,12 @@ const CODE_CONTEXT = /(?:статус|код|http|ответ)\S*\s*[:=—-]?\s*(
  */
 export function dropContractEcho(items: string[], contractMd: string): string[] {
   const idents = new Set<string>();
-  for (const m of contractMd.matchAll(/`([^`\n]{3,80})`/g)) idents.add(m[1]!.trim());
+  // Только идентификаторы (латиница/цифры): контракт в обратных кавычках может выделять и русское слово
+  // (« `и` »), и тогда отброшенным оказалось бы любое требование на русском.
+  for (const m of contractMd.matchAll(/`([^`\n]{3,80})`/g)) {
+    const id = m[1]!.trim();
+    if (id.length >= 3 && /[A-Za-z0-9_]/.test(id)) idents.add(id);
+  }
   for (const m of contractMd.matchAll(/['"]([a-z][a-z0-9_]{2,40})['"]/g)) idents.add(m[1]!);
   const contractCodes = new Set([...contractMd.matchAll(CODE_NUM)].map((m) => m[1]!));
   return items.filter((r) => {

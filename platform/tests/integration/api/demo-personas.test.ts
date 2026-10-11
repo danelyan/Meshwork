@@ -7,6 +7,8 @@ import { seedClaims } from '../../../prisma/seed/claims';
 import { seedDemoPersonas } from '../../../prisma/seed/demo-personas';
 import { seedRecommend } from '../../../prisma/seed/recommend';
 import { prisma, resetDb } from '../../helpers/db';
+import { ALL_COMPANIES } from '../../../prisma/seed/content/index';
+import { employerUserId } from '../../../prisma/seed/content/types';
 
 // Курированные демо-персоны (src/server/demo/personas.ts): каждая подтверждена реальными записями в БД.
 describe('демо-персоны по этапам пути', () => {
@@ -33,7 +35,9 @@ describe('демо-персоны по этапам пути', () => {
   it('GET отдаёт все персоны, кроме тех, чьих записей нет, и пул подборки в них не входит', async () => {
     const body = await (await list()).json();
     const ids: string[] = body.personas.map((p: { id: string }) => p.id);
-    expect(ids).toEqual(ALL_PERSONAS.map((p) => p.id));
+    // Представители компаний из seed/content сидятся отдельно (seedContent), здесь их записей нет — route их скрывает.
+    const contentEmployers = new Set(ALL_COMPANIES.filter((c) => c.employer).map((c) => employerUserId(c.slug)));
+    expect(ids).toEqual(ALL_PERSONAS.map((p) => p.id).filter((id) => !contentEmployers.has(id)));
     expect(ids.some((id) => id.startsWith('demo-pool-') || id.startsWith('demo-ai-'))).toBe(false);
   });
 

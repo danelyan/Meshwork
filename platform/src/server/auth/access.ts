@@ -43,6 +43,8 @@ export const PAGE_ACCESS = {
   '/mechanics': 'public',
   // Симулятор адаптивного теста для жюри: виртуальный кандидат, без БД.
   '/simulator': 'public',
+  // «Как устроена проверка» для жюри: схема теста, информация банка, симуляция, формула подбора; без БД.
+  '/method': 'public',
   // Флаг DEMO_LOGIN проверяет сама страница (выключен → 404).
   '/demo': 'public',
   // Режим эксперта: тест на грейд без регистрации, грейд не присваивается. Флаг DEMO_LOGIN — в странице (выключен → 404).
@@ -171,7 +173,6 @@ export const API_ACCESS = {
   '/api/invitations/[id]/live-defense/cancel': 'candidate',
   '/api/recommendations': 'candidate',
   '/api/consultant/messages': 'candidate',
-  '/api/consultant/messages/stop': 'candidate',
   '/api/consultant/conversations': 'candidate',
   '/api/consultant/conversations/[id]': 'candidate',
   '/api/consultant/settings': 'candidate',

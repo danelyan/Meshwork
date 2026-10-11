@@ -170,11 +170,13 @@ describe('вход по почте: регистрация, подтвержде
     expect(await (await post(forgot, '/api/auth/password/forgot', { email: 'dev@example.test' }, 'http://localhost:3000')).json()).toEqual({ sent: true });
 
     process.env.DEVTOOLS = 'false';
+    resetEnvCache(); // DEVTOOLS читается через getEnv() — сбросить кэш окружения
     try {
       const off = await post(register, '/api/auth/register', { email: 'dev2@example.test', password: PASS, consent: CONSENT_VERSION }, 'http://localhost:3000');
       expect(await off.json()).toEqual({ sent: true });
     } finally {
       delete process.env.DEVTOOLS;
+      resetEnvCache();
     }
   });
 

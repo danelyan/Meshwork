@@ -6,6 +6,7 @@ import { POST as newUser } from '@/app/api/dev/new-user/route';
 import { POST as resetOnboarding } from '@/app/api/dev/reset-onboarding/route';
 import { POST as resetAttempts } from '@/app/api/dev/reset-test-attempts/route';
 import { CONSENT_VERSION } from '@/server/auth/consent';
+import { resetEnvCache } from '@/server/env';
 import { signUserSession } from '@/server/session';
 
 import { prisma, resetDb } from '../../helpers/db';
@@ -223,7 +224,10 @@ describe('api/dev/*', () => {
 
 describe('api/dev/*: production и чужой хост → 404', () => {
   const handlers = [deleteAccount, loginAs, logout, newConversation, newUser, resetOnboarding, resetAttempts, loginAsList];
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    resetEnvCache(); // DEVTOOLS читается через getEnv(), кэш переживает подмену переменной
+  });
 
   it('NODE_ENV=production: 404 на всё, ничего не создаётся', async () => {
     vi.stubEnv('NODE_ENV', 'production');
@@ -240,6 +244,7 @@ describe('api/dev/*: production и чужой хост → 404', () => {
 
   it('DEVTOOLS=false: 404 даже на localhost', async () => {
     vi.stubEnv('DEVTOOLS', 'false');
+    resetEnvCache();
     for (const h of handlers) expect((await h(req('/api/dev/x', 'POST', {}))).status).toBe(404);
   });
 });

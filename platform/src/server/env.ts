@@ -29,6 +29,9 @@ const jsonObject = (name: string) =>
 const intFrom = (def: number, min: number, max: number) =>
   z.coerce.number().int().min(min).max(max).default(def);
 
+/** Разбор выключателя DEVTOOLS: false / 0 / off (в любом регистре) выключают, не задан или иное — нет. */
+export const devtoolsEnabled = (v: string | undefined): boolean => !['false', '0', 'off'].includes((v ?? '').trim().toLowerCase());
+
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -39,6 +42,12 @@ export const envSchema = z
     SESSION_SECRET: z.string().min(32, 'SESSION_SECRET — не короче 32 символов'),
     /** Страница /demo и /api/demo/login со списком демо-аккаунтов. Для стенда жюри true, на проде выключить. */
     DEMO_LOGIN: z.stringbool().default(false),
+    /**
+     * Выключатель дебаг-инструментов (панель и /api/dev/*, server/devtools/guard.ts): false / 0 / off (в любом
+     * регистре) — выключены и на localhost. Не задан или любое другое значение — включены; в production их нет
+     * при любом значении. Нестрогий разбор вместо stringbool: опечатка в значении не должна ронять запуск.
+     */
+    DEVTOOLS: z.string().optional().transform(devtoolsEnabled),
     APP_URL: z.url().default('http://localhost:3000'),
     /** Пароль на публичный адрес (без логина, src/server/site-access.ts). Пусто — стенд открыт; localhost не закрывается. */
     SITE_PASSWORD: optionalString,
@@ -84,18 +93,6 @@ export const envSchema = z
     LLM_FALLBACK_NAME: optionalString,
     LLM_FALLBACK_EXTRA_BODY: jsonObject('LLM_FALLBACK_EXTRA_BODY'),
 
-    /**
-     * Отдельная модель для созвонов (getLlm({ purpose: 'call' })): те же правила, что у LLM_FALLBACK_* (тройка BASE_URL +
-     * API_KEY + MODEL, FOLDER_ID для Yandex AI Studio). Не задана — созвоны идут на основной модели; при её сбое запрос
-     * уходит на основную (LLM_PROVIDER).
-     */
-    LLM_CALL_BASE_URL: optionalString.pipe(z.url().optional()),
-    LLM_CALL_API_KEY: optionalString,
-    LLM_CALL_MODEL: optionalString,
-    LLM_CALL_FOLDER_ID: optionalString,
-    LLM_CALL_NAME: optionalString,
-    LLM_CALL_EXTRA_BODY: jsonObject('LLM_CALL_EXTRA_BODY'),
-
     /** Распознавание голоса в композере: yandex (SpeechKit, нужны YANDEX_API_KEY + YANDEX_FOLDER_ID), browser (Web Speech API), off; auto — yandex при ключах, иначе browser. */
     STT_PROVIDER: z.enum(['auto', 'yandex', 'openai', 'browser', 'off']).default('auto'),
     /** STT_PROVIDER=openai: OpenAI-совместимый /audio/transcriptions (vLLM whisper в Selectel). Базовый URL с /v1, ключ сервиса — Bearer. */
@@ -133,13 +130,17 @@ export const envSchema = z
     YANDEX_CLIENT_SECRET: optionalString,
 
     /**
-     * Привязка ФСП ID (OIDC, Keycloak). Не задан FSP_OIDC_ISSUER → кнопка привязки скрыта, ФСП — демо-источник
-     * (server/collector/fsp-demo.ts). Сейчас issuer — симулятор ФСП ID команды; в проде — реалм Keycloak ФСП.
+     * ФСП ID (OIDC, Keycloak). Внешний провайдер включается, только когда заданы и FSP_OIDC_ISSUER, и
+     * FSP_OIDC_CLIENT_SECRET; иначе работает встроенный мок (fsp-id/client.ts: fspOidcConfig, fspProviderMode).
+     * Сейчас issuer — симулятор ФСП ID команды; в проде — реалм Keycloak ФСП.
      */
     FSP_OIDC_ISSUER: optionalString.pipe(z.url().optional()),
     /** client_id нашего приложения у провайдера; по умолчанию fsp-career. */
     FSP_OIDC_CLIENT_ID: optionalString,
-    /** Секрет конфиденциального клиента (client_secret_post). Пусто — публичный клиент, только PKCE. */
+    /**
+     * Секрет конфиденциального клиента (client_secret_post). Пусто — внешний провайдер не используется даже при
+     * заданном FSP_OIDC_ISSUER: вход идёт через встроенный мок (fsp-id/client.ts, fspOidcConfig).
+     */
     FSP_OIDC_CLIENT_SECRET: optionalString,
     /** Базовый URL API реестра достижений (…/api/v1); достижения — GET /me/achievements по токену пользователя. */
     FSP_API_URL: optionalString.pipe(z.url().optional()),
@@ -225,12 +226,6 @@ export const envSchema = z
     if (fallbackKeys.some((k) => env[k])) {
       for (const key of fallbackKeys) {
         if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен, если задана запасная модель (LLM_FALLBACK_*)` });
-      }
-    }
-    const callKeys = ['LLM_CALL_BASE_URL', 'LLM_CALL_API_KEY', 'LLM_CALL_MODEL'] as const;
-    if (callKeys.some((k) => env[k])) {
-      for (const key of callKeys) {
-        if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} обязателен, если задана модель созвонов (LLM_CALL_*)` });
       }
     }
     if (env.LLM_PROVIDER === 'yandex') need(['YANDEX_API_KEY', 'YANDEX_FOLDER_ID', 'YANDEX_MODEL'], 'yandex');

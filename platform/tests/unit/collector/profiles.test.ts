@@ -11,6 +11,7 @@ vi.mock('@/server/db', () => ({
 }));
 
 import { prisma } from '@/server/db';
+import { resetEnvCache } from '@/server/env';
 import { resetProfileCache } from '@/server/collector/cache';
 import { cfThrottle, CF_MIN_INTERVAL_MS, resetCfThrottle } from '@/server/collector/codeforces';
 import { demoAchievements, fspDemoDoc } from '@/server/collector/fsp-demo';
@@ -79,6 +80,12 @@ beforeEach(() => {
   vi.mocked(prisma.source.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.source.create).mockReset();
   delete process.env.COLLECTOR_FIXTURES;
+  resetEnvCache();
+});
+
+afterAll(() => {
+  delete process.env.COLLECTOR_FIXTURES;
+  resetEnvCache();
 });
 
 describe('collector/profiles: GitHub', () => {
@@ -261,6 +268,15 @@ describe('collector/profiles: фикстуры демо-кандидатов', (
 
   it('COLLECTOR_FIXTURES=1: не-демо профиль → fetch_failed без сети', async () => {
     process.env.COLLECTOR_FIXTURES = '1';
+    resetEnvCache();
+    const calls = mockFetch(GH);
+    await expect(fetchProfile('github', 'ivan')).rejects.toMatchObject({ code: 'fetch_failed' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each(['true', 'yes', 'on'])('COLLECTOR_FIXTURES=%s читается так же, как при проверке окружения: сети нет', async (value) => {
+    process.env.COLLECTOR_FIXTURES = value;
+    resetEnvCache();
     const calls = mockFetch(GH);
     await expect(fetchProfile('github', 'ivan')).rejects.toMatchObject({ code: 'fetch_failed' });
     expect(calls).toHaveLength(0);

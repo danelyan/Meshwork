@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 
+import { devtoolsEnabled, getEnv } from '@/server/env';
 import { errors } from '@/server/errors';
 
 /** Хосты, на которых дебаг-панель разрешена (порт любой). */
@@ -16,11 +17,15 @@ export function hostnameOf(host: string | null | undefined): string | null {
   return h.split(':')[0] || null;
 }
 
-/** Чистая проверка без обращения к запросу: env и значение Host. */
-export function isDevHostFor(host: string | null | undefined, env: Record<string, string | undefined> = process.env): boolean {
-  if (env.NODE_ENV === 'production') return false;
-  const off = (env.DEVTOOLS ?? '').trim().toLowerCase();
-  if (off === 'false' || off === '0' || off === 'off') return false;
+/**
+ * Проверка без обращения к запросу: окружение и значение Host. Выключатель DEVTOOLS берётся из проверенного
+ * окружения (`getEnv()`, схема в env.ts); явный `env` — сырые значения для тестов, разбор тот же.
+ * NODE_ENV читается напрямую: в production выходим раньше, не обращаясь к схеме окружения.
+ */
+export function isDevHostFor(host: string | null | undefined, env?: Record<string, string | undefined>): boolean {
+  if ((env ?? process.env).NODE_ENV === 'production') return false;
+  const enabled = env ? devtoolsEnabled(env.DEVTOOLS) : getEnv().DEVTOOLS !== false;
+  if (!enabled) return false;
   const name = hostnameOf(host);
   return name !== null && LOCAL_HOSTNAMES.has(name);
 }

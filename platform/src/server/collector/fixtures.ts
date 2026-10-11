@@ -1,6 +1,7 @@
 import demo1 from '../../../eval/demo/demo-1/links.json';
 import demo2 from '../../../eval/demo/demo-2/links.json';
 import demo3 from '../../../eval/demo/demo-3/links.json';
+import { getEnv } from '../env';
 import { buildDoc } from './doc';
 import type { ExtractedDoc, ProfileKind, SourceKind } from './types';
 
@@ -21,10 +22,6 @@ const ALL: FixtureLink[] = [demo1, demo2, demo3].flatMap((d) => (d as { links: F
 const key = (kind: string, handle: string) => `${kind}:${handle.toLowerCase()}`;
 const BY_KEY = new Map(ALL.map((l) => [key(l.kind, l.handle), l]));
 
-export function hasFixture(kind: ProfileKind, handle: string): boolean {
-  return BY_KEY.has(key(kind, handle));
-}
-
 export function fixtureDoc(kind: ProfileKind, handle: string): ExtractedDoc | null {
   const link = BY_KEY.get(key(kind, handle));
   if (!link) return null;
@@ -39,7 +36,10 @@ export function fixtureDoc(kind: ProfileKind, handle: string): ExtractedDoc | nu
   });
 }
 
-/** COLLECTOR_FIXTURES=1 — сеть для профилей выключена: только фикстуры. */
+/**
+ * COLLECTOR_FIXTURES включён — сеть для профилей выключена: только фикстуры. Значение — из проверенного
+ * окружения (env.ts, `z.stringbool`): «1», «true», «yes», «on» читаются одинаково здесь и при старте.
+ */
 export function fixturesOnly(): boolean {
-  return process.env.COLLECTOR_FIXTURES === '1' || process.env.COLLECTOR_FIXTURES === 'true';
+  return getEnv().COLLECTOR_FIXTURES;
 }

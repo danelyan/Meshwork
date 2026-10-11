@@ -1,4 +1,5 @@
-import { hostnameOf, isDevHostFor } from '@/server/devtools/guard';
+import { hostnameOf, isDevHostFor, isDevRequest } from '@/server/devtools/guard';
+import { getEnv, parseEnv, resetEnvCache } from '@/server/env';
 
 describe('devtools guard: только localhost', () => {
   const dev = { NODE_ENV: 'development' };
@@ -36,5 +37,46 @@ describe('devtools guard: только localhost', () => {
   it('DEVTOOLS=true или не задан — не мешает', () => {
     expect(isDevHostFor('localhost', { ...dev, DEVTOOLS: 'true' })).toBe(true);
     expect(isDevHostFor('localhost', {})).toBe(true);
+  });
+});
+
+describe('devtools guard: DEVTOOLS — через схему окружения (env.ts)', () => {
+  const base = { DATABASE_URL: 'postgresql://x@localhost/db', SESSION_SECRET: 'x'.repeat(32) };
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    resetEnvCache();
+  });
+
+  it.each(['false', 'FALSE', ' 0 ', 'off'])('схема: DEVTOOLS=%s → выключено', (v) => {
+    expect(parseEnv({ ...base, DEVTOOLS: v }).DEVTOOLS).toBe(false);
+  });
+
+  it.each([undefined, '', 'true', '1', 'on', 'maybe'])('схема: DEVTOOLS=%s → включено, запуск не падает', (v) => {
+    expect(parseEnv({ ...base, DEVTOOLS: v }).DEVTOOLS).toBe(true);
+  });
+
+  it('без явного env выключатель читается из getEnv(), а не из process.env', () => {
+    const req = new Request('http://localhost:3000/api/dev/x');
+    expect(isDevHostFor('localhost')).toBe(true);
+    expect(isDevRequest(req)).toBe(true);
+
+    vi.stubEnv('DEVTOOLS', 'false');
+    resetEnvCache();
+    expect(getEnv().DEVTOOLS).toBe(false);
+    expect(isDevHostFor('localhost')).toBe(false);
+    expect(isDevRequest(req)).toBe(false);
+
+    // Окружение проверяется один раз: правка process.env после этого решение не меняет.
+    vi.stubEnv('DEVTOOLS', 'true');
+    expect(isDevHostFor('localhost')).toBe(false);
+    resetEnvCache();
+    expect(isDevHostFor('localhost')).toBe(true);
+  });
+
+  it('production: выключено до обращения к схеме окружения', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('SESSION_SECRET', '');
+    resetEnvCache();
+    expect(isDevHostFor('localhost')).toBe(false);
   });
 });

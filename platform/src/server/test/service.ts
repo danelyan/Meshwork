@@ -232,6 +232,25 @@ export async function checkEligibility(
   return { allowed: true, subcategoryId: sub };
 }
 
+/**
+ * Пересдача последнего грейда закрыта интервалом (то же правило, что retake_too_soon в checkEligibility):
+ * для «Твоего пути», когда категории нет. null — интервала нет или он снят поддержкой. Другой грейд интервалом не закрыт.
+ */
+export async function retakeCooldown(candidateId: string, now: Date = new Date()): Promise<{ grade: Grade; nextAllowedAt: Date; demo: boolean } | null> {
+  const [last, resetAt, iv] = await Promise.all([
+    prisma.testAttempt.findFirst({
+      where: { candidateId, kind: 'grade', status: { in: ['passed', 'not_confirmed', 'needs_confirmation'] }, finishedAt: { not: null } },
+      orderBy: { finishedAt: 'desc' },
+      select: { grade: true, finishedAt: true },
+    }),
+    cooldownResetAt(candidateId),
+    intervals(),
+  ]);
+  if (!last?.finishedAt || (resetAt !== null && last.finishedAt <= resetAt)) return null;
+  const next = new Date(last.finishedAt.getTime() + iv.retakeMs);
+  return now < next ? { grade: last.grade as Grade, nextAllowedAt: next, demo: iv.demo } : null;
+}
+
 // ---------------------------------------------------------------------------
 // Попытка
 // ---------------------------------------------------------------------------

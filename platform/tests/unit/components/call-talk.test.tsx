@@ -1,7 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 
 import type { CompanionVoice } from '@/components/avatar/voice';
-import type { InterruptDecision } from '@/lib/interrupt';
 import { CALL_PHRASE_MAX_MS, useCallTalk, type CallTalkOptions } from '@/components/call/useCallTalk';
 import { STT_MAX_SECONDS } from '@/server/stt';
 
@@ -42,19 +41,7 @@ vi.mock('@/lib/vad', () => {
 const frameMs = (FAKE_BUFFER / FAKE_RATE) * 1000; // 128 мс
 
 function fakeVoice(status: CompanionVoice['status'] = 'idle') {
-  return { status, stop: vi.fn(), duck: vi.fn(), speak: vi.fn() } as unknown as CompanionVoice & { stop: ReturnType<typeof vi.fn>; duck: ReturnType<typeof vi.fn> };
-}
-
-/** Вызывающий: STT вернул text → решение фильтра; отправлено — то, что не ignore/hard. */
-function phrase(text: string) {
-  const decisions: InterruptDecision[] = [];
-  const onPhrase = vi.fn(async (_u: unknown, decide: (t: string) => InterruptDecision) => {
-    if (!text) return false;
-    const d = decide(text);
-    decisions.push(d);
-    return d !== 'ignore' && d !== 'hard';
-  });
-  return { onPhrase: onPhrase as unknown as CallTalkOptions['onPhrase'], decisions, mock: onPhrase };
+  return { status, stop: vi.fn(), speak: vi.fn() } as unknown as CompanionVoice & { stop: ReturnType<typeof vi.fn> };
 }
 
 let audio: FakeAudio;
@@ -72,9 +59,10 @@ afterEach(() => {
 
 function setup(over: Partial<CallTalkOptions> = {}) {
   const onPhrase = vi.fn(async () => true);
-  const props: CallTalkOptions = { active: true, voice: fakeVoice(), busy: false, onPhrase, ...over };
+  const onResume = vi.fn();
+  const props: CallTalkOptions = { active: true, voice: fakeVoice(), busy: false, onPhrase, onResume, ...over };
   const hook = renderHook((p: CallTalkOptions) => useCallTalk(p), { initialProps: props });
-  return { hook, onPhrase, props };
+  return { hook, onPhrase, onResume, props };
 }
 
 async function opened() {
@@ -117,89 +105,26 @@ describe('useCallTalk — созвон без кнопки «Ответить»'
     expect(onPhrase).not.toHaveBeenCalled();
   });
 
-  it('duck вместо kill: кандидат заговорил поверх звучащей Киры — приглушена, не остановлена; порог детектора — «ИИ звучит»', async () => {
+  it('перебивание: кандидат заговорил, пока Кира звучит — озвучка остановлена, ответ подавлен, порог детектора — «ИИ звучит»', async () => {
     const voice = fakeVoice('speaking');
     const { hook } = setup({ voice });
     await opened();
     await act(async () => audio.feed(0, 2));
     expect(playingSeen.every(Boolean)).toBe(true);
     await act(async () => audio.feed(0.9));
-    expect(voice.duck).toHaveBeenCalledWith(true);
-    expect(voice.stop).not.toHaveBeenCalled();
-    expect(hook.result.current.hushed()).toBe(false);
-  });
-
-  it('обычная речь поверх звучащей Киры — stop + hush, фраза отправлена', async () => {
-    const voice = fakeVoice('speaking');
-    const p = phrase('Я работал с PostgreSQL три года');
-    const { hook } = setup({ voice, onPhrase: p.onPhrase });
-    await opened();
-    await say(4);
-    await waitFor(() => expect(p.decisions).toEqual(['interrupt']));
     expect(voice.stop).toHaveBeenCalledTimes(1);
     expect(hook.result.current.hushed()).toBe(true);
     hook.result.current.unhush();
     expect(hook.result.current.hushed()).toBe(false);
   });
 
-  it('поддакивание поверх Киры — не перебивает и не отправляется, громкость вернулась', async () => {
+  it('ложное перебивание (фраза без текста) — Кира продолжает (onResume)', async () => {
     const voice = fakeVoice('speaking');
-    const p = phrase('угу');
-    const { hook } = setup({ voice, onPhrase: p.onPhrase });
+    const onPhrase = vi.fn(async () => false);
+    const { hook, onResume } = setup({ voice, onPhrase });
     await opened();
     await say(4);
-    await waitFor(() => expect(p.decisions).toEqual(['ignore']));
-    expect(voice.duck).toHaveBeenNthCalledWith(1, true);
-    expect(voice.duck).toHaveBeenLastCalledWith(false);
-    expect(voice.stop).not.toHaveBeenCalled();
-    expect(hook.result.current.hushed()).toBe(false);
-  });
-
-  it('поддакивание, когда Кира молчит, — обычный ход', async () => {
-    const voice = fakeVoice('idle');
-    const p = phrase('хорошо');
-    setup({ voice, onPhrase: p.onPhrase });
-    await opened();
-    await say(4);
-    await waitFor(() => expect(p.decisions).toEqual(['turn']));
-    expect(voice.duck).not.toHaveBeenCalled();
-    expect(voice.stop).not.toHaveBeenCalled();
-  });
-
-  it('«подождите» пока Кира думает — stop + hush, ходом не отправляется', async () => {
-    const voice = fakeVoice('thinking');
-    const p = phrase('Подождите, секунду');
-    const { hook } = setup({ voice, busy: true, onPhrase: p.onPhrase });
-    await opened();
-    await say(4);
-    await waitFor(() => expect(p.decisions).toEqual(['hard']));
-    expect(voice.stop).toHaveBeenCalledTimes(1);
-    expect(voice.duck).not.toHaveBeenCalled();
-    expect(hook.result.current.hushed()).toBe(true);
-  });
-
-  it('обычная речь, пока озвучка ответа грузится, — в очередь, без stop и hush', async () => {
-    const voice = fakeVoice('loading');
-    const p = phrase('И ещё про индексы хотел сказать');
-    const { hook } = setup({ voice, onPhrase: p.onPhrase });
-    await opened();
-    await say(4);
-    await waitFor(() => expect(p.decisions).toEqual(['queue']));
-    expect(voice.stop).not.toHaveBeenCalled();
-    expect(voice.duck).toHaveBeenLastCalledWith(false);
-    expect(hook.result.current.hushed()).toBe(false);
-  });
-
-  it('фраза без текста поверх Киры — громкость вернулась, Кира не прерывалась и не повторяет', async () => {
-    const voice = fakeVoice('speaking');
-    const p = phrase('');
-    const { hook } = setup({ voice, onPhrase: p.onPhrase });
-    await opened();
-    await say(4);
-    await waitFor(() => expect(p.mock).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(voice.duck).toHaveBeenLastCalledWith(false));
-    expect(voice.stop).not.toHaveBeenCalled();
-    expect(voice.speak).not.toHaveBeenCalled();
+    await waitFor(() => expect(onResume).toHaveBeenCalledTimes(1));
     expect(hook.result.current.hushed()).toBe(false);
   });
 

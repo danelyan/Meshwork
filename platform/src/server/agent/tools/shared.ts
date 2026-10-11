@@ -25,10 +25,12 @@ export const DocResultSchema = z.object({
 export type DocResult = z.infer<typeof DocResultSchema>;
 
 export function docToResult(doc: ExtractedDoc, sourceId?: string): DocResult {
-  const hidden = new Set(doc.flags.hiddenText?.sample ?? []);
+  // Признак строки — основной. Образцы (не больше трёх, обрезаны) — запасной путь для старых
+  // записей, сохранённых без признака `hidden`.
+  const samples = new Set(doc.flags.hiddenText?.sample ?? []);
   const body = doc.lines.length
     ? doc.lines
-        .filter((l) => !hidden.has(l.text))
+        .filter((l) => !l.hidden && !samples.has(l.text))
         .map((l) => `${l.ref}\t${l.text}`)
         .join('\n')
     : doc.text;

@@ -193,3 +193,10 @@
  .cardToggle { cursor: pointer; padding: 14px 16px; }
  .cardBody { padding: 0 16px 16px; }
 }
+/* блокер шага: что мешает и как снять (согласие, скрытый профиль, кулдаун) */
+.blocker { margin-top: 10px; padding: 8px 10px; border-left: 3px solid var(--stage-accent); background: var(--stage-track); }
+.blockerText { margin: 0; font-size: var(--fs); line-height: 1.45; color: var(--stage-text); }
+.blocker .cta { border: 0; cursor: pointer; font-family: inherit; }
+.blocker .cta:disabled { opacity: 0.6; cursor: default; }
+.blockerError { margin: 6px 0 0; font-size: var(--fs-sm); color: var(--stage-text-soft); }
+.ctaSecondary { display: inline-block; margin-top: 10px; font-size: var(--fs-sm); color: var(--stage-text-soft); text-decoration: underline; }

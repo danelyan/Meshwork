@@ -5,21 +5,27 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/server/db';
 
-/** ExtractedDoc из Json-колонок (Upload.extracted, Source.snapshot) — проверяем форму, а не доверяем. */
+/**
+ * ExtractedDoc из Json-колонок (Upload.extracted, Source.snapshot) — проверяем форму, а не доверяем.
+ * Zod срезает ключи, которых нет в схеме, поэтому здесь перечислены все поля `ExtractedDoc`:
+ * без `hidden` у строки скрытый текст после чтения из базы стал бы обычным и годился бы в цитаты.
+ */
 export const ExtractedDocSchema = z.object({
   sourceKind: z.enum(['resume', 'document', 'url', 'github', 'codeforces', 'stackoverflow', 'fsp', 'chat']),
   title: z.string(),
   origin: z.string(),
-  lines: z.array(z.object({ ref: z.string(), text: z.string() })),
+  lines: z.array(z.object({ ref: z.string(), text: z.string(), hidden: z.boolean().optional() })),
   text: z.string(),
   flags: z
     .object({
       hiddenText: z.object({ count: z.number(), sample: z.array(z.string()) }).optional(),
       truncated: z.boolean().optional(),
       injectionSuspect: z.boolean().optional(),
+      maskedContacts: z.number().optional(),
     })
     .default({}),
   fetchedAt: z.string(),
+  meta: z.record(z.string(), z.unknown()).optional(),
 });
 
 export function parseExtractedDoc(json: unknown): ExtractedDoc | null {

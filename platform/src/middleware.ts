@@ -28,5 +28,6 @@ export const config = {
   // Node.js-рантайм (Next 15.5): node:crypto и окружение контейнера во время запроса.
   runtime: 'nodejs',
   // Статика сборки и файлы public/ — без проверки: страница пароля должна загрузить стили и шрифты.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|assets/|audio/|avatar/|design/|landing/|models/).*)'],
+  // design/ — только файлы public/design/<каталог>/<файл>: страницы /design/<имя> (src/app/design) идут через проверку.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|assets/|audio/|avatar/|design/[^/]+/[^/]|landing/|models/).*)'],
 };

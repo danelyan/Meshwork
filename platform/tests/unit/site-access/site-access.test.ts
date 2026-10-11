@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { readdirSync } from 'node:fs';
+import path from 'node:path';
 
 import { NextRequest } from 'next/server';
 
@@ -112,5 +114,27 @@ describe('middleware', () => {
     expect(re.test('/assets/logo.svg')).toBe(false);
     expect(re.test('/employer')).toBe(true);
     expect(re.test('/api/me')).toBe(true);
+  });
+
+  it('страницы /design/* проходят через гейт, файлы public/design/** — нет', () => {
+    const re = new RegExp(`^${config.matcher[0]}$`);
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
+    const urlOf = (root: string, file: string) => `/design/${path.relative(root, file).split(path.sep).join('/')}`;
+
+    const appRoot = path.join(process.cwd(), 'src/app/design');
+    const pages = walk(appRoot)
+      .filter((f) => path.basename(f) === 'page.tsx')
+      .map((f) => urlOf(appRoot, path.dirname(f)));
+    expect(pages).toEqual(expect.arrayContaining(['/design/avatar', '/design/fonts', '/design/head-motion-preview', '/design/consultant-grid-v1']));
+    for (const page of pages) expect(re.test(page), page).toBe(true);
+    // Со слэшем на конце и с query (matcher видит только путь) — тоже через гейт.
+    for (const page of pages) expect(re.test(`${page}/`), `${page}/`).toBe(true);
+    expect(re.test('/design')).toBe(true);
+
+    const publicRoot = path.join(process.cwd(), 'public/design');
+    const files = walk(publicRoot).map((f) => urlOf(publicRoot, f));
+    expect(files).toContain('/design/consultant-grid-v1/index.html');
+    for (const file of files) expect(re.test(file), file).toBe(false);
   });
 });

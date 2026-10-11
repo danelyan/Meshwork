@@ -5,6 +5,7 @@ import { loadPlatformEnv } from '../scripts/load-env.mjs';
 import { seedAuth } from './seed/auth';
 import { seedClaims } from './seed/claims';
 import { seedDemoClaims } from './seed/demo-claims';
+import { seedDemoPersonas } from './seed/demo-personas';
 import { seedDirections } from './seed/directions';
 import { seedEmployer } from './seed/employer';
 import { seedEmployerPool } from './seed/employer-pool';
@@ -71,6 +72,8 @@ async function main() {
   await seedEmployerPool(prisma);
   // lane directions: справочник подкатегорий и демо-кандидаты ai (после каталога утверждений).
   await seedDirections(prisma);
+  // Курированные демо-персоны по этапам пути (окно входа, /demo): после каталога, компаний и demo-claims.
+  await seedDemoPersonas(prisma);
 }
 
 main()

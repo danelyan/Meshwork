@@ -10,10 +10,8 @@
 .hint { font: var(--fs-xs) var(--mono); color: var(--muted); }
 .methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; }
 .method { display: grid; align-content: start; gap: 14px; min-width: 0; }
-.list { display: grid; gap: 16px; max-height: 300px; overflow-y: auto; }
-.group { display: grid; gap: 8px; }
-.groupTitle { font: 500 var(--fs-xs) var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.account { width: 100%; justify-content: flex-start; text-align: left; white-space: normal; }
+/* демо-профили занимают всю ширину под способами входа */
+.demo { grid-column: 1 / -1; padding-top: 20px; border-top: 1px solid var(--line); }
 @media (max-width: 640px) {
   .dialog { width: calc(100vw - 24px); max-height: calc(100svh - 24px); }
   .header { padding: 20px; gap: 12px; }

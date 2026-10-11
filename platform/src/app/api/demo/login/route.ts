@@ -5,6 +5,7 @@ import { ensureConsent } from '@/server/auth/consent';
 import { ensureConsents } from '@/server/consent/service';
 import { DEMO_EMPLOYER_CONSENTS, SHARED_DEMO_USER, createFreshDemoUser, ensureDemoCandidateUser, resetDemoOnboarding, sessionInputFor } from '@/server/auth/users';
 import { prisma } from '@/server/db';
+import { ALL_PERSONAS } from '@/server/demo/personas';
 import { demoResumeFor } from '@/server/demo/resumes';
 import { getEnv } from '@/server/env';
 import { errors, withErrors } from '@/server/errors';
@@ -16,7 +17,11 @@ function assertEnabled() {
   if (!getEnv().DEMO_LOGIN) throw errors.notFound();
 }
 
-/** Список демо-кандидатов и демо-работодателей для экрана выбора. */
+/**
+ * Список демо-аккаунтов. `personas` — курированный набор для окна входа и /demo (server/demo/personas.ts):
+ * только те персоны, чьи записи есть в БД. `candidates`/`employers` — все демо-аккаунты (пул подборки и
+ * валидации в списки входа не попадает, но остаётся для API и тестов).
+ */
 export const GET = withErrors(async () => {
   assertEnabled();
   const candidates = await prisma.candidate.findMany({
@@ -30,7 +35,10 @@ export const GET = withErrors(async () => {
     orderBy: { createdAt: 'asc' },
   });
   // Подсказка для экрана входа: какой файл загрузить и какую ссылку вставить (eval/demo/demo-N).
+  const have = new Set([...candidates.map((c) => c.id), ...employers.map((e) => e.id)]);
+  const personas = ALL_PERSONAS.filter((p) => p.kind === 'fresh' || have.has(p.id));
   return Response.json({
+    personas,
     candidates: candidates.map((c) => {
       const r = demoResumeFor(c.id);
       return { ...c, demoResume: r ? { fileName: r.fileName, link: r.link } : null };

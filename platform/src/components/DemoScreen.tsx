@@ -1,198 +1,98 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { specLabel } from '@/lib/directions';
-import { type DemoCandidate, type DemoEmployer, demoEmployerLogin, demoFreshLogin, demoLogin, demoRestartOnboarding, getDemoAccounts } from '@/lib/api';
-
-import { CONSENT_VERSION } from '@/server/onboarding/consent-text';
+import { type DemoPersona } from '@/lib/api';
 
 import { ConsentCheck } from './auth/ConsentCheck';
+import { PersonaChip, PersonaGroups, type PersonasState, useDemoPersonas } from './demo/DemoPersonas';
 import { Container } from './shell/Container';
 import { PageTitle } from './shell/PageTitle';
-import styles from './AuthScreen.module.css';
 import { Notice } from './ui';
-import ui from './ui.module.css';
+import styles from './DemoScreen.module.css';
 
-
-function pluralCandidates(n: number): string {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return 'кандидат';
-  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'кандидата';
-  return 'кандидатов';
-}
-
-function Avatar() {
-  return (
-    <span className={ui.avatar} aria-hidden="true">
-      <svg viewBox="0 0 44 44" focusable="false">
-        <circle cx="22" cy="16" r="8" />
-        <path d="M6 44c1.5-10 8-15 16-15s14.5 5 16 15z" />
-      </svg>
-    </span>
-  );
-}
-
-const isEmployerPath = (p: string) => p === '/employer' || p.startsWith('/employer/') || p.startsWith('/employer?');
+/** Возможности платформы для жюри: коротко, и под каждой - кем войти, чтобы увидеть её сразу. */
+export const DEMO_FEATURES: { id: string; title: string; text: string; personas: string[] }[] = [
+  {
+    id: 'reverse', title: 'Обратная механика подбора',
+    text: 'Специалист проходит опрос и тест и получает категорию. Компания сама ищет в базе по категориям и пишет первой - с вилкой зарплаты и контактом.',
+    personas: ['demo-employer', 'demo-invited'],
+  },
+  {
+    id: 'test', title: 'Тест на грейд и его калибровка',
+    text: 'Адаптивный тест выдаёт направление и грейд, а резюме и ответы в чате категорию не меняют. Пороги проверены на персонах-тестировщиках, цифры - в документе валидации.',
+    personas: ['fresh', 'demo-tested'],
+  },
+  {
+    id: 'calls', title: 'Созвоны с ИИ',
+    text: 'Квалификационный созвон по резюме и ИИнтервью: карта глубины по темам, подтверждённые утверждения получают отметку платформы. Разбор резюме устойчив к скрытым инструкциям.',
+    personas: ['demo-frontend-mid', 'demo-strong', 'demo-injection'],
+  },
+  {
+    id: 'projects', title: 'Проекты и защита',
+    text: 'Работодатель задаёт проектное задание под вакансию, код проверяют автотесты, затем защита проекта в комнате вместе с ИИ и работодателем.',
+    personas: ['demo-employer', 'demo-employer-granit'],
+  },
+  {
+    id: 'fsp', title: 'Достижения ФСП',
+    text: 'Спортивное программирование усиливает профиль через ФСП ID. Нет истории ФСП - путь не закрыт: решает тест.',
+    personas: ['demo-strong', 'demo-tested'],
+  },
+  {
+    id: 'search', title: 'Поиск работодателя, вилка и найм',
+    text: 'Подборка с обоснованием по каждому кандидату, приглашение с вилкой от и до, контакты после согласия кандидата и отметка о найме.',
+    personas: ['demo-employer-granit', 'demo-accepted', 'demo-hired'],
+  },
+];
 
 /**
- * Страница /demo: список демо-аккаунтов для жюри (только при DEMO_LOGIN=true, решает серверная страница).
- * `next` — уже проверенный safeNext путь, откуда прислал guard: после входа готовым аккаунтом ведём туда,
- * если путь подходит роли (кандидат — не /employer, работодатель — /employer…). Онбординг-входы его не используют.
+ * Страница /demo: что умеет платформа и быстрый вход нужной персоной (только при DEMO_LOGIN=true,
+ * решает серверная страница). Набор персон - server/demo/personas.ts, тот же компонент, что в окне входа.
+ * `next` - уже проверенный safeNext путь, откуда прислал guard.
  */
 export function DemoScreen({ next = null }: { next?: string | null } = {}) {
-  const [accounts, setAccounts] = useState<{ candidates: DemoCandidate[]; employers: DemoEmployer[] } | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
-  const [pending, setPending] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    getDemoAccounts().then(
-      (a) => alive && setAccounts({ candidates: a.candidates, employers: a.employers ?? [] }),
-      (e: unknown) => {
-        if (!alive) return;
-        setFailure(e instanceof Error ? e.message : 'Не удалось загрузить демо-аккаунты.');
-        setAccounts({ candidates: [], employers: [] });
-      },
-    );
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  async function enter(key: string, run: () => Promise<{ next?: string }>, fallback: string, back: string | null = null) {
-    setPending(key);
-    setFailure(null);
-    try {
-      const r = await run();
-      // Полная навигация: push+refresh подряд на холодном dev-сервере давали гонку (refresh /demo перебивал переход).
-      window.location.assign(back ?? r.next ?? fallback);
-    } catch (e) {
-      setFailure(e instanceof Error ? e.message : 'Не удалось войти.');
-      setPending(null);
-    }
-  }
-
-  // Кандидаты пула работодателя (demo-pool-*) не нужны для знакомства с консультантом: прячем под спойлер.
-  const mainCandidates = (accounts?.candidates ?? []).filter((c) => !c.id.startsWith('demo-pool-'));
-  const poolCandidates = (accounts?.candidates ?? []).filter((c) => c.id.startsWith('demo-pool-'));
-  const candidateItem = (c: DemoCandidate) => (
-    <li key={c.id}>
-      <button
-        type="button"
-        className={styles.item}
-        aria-label={`Войти как ${c.name}`}
-        disabled={pending !== null}
-        onClick={() => void enter(c.id, () => demoLogin(c.id), '/consultant', next && !isEmployerPath(next) ? next : null)}
-      >
-        <Avatar />
-        <span className={styles.who}>
-          <span className={styles.name}>{c.name}</span>
-          <span className={styles.sub}>кандидат · {c.specialization ? specLabel(c.specialization) : 'специализация не выбрана'}</span>
-        </span>
-        <span className={`${ui.tag} ${ui.outline}`} aria-hidden="true">
-          {pending === c.id ? 'Вхожу…' : 'Войти →'}
-        </span>
-      </button>
-      <button
-        type="button"
-        className={styles.restart}
-        aria-label={`Пройти онбординг заново: ${c.name}`}
-        disabled={pending !== null}
-        onClick={() => void enter(`r-${c.id}`, () => demoRestartOnboarding({ restartCandidateId: c.id }), '/consultant')}
-      >
-        пройти онбординг заново
-      </button>
-    </li>
-  );
-
+  const state = useDemoPersonas({ next, agreed });
+  const byId = new Map<string, DemoPersona>((state.personas ?? []).map((p) => [p.id, p]));
+  const known = (ids: string[]) => ids.map((id) => byId.get(id)).filter((p): p is DemoPersona => Boolean(p));
 
   return (
     <Container size="wide" className={styles.wrap}>
       <PageTitle
         kicker="ФСП Карьера · демо для жюри"
-        title="Демо-аккаунты"
-        lead="Готовые вымышленные пользователи с синтетическими данными. Настоящий вход - через Яндекс ID на странице входа."
+        title="Что умеет платформа"
+        lead="Вымышленные люди и компании. Выбери возможность и войди тем, у кого она видна сразу, без пароля."
       />
 
-      {failure && <Notice tone="error">{failure}</Notice>}
+      {state.error && <Notice tone="error">{state.error}</Notice>}
 
-      <div className={styles.grid}>
-      <section className={styles.block} aria-labelledby="demo-fresh">
-        <h2 id="demo-fresh" className={styles.blockTitle}>
-          Новый пользователь - пройти онбординг
-        </h2>
-        <p className={ui.hint}>Создаёт чистый аккаунт без роли: онбординг-чат сразу спросит, кто ты - специалист или работодатель.</p>
-        <ConsentCheck checked={agreed} onChange={setAgreed} />
-        <button
-          type="button"
-          className={`${ui.btn} ${ui.cta}`}
-          disabled={pending !== null || !agreed}
-          onClick={() => void enter('fresh', () => demoFreshLogin(CONSENT_VERSION), '/consultant')}
-        >
-          {pending === 'fresh' ? 'Создаю…' : 'Новый пользователь'}
-        </button>
-      </section>
-      <section className={styles.block} aria-labelledby="auth-demo">
-        <h2 id="auth-demo" className={styles.blockTitle}>
-            Демо-вход
-        </h2>
-        <p className={ui.hint}>Без аккаунта: готовые вымышленные пользователи с синтетическими данными.</p>
-          {accounts === null && (
-          <p className={ui.muted} role="status">
-            <span className={ui.spinner} aria-hidden="true" /> Загружаю список…
-          </p>
-          )}
-          {accounts && (
-          <>
-            <p className={styles.group}>Кандидаты</p>
-              {accounts.candidates.length === 0 && <p className={ui.muted}>Демо-кандидатов нет.</p>}
-            <ul className={styles.list}>{mainCandidates.map(candidateItem)}</ul>
-              {poolCandidates.length > 0 && (
-              <details className={styles.more}>
-                <summary>ещё {poolCandidates.length} {pluralCandidates(poolCandidates.length)} для подборки</summary>
-                <ul className={styles.list}>{poolCandidates.map(candidateItem)}</ul>
-              </details>
-              )}
-            <p className={styles.group}>Работодатели</p>
-              {accounts.employers.length === 0 && <p className={ui.muted}>Демо-работодателей нет.</p>}
-            <ul className={styles.list}>
-                {accounts.employers.map((e) => (
-                <li key={e.id}>
-                  <button
-                      type="button"
-                      className={styles.item}
-                      aria-label={`Войти как ${e.name}`}
-                      disabled={pending !== null}
-                      onClick={() => void enter(e.id, () => demoEmployerLogin(e.id), '/consultant', next && isEmployerPath(next) ? next : null)}
-                    >
-                    <Avatar />
-                    <span className={styles.who}>
-                      <span className={styles.name}>{e.name}</span>
-                      <span className={styles.sub}>работодатель{e.company ? ` · ${e.company.name}` : ''}</span>
-                    </span>
-                    <span className={`${ui.tag} ${ui.outline}`} aria-hidden="true">
-                        {pending === e.id ? 'Вхожу…' : 'Войти →'}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.restart}
-                    aria-label={`Пройти онбординг заново: ${e.name}`}
-                    disabled={pending !== null}
-                    onClick={() => void enter(`r-${e.id}`, () => demoRestartOnboarding({ restartUserId: e.id }), '/consultant')}
-                  >
-                    пройти онбординг заново
-                  </button>
-                </li>
-                ))}
-            </ul>
-          </>
-          )}
-      </section>
-      </div>
+      <ConsentCheck checked={agreed} onChange={setAgreed} />
+
+      <ul className={styles.features}>
+        {DEMO_FEATURES.map((f, i) => (
+          <li key={f.id} className={styles.feature}>
+            <span className={styles.num} aria-hidden="true">{i + 1}</span>
+            <div className={styles.body}>
+              <h2 className={styles.title}>{f.title}</h2>
+              <p className={styles.text}>{f.text}</p>
+              <div className={styles.chips} role="group" aria-label={`Войти: ${f.title}`}>
+                {state.personas === null && !state.error ? <span className={styles.loading} role="status">Загружаю профили…</span> : known(f.personas).map((p) => <PersonaChip key={p.id} persona={p} state={state} agreed={agreed} />)}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <AllProfiles state={state} agreed={agreed} />
     </Container>
+  );
+}
+
+function AllProfiles({ state, agreed }: { state: PersonasState; agreed: boolean }) {
+  return (
+    <details className={styles.all}>
+      <summary>Все профили по этапам пути</summary>
+      <PersonaGroups state={state} agreed={agreed} columns />
+    </details>
   );
 }

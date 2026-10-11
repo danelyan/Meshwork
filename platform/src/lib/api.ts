@@ -1,5 +1,6 @@
 // Тонкий клиент к API платформы. Контракты других лейнов могут быть заглушками,
 // поэтому ответы разбираются терпимо, а ошибки приводятся к ApiError с понятным текстом.
+import type { DemoPersona } from '@/server/demo/personas';
 import type { Specialization } from '@/lib/directions';
 import type { ProfileView } from '@/server/claims/types';
 import type { OnboardingView } from '@/server/onboarding/types';
@@ -70,13 +71,15 @@ export const demoLogout = () => request<{ ok: true }>('/api/demo/login', { metho
 
 // --- lane auth: вход, роль, согласие (docs/decisions/0001-auth-yandex-id.md) ---
 
+export type { DemoPersona } from '@/server/demo/personas';
+
 export interface DemoEmployer {
   id: string;
   name: string;
   company: { id: string; name: string } | null;
 }
 
-export const getDemoAccounts = () => request<{ candidates: DemoCandidate[]; employers?: DemoEmployer[] }>('/api/demo/login');
+export const getDemoAccounts = () => request<{ candidates: DemoCandidate[]; employers?: DemoEmployer[]; personas?: DemoPersona[] }>('/api/demo/login');
 /** Новый демо-гость; `consent` — версия текста согласия с галки (без неё сервер отвечает 409/400). */
 export const demoFreshLogin = (consent: string) => postJson<{ user: { id: string; name: string }; next: string }>('/api/demo/login', { fresh: true, consent });
 export const demoRestartOnboarding = (key: { restartUserId: string } | { restartCandidateId: string }) =>

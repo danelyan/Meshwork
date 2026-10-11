@@ -25,15 +25,15 @@ function stub(claims: unknown[], recs: unknown) {
 }
 
 describe('ProfilePage: у блоков один дом', () => {
-  it('карта глубины, пробелы и вакансии не дублируются, вместо них ссылки на дом', async () => {
+  it('карта глубины, пробелы и вакансии не дублируются; профиль по макету Astra v2 — форма и «Как видит компания»', async () => {
     stub([claim('confirmed')], { targets: [{ vacancyId: 'v1', companyName: 'Альфа', title: 'Backend', reason: 'r' }], gaps: [], tasks: [] });
     render(<ProfilePage />);
     await screen.findByText('Писал эндпоинты');
     expect(screen.queryByText('Альфа, Backend')).toBeNull();
     expect(screen.queryByText('Карта пробелов к цели')).toBeNull();
-    expect(screen.getByRole('link', { name: /Карта глубины и пробелы/ }).getAttribute('href')).toBe('/skills');
-    expect(screen.getByRole('link', { name: /Подходящие вакансии/ }).getAttribute('href')).toBe('/career');
-    expect(screen.getByText('Что видят компании')).toBeDefined();
+    expect(screen.getByText('Основное')).toBeDefined();
+    expect(screen.getByText('Условия')).toBeDefined();
+    expect(screen.getByText('Как видит компания')).toBeDefined();
   });
 
   it('сохраняет пользовательскую формулировку через API и обновляет профиль', async () => {

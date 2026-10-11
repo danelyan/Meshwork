@@ -1,6 +1,6 @@
 import { profileDetails } from '@/server/claims/profile-details';
 const mocks = vi.hoisted(() => ({ candidate: vi.fn() }));
-vi.mock('@/server/db', () => ({ prisma: { candidate: { findUnique: mocks.candidate }, resumeField: { findMany: async () => [] } } }));
+vi.mock('@/server/db', () => ({ prisma: { candidate: { findUnique: mocks.candidate }, resumeField: { findMany: async () => [] }, claim: { findMany: async () => [{ statement: 'Сервисы на Kafka', quote: '', sourceKind: 'github' }] }, onboardingState: { findUnique: async () => null } } }));
 vi.mock('@/server/recommend/evidence', () => ({ loadCatalog: async () => new Map([['sql', { id: 'sql', statement: 'Работает с SQL' }]]) }));
 beforeEach(() => vi.resetAllMocks());
 it('keeps own private contact and questionnaire separate from exact anonymous employer projection', async () => {
@@ -9,7 +9,8 @@ it('keeps own private contact and questionnaire separate from exact anonymous em
   expect(mocks.candidate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'own' } }));
   expect(result.contact).toBe('@private');
   expect(result.basics?.city).toBe('Москва');
-  expect(result.completion).toEqual({ filled: 9, total: 9 });
+  expect(result.completion).toEqual({ filled: 9, total: 9, missing: [] });
+  expect(result.suggestions).toEqual([{ name: 'Kafka', from: 'github' }]);
   expect(result.employerPreview.contacts).toBeNull();
   expect(result.employerPreview.displayName).toMatch(/^Кандидат #/);
   expect(JSON.stringify(result.employerPreview)).not.toMatch(/Private Name|private@example|@private|Москва/);

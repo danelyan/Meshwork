@@ -131,3 +131,17 @@ describe('companyTrust: штраф за жалобы', () => {
     expect(companyTrust({ name: 'ОО', description: null, industry: null, innValid: false, contact: null, createdAt: now, invitationsSent: 0, invitationsDeclined: 0, complaints: 9, now }).index).toBe(0);
   });
 });
+
+describe('companyTrust: неявки на назначенные защиты', () => {
+  const now = new Date('2026-09-20T00:00:00Z');
+  const full = { name: 'ООО Пример', description: 'О компании', industry: 'Финтех', innValid: true, contact: '@hr', createdAt: new Date('2026-08-01T00:00:00Z'), invitationsSent: 2, invitationsDeclined: 0, now };
+  it('15 баллов за неявку, не больше 30; без неявок сигнала нет', () => {
+    const base = companyTrust(full);
+    expect(base.signals.some((x) => x.code === 'no_shows')).toBe(false);
+    const one = companyTrust({ ...full, noShows: 1 });
+    expect(one.index).toBe(base.index - 15);
+    expect(one.signals.find((x) => x.code === 'no_shows')).toMatchObject({ earned: -15, points: 0 });
+    expect(companyTrust({ ...full, noShows: 7 }).index).toBe(base.index - 30);
+  });
+});
+

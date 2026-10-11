@@ -158,13 +158,15 @@ export interface CompanyTrustInput {
   invitationsDeclined: number;
   /** Жалобы кандидатов за COMPLAINT_WINDOW_DAYS, кроме отклонённых (dismissed). Нет данных — 0. */
   complaints?: number;
+  /** Неявки работодателя на назначенные живые защиты за NO_SHOW_WINDOW_DAYS (опоздание > 15 минут). Нет данных - 0. */
+  noShows?: number;
   now?: Date;
 }
 
 export interface TrustSignal {
-  code: 'profile' | 'inn' | 'age' | 'declines' | 'complaints';
+  code: 'profile' | 'inn' | 'age' | 'declines' | 'complaints' | 'no_shows';
   label: string;
-  /** Вклад в индекс, 0..points; у штрафа complaints — от -COMPLAINT_TRUST_PENALTY.max до 0 при points = 0. */
+  /** Вклад в индекс, 0..points; у штрафов complaints и no_shows - отрицательный при points = 0. */
   earned: number;
   points: number;
 }
@@ -187,6 +189,11 @@ export const COMPLAINT_WINDOW_DAYS = 30;
 export const COMPLAINT_SANCTIONS = { reducedAt: 3, reducedLimit: 5, blockedAt: 5 } as const;
 /** Штраф индексу доверия за жалобу. ПРЕДЛОЖЕНИЕ агента, не калибровано. */
 export const COMPLAINT_TRUST_PENALTY = { perComplaint: 10, max: 40 } as const;
+
+/** Окно подсчёта неявок работодателя, дней. */
+export const NO_SHOW_WINDOW_DAYS = 30;
+/** Штраф индексу доверия за неявку работодателя на назначенную защиту. ПРЕДЛОЖЕНИЕ агента, не калибровано. */
+export const NO_SHOW_TRUST_PENALTY = { perNoShow: 15, max: 30 } as const;
 
 export interface InvitationSanction {
   /** none — обычный лимит; reduced — сниженный суточный лимит; blocked — отправка закрыта. */
@@ -215,7 +222,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /**
  * Индекс доверия из уже имеющихся данных: заполненность профиля (35), ИНН с верной контрольной цифрой (25),
  * возраст аккаунта (15, полные баллы с 30 дней), доля отклонённых приглашений (25; без данных — половина),
- * минус штраф за жалобы кандидатов за 30 дней (COMPLAINT_TRUST_PENALTY), не ниже 0.
+ * минус штраф за жалобы кандидатов за 30 дней (COMPLAINT_TRUST_PENALTY) и за неявки на назначенные защиты
+ * за 30 дней (NO_SHOW_TRUST_PENALTY: 15 за неявку, не больше 30), не ниже 0.
  */
 export function companyTrust(c: CompanyTrustInput): CompanyTrust {
   const filled = [c.name.trim().length >= 2, !!c.description?.trim(), !!c.industry?.trim(), !!c.contact?.trim()].filter(Boolean).length;
@@ -238,6 +246,15 @@ export function companyTrust(c: CompanyTrustInput): CompanyTrust {
       code: 'complaints',
       label: `Жалобы кандидатов за ${COMPLAINT_WINDOW_DAYS} дней: ${complaints}`,
       earned: -Math.min(COMPLAINT_TRUST_PENALTY.max, complaints * COMPLAINT_TRUST_PENALTY.perComplaint),
+      points: 0,
+    });
+  }
+  const noShows = Math.max(0, c.noShows ?? 0);
+  if (noShows > 0) {
+    signals.push({
+      code: 'no_shows',
+      label: `Неявки на назначенные защиты за ${NO_SHOW_WINDOW_DAYS} дней: ${noShows}`,
+      earned: -Math.min(NO_SHOW_TRUST_PENALTY.max, noShows * NO_SHOW_TRUST_PENALTY.perNoShow),
       points: 0,
     });
   }

@@ -12,7 +12,7 @@ type Ctx = { params: Promise<{ id: string }> };
 /**
  * POST `{ slots: ISO[], durationMin: 30|45, comment? }` — предложить слоты живой защиты по принятому приглашению своей
  * компании (ADR 0008): 2–5 слотов, не раньше чем через 2 часа и не позже 14 дней. Новое предложение заменяет старое.
- * Чужое — 404; не accepted — 409 `invitation_not_accepted`; время занято другим кандидатом — 409 `slot_taken`;
+ * Чужое — 404; не accepted — 409 `invitation_not_accepted`; у кандидата нет проверенного проекта — 409 `project_not_submitted`; время занято другим кандидатом — 409 `slot_taken`;
  * защита уже назначена — 409 `live_defense_scheduled` (сначала отмена).
  */
 export const POST = withErrors(async (req: Request, { params }: Ctx) => {

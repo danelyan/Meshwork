@@ -9,6 +9,7 @@ import { GET as candidateList } from '@/app/api/invitations/route';
 import { notifications } from '@/server/auth/notifications';
 import { CALL_RECORDING_CONSENT_VERSION } from '@/server/call/consent';
 import { joinCall } from '@/server/defense-room/employer';
+import { loadCompanyTrusts } from '@/server/employer/company';
 import { markInvitationHired } from '@/server/employer/invitations';
 import { assertLiveRoomOpen, cancelLiveDefense, chooseSlot, proposeSlots } from '@/server/live-defense';
 import { clearMailOutbox, mailOutbox } from '@/server/mail';
@@ -20,7 +21,7 @@ import { discloseAccepted, grantConsents, grantEmployerConsents } from '../../he
 
 const EMP_A = `cid=${signUserSession({ userId: 'u-emp-a', role: 'employer', employerProfileId: 'ep-a' })}`;
 const EMP_B = `cid=${signUserSession({ userId: 'u-emp-b', role: 'employer', employerProfileId: 'ep-b' })}`;
-const cand = (n: 1 | 2 | 3) => `cid=${signUserSession({ userId: `u-c${n}`, role: 'candidate', candidateId: `c${n}` })}`;
+const cand = (n: 1 | 2 | 3 | 4) => `cid=${signUserSession({ userId: `u-c${n}`, role: 'candidate', candidateId: `c${n}` })}`;
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 const post = (body: unknown, cookie: string) => jsonRequest('/x', 'POST', body, cookie);
 const hoursFromNow = (h: number) => {
@@ -41,7 +42,7 @@ async function seed() {
     await prisma.employerProfile.create({ data: { id: `ep-${x}`, userId: `u-emp-${x}`, companyId: `co-${x}` } });
   }
   await grantEmployerConsents(['u-emp-a', 'u-emp-b']);
-  for (const n of [1, 2, 3] as const) {
+  for (const n of [1, 2, 3, 4] as const) {
     await prisma.candidate.create({ data: { id: `c${n}`, email: `c${n}@example.com`, name: `Кандидат ${n}` } });
     await prisma.user.create({ data: { id: `u-c${n}`, name: `c${n}`, role: 'candidate', candidateId: `c${n}` } });
   }
@@ -54,6 +55,7 @@ async function seed() {
     a1: await mk('c1', 'co-a', 'accepted', 'ep-a'),
     a2: await mk('c2', 'co-a', 'accepted', 'ep-a'),
     a3: await mk('c3', 'co-a', 'accepted', 'ep-a'),
+    a4: await mk('c4', 'co-a', 'accepted', 'ep-a'),
     aSent: await mk('c1', 'co-a', 'sent', 'ep-a'),
     b1: await mk('c1', 'co-b', 'accepted', 'ep-b'),
   };
@@ -62,6 +64,8 @@ async function seed() {
   await prisma.projectTemplate.create({ data: { id: 'tpl-1', subcategoryId: 'backend.integrations', specialization: 'backend', grade: 'middle', title: 'Платежи', contractMd: '#', dirRef: 'x', hiddenTestsRef: 'hidden', visibleTestsRef: 'visible', image: 'node20', timeBudgetMin: 240 } });
   await prisma.vacancy.create({ data: { id: 'vac-1', companyId: 'co-a', title: 'Backend', specialization: 'backend', grade: 'middle', salaryFrom: 200000, salaryTo: 250000, needs: [] } });
   await prisma.projectTask.create({ data: { id: 'task-1', vacancyId: 'vac-1', templateId: 'tpl-1', specialization: 'backend', grade: 'middle', specJson: {}, rubricJson: { criteria: [] } } });
+  for (const n of [2, 3]) await prisma.projectSubmission.create({ data: { id: `sub-${n}`, projectTaskId: 'task-1', candidateId: `c${n}`, repoUrl: `https://github.com/fsp-demo/p${n}`, status: 'checked' } });
+  // c4 проекта не сдавал.
   await prisma.projectSubmission.create({ data: { id: 'sub-1', projectTaskId: 'task-1', candidateId: 'c1', repoUrl: 'https://github.com/fsp-demo/payments', status: 'checked' } });
 }
 
@@ -222,5 +226,45 @@ describe('lane live-slots: назначение живой защиты (БД)',
     await prisma.liveDefense.updateMany({ where: { invitationId: INV.a1! }, data: { startsAt: past, endsAt: new Date(past.getTime() + 45 * 60_000) } });
     const mine = await (await candidateList(jsonRequest('/x', 'GET', undefined, cand(1)))).json();
     expect(mine.invitations.find((i: { id: string }) => i.id === INV.a1).liveDefense).toMatchObject({ status: 'no_show', noShow: ['candidate', 'employer'] });
+  });
+
+  it('слоты только при проверенном проекте: без сабмита 409 project_not_submitted, с сабмитом 201', async () => {
+    const slots = [hoursFromNow(3), hoursFromNow(5)];
+    const no = await propose(INV.a4!, slots);
+    expect(no.status).toBe(409);
+    expect((await no.json()).error.code).toBe('project_not_submitted');
+    expect(await prisma.liveDefense.count({ where: { invitationId: INV.a4! } })).toBe(0);
+    // Сабмит есть, но не проверен (идёт проверка) - тоже нельзя.
+    await prisma.projectSubmission.create({ data: { id: 'sub-4', projectTaskId: 'task-1', candidateId: 'c4', repoUrl: 'https://github.com/fsp-demo/p4', status: 'running' } });
+    expect((await propose(INV.a4!, slots)).status).toBe(409);
+    // Флаг для UI обеих сторон.
+    const emp = await (await employerList(jsonRequest('/x', 'GET', undefined, EMP_A))).json();
+    expect(emp.invitations.find((i: { id: string }) => i.id === INV.a4).projectReady).toBe(false);
+    expect(emp.invitations.find((i: { id: string }) => i.id === INV.a1).projectReady).toBe(true);
+    const mine = await (await candidateList(jsonRequest('/x', 'GET', undefined, cand(4)))).json();
+    expect(mine.invitations[0].projectReady).toBe(false);
+    await prisma.projectSubmission.update({ where: { id: 'sub-4' }, data: { status: 'checked' } });
+    expect((await propose(INV.a4!, slots)).status).toBe(201);
+  });
+
+  it('неявка работодателя снижает индекс доверия компании; неявка кандидата видна только его компании', async () => {
+    const before = (await loadCompanyTrusts(['co-a', 'co-b'])).get('co-a')!;
+    expect(before.signals.some((x) => x.code === 'no_shows')).toBe(false);
+    const v = await (await propose(INV.a1!, [hoursFromNow(3), hoursFromNow(5)])).json();
+    await choose(INV.a1!, v.slots[0].id, cand(1));
+    const past = new Date(Date.now() - 20 * 60_000);
+    await prisma.liveDefense.updateMany({ where: { invitationId: INV.a1! }, data: { startsAt: past, endsAt: new Date(past.getTime() + 45 * 60_000) } });
+    const trusts = await loadCompanyTrusts(['co-a', 'co-b']);
+    const after = trusts.get('co-a')!;
+    expect(after.signals.find((x) => x.code === 'no_shows')).toMatchObject({ earned: -15 });
+    expect(after.index).toBe(Math.max(0, before.index - 15));
+    expect(trusts.get('co-b')!.signals.some((x) => x.code === 'no_shows')).toBe(false);
+    // Компания A видит неявку кандидата в своей карточке приглашения.
+    const a = await (await employerList(jsonRequest('/x', 'GET', undefined, EMP_A))).json();
+    expect(a.invitations.find((i: { id: string }) => i.id === INV.a1).liveDefense.noShow).toContain('candidate');
+    // Компания B по приглашению того же кандидата ничего не видит: ни защиты, ни неявки.
+    const b = await (await employerList(jsonRequest('/x', 'GET', undefined, EMP_B))).json();
+    expect(b.invitations.find((i: { id: string }) => i.id === INV.b1).liveDefense).toBeNull();
+    expect(JSON.stringify(b)).not.toContain('no_show');
   });
 });

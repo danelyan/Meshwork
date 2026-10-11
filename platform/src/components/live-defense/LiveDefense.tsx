@@ -68,7 +68,7 @@ function defaultSlots(): string[] {
   return [`${tomorrow}T11:00`, `${tomorrow}T15:00`];
 }
 
-export function EmployerLiveDefense({ invitationId, live: initial }: { invitationId: string; live: LiveDefenseView | null | undefined }) {
+export function EmployerLiveDefense({ invitationId, live: initial, projectReady = true }: { invitationId: string; live: LiveDefenseView | null | undefined; projectReady?: boolean }) {
   const router = useRouter();
   const [live, setLive] = useState(initial ?? null);
   const [formOpen, setFormOpen] = useState(false);
@@ -99,13 +99,15 @@ export function EmployerLiveDefense({ invitationId, live: initial }: { invitatio
     finally { setBusy(false); }
   }
 
-  const canPropose = !live || live.status !== 'scheduled';
+  const canPropose = (!live || live.status !== 'scheduled') && projectReady;
+  const waitingProject = !projectReady && (!live || live.status !== 'scheduled');
   return <div className={styles.box} data-testid="live-defense-employer">
     <div className={styles.head}><h3>Живая защита с компанией</h3><LiveSubStatus live={live} /></div>
     {live && <Summary live={live} role="employer" />}
     {live?.status === 'slots_proposed' && <ul className={styles.slots}>{live.slots.map((s) => <li key={s.id} className={styles.slot} data-available={s.available}>{formatMsk(s.startsAt)}{!s.available && ' · занято'}</li>)}</ul>}
     {error && <p className={styles.error} role="alert">{error}</p>}
-    {formOpen ? <div className={styles.box}>
+    {waitingProject && <p className={styles.fine} data-testid="live-project-missing">Кандидат ещё не сдал проект — назначить защиту можно после сдачи.</p>}
+    {formOpen && projectReady ? <div className={styles.box}>
       <p className={styles.fine}>От 2 до 5 слотов по МСК, не раньше чем через 2 часа и не позже 14 дней. Одно активное предложение: новое заменит старое.</p>
       <ul className={styles.slots}>{slots.map((v, i) => <li key={i} className={styles.slot}>
         <input type="datetime-local" className={styles.input} aria-label={`Слот ${i + 1}, МСК`} value={v} onChange={(e) => setSlots((all) => all.map((x, j) => (j === i ? e.target.value : x)))} />
@@ -132,7 +134,7 @@ export function EmployerLiveDefense({ invitationId, live: initial }: { invitatio
 // Кандидат
 // ---------------------------------------------------------------------------
 
-export function CandidateLiveDefense({ invitationId, live: initial, hasRecordingConsent }: { invitationId: string; live: LiveDefenseView | null | undefined; hasRecordingConsent: boolean }) {
+export function CandidateLiveDefense({ invitationId, live: initial, hasRecordingConsent, accepted = false, projectReady = true }: { invitationId: string; live: LiveDefenseView | null | undefined; hasRecordingConsent: boolean; accepted?: boolean; projectReady?: boolean }) {
   const router = useRouter();
   const [live, setLive] = useState(initial ?? null);
   const [slotId, setSlotId] = useState<string | null>(null);
@@ -141,7 +143,12 @@ export function CandidateLiveDefense({ invitationId, live: initial, hasRecording
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const text = CONSENT_TEXTS.call_recording;
-  if (!live) return null;
+  if (!live) {
+    // Приглашение принято, проекта нет: компания не сможет назначить защиту, пока его не сдать.
+    return accepted && !projectReady
+      ? <p className={styles.fine} data-testid="live-project-hint">Чтобы компания смогла назначить живую защиту, сдайте проект в разделе <a href="/projects">«Проекты»</a>.</p>
+      : null;
+  }
 
   async function run(fn: () => Promise<LiveDefenseView>, fallback: string) {
     setBusy(true);

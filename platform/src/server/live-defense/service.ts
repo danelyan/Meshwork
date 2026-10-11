@@ -138,6 +138,34 @@ function toView(
   };
 }
 
+/**
+ * Неявки работодателей на назначенные защиты за окно (по `startsAt`): индекс доверия компании.
+ * Неявка вычисляется при чтении так же, как в подстатусе (опоздание > 15 минут, `deriveSubStatus`).
+ */
+export async function countEmployerNoShows(companyIds: readonly string[], windowStart: Date, now = new Date()): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (!companyIds.length) return out;
+  const rows = await prisma.liveDefense.findMany({
+    where: { companyId: { in: [...companyIds] }, status: 'scheduled', startsAt: { gt: windowStart, lt: new Date(now.getTime() - LIVE_SLOT_RULES.noShowAfterMs) } },
+    select: { companyId: true, status: true, startsAt: true, callSessionId: true },
+  });
+  const callIds = rows.map((r) => r.callSessionId).filter((id): id is string => !!id);
+  const calls = callIds.length
+    ? await prisma.callSession.findMany({
+        where: { id: { in: callIds } },
+        select: { id: true, status: true, startedAt: true, participants: { select: { joinedAt: true, user: { select: { employerProfile: { select: { companyId: true } } } } } } },
+      })
+    : [];
+  const callById = new Map(calls.map((c) => [c.id, c]));
+  for (const r of rows) {
+    const call = callById.get(r.callSessionId ?? '');
+    const employerJoinedAt = call?.participants.filter((p) => p.user.employerProfile?.companyId === r.companyId).map((p) => p.joinedAt).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
+    const d = deriveSubStatus({ status: r.status, startsAt: r.startsAt, call: call ? { status: call.status, startedAt: call.startedAt } : null, employerJoinedAt }, now);
+    if (d.noShow.includes('employer')) out.set(r.companyId, (out.get(r.companyId) ?? 0) + 1);
+  }
+  return out;
+}
+
 async function viewOf(invitationId: string, role: LiveActor, now: Date): Promise<LiveDefenseView> {
   const v = (await liveDefenseViews([invitationId], role, now)).get(invitationId);
   if (!v) throw errors.notFound('Предложение слотов не найдено');
@@ -175,6 +203,8 @@ export async function proposeSlots(ctx: { companyId: string; userId: string }, i
   const inv = await prisma.invitation.findFirst({ where: { id: invitationId, companyId: ctx.companyId }, select: { id: true, status: true, candidateId: true, company: { select: { name: true } } } });
   if (!inv) throw errors.notFound('Приглашение не найдено');
   if (inv.status !== 'accepted') throw new AppError('invitation_not_accepted', 'Назначить защиту можно только по принятому приглашению', 409);
+  const sub = await pickSubmissionRow(inv.candidateId, ctx.companyId);
+  if (sub?.status !== 'checked') throw new AppError('project_not_submitted', 'Кандидат ещё не сдал проект - назначить защиту можно после сдачи', 409);
   const slots = validateProposal(input, now);
   const comment = input.comment?.trim() || null;
   if (comment && comment.length > LIVE_SLOT_RULES.maxCommentChars) throw new AppError('comment_too_long', `Комментарий - до ${LIVE_SLOT_RULES.maxCommentChars} знаков`, 400);
@@ -224,14 +254,35 @@ async function candidateLive(candidateId: string, invitationId: string) {
 }
 
 /** Сабмит проекта для защиты: сданный под потребность этой компании, иначе последний проверенный, иначе последний. */
+function chooseSubmission<T extends { status: string; projectTask: { vacancy: { companyId: string } } }>(subs: readonly T[], companyId: string): T | null {
+  return subs.find((s) => s.projectTask.vacancy.companyId === companyId) ?? subs.find((s) => s.status === 'checked') ?? subs[0] ?? null;
+}
+
+const submissionSelect = { id: true, status: true, projectTask: { select: { vacancy: { select: { companyId: true } } } } } satisfies Prisma.ProjectSubmissionSelect;
+
+async function pickSubmissionRow(candidateId: string, companyId: string) {
+  const subs = await prisma.projectSubmission.findMany({ where: { candidateId }, orderBy: { submittedAt: 'desc' }, take: 20, select: submissionSelect });
+  return chooseSubmission(subs, companyId);
+}
+
 async function pickSubmission(candidateId: string, companyId: string): Promise<string | null> {
-  const subs = await prisma.projectSubmission.findMany({
-    where: { candidateId },
-    orderBy: { submittedAt: 'desc' },
-    take: 20,
-    select: { id: true, status: true, projectTask: { select: { vacancy: { select: { companyId: true } } } } },
-  });
-  return (subs.find((s) => s.projectTask.vacancy.companyId === companyId) ?? subs.find((s) => s.status === 'checked') ?? subs[0])?.id ?? null;
+  return (await pickSubmissionRow(candidateId, companyId))?.id ?? null;
+}
+
+/**
+ * Есть ли у кандидата проверенный сабмит для защиты этой компании (тот же выбор, что при выборе слота).
+ * Без него слоты предлагать нельзя: 409 `project_not_submitted` (ADR 0008).
+ */
+export async function projectReadyByInvitation(invs: readonly { id: string; candidateId: string; companyId: string | null }[]): Promise<Map<string, boolean>> {
+  const out = new Map<string, boolean>();
+  if (!invs.length) return out;
+  const candidateIds = [...new Set(invs.map((i) => i.candidateId))];
+  const rows = await prisma.projectSubmission.findMany({ where: { candidateId: { in: candidateIds } }, orderBy: { submittedAt: 'desc' }, select: { ...submissionSelect, candidateId: true } });
+  for (const inv of invs) {
+    const mine = rows.filter((r) => r.candidateId === inv.candidateId).slice(0, 20);
+    out.set(inv.id, !!inv.companyId && chooseSubmission(mine, inv.companyId)?.status === 'checked');
+  }
+  return out;
 }
 
 /**

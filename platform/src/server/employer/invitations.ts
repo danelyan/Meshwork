@@ -10,7 +10,7 @@ import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 import { deliverable, notifyInBackground, sendMail } from '../mail';
 import { invitationAnswerMail, invitationMail, invitationWithdrawnMail } from '../mail/templates';
-import { closeLiveDefenseOnWithdraw, closeLiveDefensesOnHire, liveDefenseViews, type LiveDefenseView } from '../live-defense/service';
+import { closeLiveDefenseOnWithdraw, closeLiveDefensesOnHire, liveDefenseViews, projectReadyByInvitation, type LiveDefenseView } from '../live-defense/service';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
@@ -45,6 +45,8 @@ export interface EmployerInvitationView {
   candidate: CandidateCard;
   /** lane live-slots (ADR 0008): активное предложение слотов живой защиты и его подстатус; null — не назначалась. */
   liveDefense?: LiveDefenseView | null;
+  /** lane defense-rules (ADR 0008): у кандидата есть проверенный проект - только тогда можно предлагать слоты живой защиты. */
+  projectReady?: boolean;
 }
 
 export interface CandidateInvitationView {
@@ -73,6 +75,8 @@ export interface CandidateInvitationView {
   disclosed?: boolean;
   /** lane live-slots (ADR 0008): слоты живой защиты и подстатус; null — компания ещё не предлагала. */
   liveDefense?: LiveDefenseView | null;
+  /** lane defense-rules: у кандидата есть проверенный проект (иначе живую защиту назначить нельзя - сдайте его в «Проектах»). */
+  projectReady?: boolean;
   vacancy: {
     title: string;
     specialization: Specialization;
@@ -219,8 +223,10 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
   const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
   const accepted = new Set(rows.filter((r) => disclosed.has(r.id)).map((r) => r.candidateId));
   const live = await liveDefenseViews(rows.map((r) => r.id), 'employer');
+  const ready = await projectReadyByInvitation(rows.filter((r) => r.status === 'accepted').map((r) => ({ id: r.id, candidateId: r.candidateId, companyId })));
   return rows.map((r) => ({
     liveDefense: live.get(r.id) ?? null,
+    projectReady: ready.get(r.id) ?? false,
     id: r.id,
     status: r.status,
     salaryFrom: r.salaryFrom,
@@ -290,6 +296,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
   const trusts = await loadCompanyTrusts(rows.map((r) => (r.company ?? r.vacancy?.company)?.id).filter((id): id is string => !!id));
   const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
   const live = await liveDefenseViews(rows.map((r) => r.id), 'candidate');
+  const ready = await projectReadyByInvitation(rows.filter((r) => r.status === 'accepted').map((r) => ({ id: r.id, candidateId, companyId: (r.company ?? r.vacancy?.company)?.id ?? null })));
   return rows.map((r) => {
     const co = r.company ?? r.vacancy?.company ?? { id: null, name: 'Компания', description: null, contact: null };
     const senderEmail = r.employerProfile?.user.email;
@@ -323,6 +330,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       disclosed: disclosed.has(r.id),
       complaint: r.complaint ? { reason: r.complaint.reason, createdAt: r.complaint.createdAt.toISOString() } : null,
       liveDefense: live.get(r.id) ?? null,
+      projectReady: ready.get(r.id) ?? false,
       vacancy,
     };
   });

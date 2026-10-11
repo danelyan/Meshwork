@@ -33,7 +33,7 @@ it('marks only current dashboard route and keeps employer routes out of candidat
 it('sidebar: candidate order follows the journey stages, employer labels match the header', () => {
   nav.pathname = '/career';
   const view = render(<DashboardFrame account={account}><p>x</p></DashboardFrame>);
-  const names = () => within(screen.getByRole('navigation', { name: 'Разделы кабинета' })).getAllByRole('link').map((a) => a.textContent?.replace(/^\S\s?/, ''));
+  const names = () => within(screen.getByRole('navigation', { name: 'Разделы кабинета' })).getAllByRole('link').map((a) => a.textContent?.trim());
   // Все разделы доступны в единственном меню кабинета.
   expect(names()).toEqual(['Консультант', 'Тест на грейд', 'Навыки и грейд', 'Проекты', 'Приглашения', 'Вакансии', 'Компании', 'Профиль', 'Созвон с ИИ', 'Избранное', 'Настройки']);
   expect(screen.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');

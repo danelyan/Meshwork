@@ -3,6 +3,8 @@ import { projectFlagLabel } from '@/server/employer/stages';
 
 import { Tag } from '../ui';
 
+import { CallEvidence } from './CallEvidence';
+
 import styles from './Employer.module.css';
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -37,6 +39,7 @@ export function DepthMapBlock({ depth }: { depth: NonNullable<Explanation['depth
           </li>
         ))}
       </ul>
+      {depth.callId && <CallEvidence callId={depth.callId} />}
     </section>
   );
 }

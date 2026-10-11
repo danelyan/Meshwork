@@ -121,7 +121,7 @@ Senior-шаблон (ADR 0003, «Дополнение 16:15») проверяе�
 | `frontend.ui-app` | `fe-uiapp-junior-catalog`<br>`fe-uiapp-junior-widget` | `fe-uiapp-middle-tasks` | `fe-uiapp-senior-search` |
 | `frontend.web-perf` | `fe-webperf-junior-suggest` | `fe-webperf-middle-virtual` | `fe-webperf-senior-dashboard` |
 
-Особый случай: `eng-qaauto-*` — кандидат пишет `verify(impl)`, скрытые тесты проверяют, что он пропускает эталон и ловит мутантов (мутационное тестирование). Senior-шаблоны требуют `DESIGN.md`. Шаблоны `ai-mleng-middle-leakfree`, `ai-mlops-middle-drift`, `eng-dataeng-middle-quality` используют numpy/pandas из песочницы runner (numpy 2.3.3, pandas 2.3.3, BLAS в один поток, образ linux/amd64).
+Особый случай: `eng-qaauto-*` — кандидат пишет `verify(impl)`, скрытые тесты проверяют, что он пропускает эталон и ловит мутантов (мутационное тестирование). Senior-шаблоны требуют `DESIGN.md`. Шаблоны `ai-datasci-junior-eda`, `ai-datasci-middle-abtest`, `ai-datasci-senior-cohorts`, `ai-mleng-junior-metrics`, `ai-mleng-middle-leakfree`, `ai-mlops-middle-drift`, `eng-dataeng-middle-quality` используют numpy/pandas из песочницы runner (numpy 2.3.3, pandas 2.3.3, BLAS в один поток, образ linux/amd64).
 
 - `reference/` исключён из обоих образов (`platform/.dockerignore`), приложение получает шаблоны через
   `outputFileTracingIncludes` в `next.config.ts` (standalone-сборка сама файлы с диска не трассирует).

@@ -41,6 +41,8 @@ import {
   livePose,
   NECK,
   neckPose,
+  pointerPose,
+  type PointerBehavior,
   trackPointer,
   trackPose,
 } from './head-motion';
@@ -76,6 +78,8 @@ export interface Head3DProps {
    * странице поворотом шеи, дыхание и моргание Карины; `alive` — то же + скулы, глаза, брови.
    */
   motion?: HeadMotionMode;
+  /** Отворачиваться от курсора на 404; по умолчанию — обычный взгляд консультанта. */
+  pointerBehavior?: PointerBehavior;
   /** WebGL-контекст потерян (`webglcontextlost`): родитель показывает знак с кнопкой «обновить». */
   onContextLost?: () => void;
   /** Свет сцены (см. lighting.ts); по умолчанию `current` — прежние лампы и окружение. */
@@ -735,10 +739,12 @@ function useHeadMotion(props: Head3DProps, mode: Mode) {
       const tr = track.current;
       if (motion) tr.time += step;
       // Лицо собеседника с камеры (комната звонка) важнее курсора: голова поворачивается за человеком.
-      const look = getLookTarget() ?? tr.pointer;
-      const goal = trackPose(look[0], look[1]);
+      const source = props.pointerBehavior === 'avoid' ? tr.pointer : getLookTarget() ?? tr.pointer;
+      const look: [number, number] = props.reducedMotion ? [0, 0] : source;
+      const goal = pointerPose(look[0], look[1], props.pointerBehavior);
+      const gaze: [number, number] = props.pointerBehavior === 'avoid' ? [-look[0], -look[1]] : look;
       tr.pose = [easeToward(tr.pose[0], goal[0], step), easeToward(tr.pose[1], goal[1], step)];
-      tr.gaze = [easeToward(tr.gaze[0], look[0], step, 9), easeToward(tr.gaze[1], look[1], step, 9)];
+      tr.gaze = [easeToward(tr.gaze[0], gaze[0], step, 9), easeToward(tr.gaze[1], gaze[1], step, 9)];
       const idle = headMotion(tr.time);
       uniforms.face.value = [motion * idle.blink, smile, 0, 0];
       const neck = neckPose({ pose: tr.pose, time: tr.time, thinking: motion > 0 && thinkingNow, level: motion * level.current });

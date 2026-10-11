@@ -1,0 +1,35 @@
+.scene {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow: hidden;
+  background: var(--avatar-stage-glow), var(--avatar-stage);
+  color: var(--stage-text);
+  padding: 36px var(--page-pad) 48px;
+  display: flex;
+  flex-direction: column;
+}
+.brand { position: relative; z-index: 2; align-self: flex-start; font: 700 var(--fs-lg)/1.4 var(--mono); letter-spacing: -0.04em; }
+.brand span { color: var(--stage-text-soft); font-weight: 400; font-size: var(--fs-sm); letter-spacing: 0; }
+.code { position: absolute; top: 5%; right: 3%; z-index: -1; color: var(--avatar-stage-line); font: 800 clamp(180px, 33vw, 520px)/1 var(--font); letter-spacing: -0.09em; user-select: none; } /* fs-ok: крупный декоративный код 404 */
+.head { position: absolute; right: -4%; top: 0; width: 76%; height: 100svh; z-index: 0; }
+.copy { position: relative; z-index: 1; width: min(490px, 44%); margin-top: auto; margin-bottom: auto; padding: 64px 0; }
+.eyebrow { color: var(--stage-accent); font: 500 var(--fs-sm)/1.4 var(--mono); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 20px; }
+.copy h1 { font-size: clamp(36px, 4.8vw, 72px); line-height: 1.02; letter-spacing: -0.055em; } /* fs-ok: fluid заголовок полноэкранной 404 */
+.description { color: var(--stage-text-soft); font-size: var(--fs-lg); margin-top: 24px; }
+.home { margin-top: 32px; min-height: 54px; padding: 16px 24px; background: var(--stage-btn); color: var(--avatar-stage); border-color: var(--stage-btn); display: inline-flex; gap: 32px; }
+.home:hover { background: var(--stage-accent); border-color: var(--stage-accent); color: var(--stage-on-accent); }
+.scene a:focus-visible { outline-color: var(--stage-accent); }
+.hint { position: relative; z-index: 1; color: var(--stage-text-soft); font: 400 var(--fs-xs)/1.5 var(--mono); }
+@media (max-width: 760px) {
+  .scene { padding: 24px 24px 28px; }
+  .brand span { display: block; margin-top: 4px; }
+  .head { position: relative; width: calc(100% + 48px); right: auto; margin: -12px -24px -24px; height: 50svh; min-height: 280px; }
+  .code { top: 100px; right: 7%; font-size: clamp(160px, 48vw, 340px); } /* fs-ok: декоративный код 404 на мобильном */
+  .copy { width: 100%; padding: 0 0 32px; margin: 0; }
+  .copy h1 br { display: none; }
+  .copy h1 { max-width: 470px; }
+  .eyebrow { margin-bottom: 12px; }
+  .description { margin-top: 16px; }
+  .home { margin-top: 24px; }
+}

@@ -101,6 +101,15 @@ export function trackPose(
   return [(yaw - KARINA_YAW_OFFSET) * TRACK_GAIN, pitch0 - py * (py < 0 ? PITCH_DOWN : PITCH_UP)];
 }
 
+export type PointerBehavior = 'follow' | 'avoid';
+
+/** На 404 лицо отворачивается от курсора, с более заметным, но ограниченным поворотом. */
+export function pointerPose(x: number, y: number, behavior: PointerBehavior = 'follow'): [number, number] {
+  if (behavior === 'follow') return trackPose(x, y);
+  const pose = trackPose(-clampUnit(x), -clampUnit(y));
+  return [pose[0] * 1.65, pose[1]];
+}
+
 /** Её сглаживание слежения: экспоненциальное приближение со скоростью 5.2/с, не зависит от FPS. */
 export function easeToward(
   current: number,

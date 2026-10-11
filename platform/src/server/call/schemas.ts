@@ -29,6 +29,9 @@ export type TurnBody = z.infer<typeof TurnBody>;
 
 export const CallConsentBody = z.object({ version: z.string().min(1).max(64) });
 
+/** Сегмент видео: смещение начала от начала созвона, мс. */
+export const VideoQuery = z.object({ startMs: z.coerce.number().int().min(0).max(24 * 60 * 60 * 1000).default(0) });
+
 /** Перебивание: индекс текущей реплики ИИ и сколько её предложений успело прозвучать (lib/sentences.ts). */
 export const InterruptBody = z.object({
   index: z.number().int().min(0),

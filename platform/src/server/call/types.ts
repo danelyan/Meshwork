@@ -238,6 +238,8 @@ export interface CallView {
   verdict: CallVerdict | PublicCallVerdict | null;
   /** Есть ли аудио кандидата (для кнопки «Запись»). */
   hasRecording: boolean;
+  /** Сегменты видео с камеры (комната звонка), только при доступе к записи; `GET /api/call/{id}/video?segment=`. */
+  videoSegments: { name: string; startMs: number }[];
   /** Сколько ответов кандидата и лимиты — для UI («вопрос 3 из 4–6»). */
   progress: { answered: number; minQuestions: number; maxQuestions: number; canFinish: boolean; awaitingAnswer: boolean };
   participants: { userId: string; role: 'employer'; joinedAt: string; leftAt: string | null; aiMuted: boolean }[];

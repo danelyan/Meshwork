@@ -21,9 +21,6 @@ tags:
     name: claims
     description: "Карточки утверждений кандидата: подтвердить, поправить, отклонить"
   -
-    name: consents
-    description: "Согласия (ADR 0005): список «Мои согласия», дать, отозвать; раскрытие — по приглашению"
-  -
     name: consultant
     description: "Чат с консультантом (SSE) и история разговоров"
   -
@@ -48,9 +45,6 @@ tags:
     name: favorites
     description: favorites
   -
-    name: fsp-id
-    description: "ФСП ID (R-FSP-01): привязка ФСП ID к профилю кандидата через OIDC-провайдер (Keycloak; сейчас — симулятор ФСП ID команды) и загрузка достижений"
-  -
     name: health
     description: "Проверка живости"
   -
@@ -59,9 +53,6 @@ tags:
   -
     name: notifications
     description: notifications
-  -
-    name: objections
-    description: "Возражения против автоматической оценки (ст. 16 152-ФЗ): тест, созвон, защита"
   -
     name: onboarding
     description: "Онбординг: шаги, ответы, итог"
@@ -998,7 +989,7 @@ paths:
       tags:
         - call
       summary: "Мои созвоны и согласие на запись"
-      description: "свои созвоны (свежие первыми) и состояние согласия на запись. `consent.mode`: audio — запись идёт; text — согласие отозвано, созвон без записи голоса (ADR 0005); ask — спросить перед созвоном.\n\nНужна сессия кандидата (кука cid)."
+      description: "свои созвоны (свежие первыми) и состояние согласия на запись.\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -1026,13 +1017,6 @@ paths:
                     properties:
                       given:
                         type: boolean
-                      mode:
-                        type: string
-                        enum:
-                          - audio
-                          - text
-                          - ask
-                        description: "`audio` — запись разрешена; `text` — согласие отозвано, созвон идёт текстом без записи голоса; `ask` — согласия не было, спросить"
                       version:
                         type: string
                       text:
@@ -1041,7 +1025,6 @@ paths:
                           type: string
                     required:
                       - given
-                      - mode
                       - version
                       - text
                   calls:
@@ -1147,7 +1130,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          description: "Созвон завершён, лимит сегментов, параллельная загрузка или согласие на запись отозвано (`call_recording_off`: созвон идёт текстом)"
+          description: "Созвон завершён, лимит сегментов или параллельная загрузка"
           content:
             "application/json":
               schema:
@@ -1458,6 +1441,125 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/call/{id}/video":
+    get:
+      operationId: getCallIdVideo
+      tags:
+        - call
+      summary: "Сегмент видео кандидата"
+      description: "кандидату всегда, работодателю после принятого приглашения.\n\nНужна любая сессия (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: segment
+          in: query
+          required: false
+          description: "Имя сегмента из CallView.videoSegments"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: WebM
+          content:
+            "video/webm":
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: "Работодателю — только после принятого приглашения"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: "Нет сегмента"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: postCallIdVideo
+      tags:
+        - call
+      summary: "Сегмент видео с камеры кандидата"
+      description: "сегмент видео с камеры кандидата (WebM, до 8 МБ): файл созвона рядом с аудио. Видео не анализируется — хранится как материал созвона (согласие: пункт о камере).\n\nНужна сессия кандидата (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        -
+          name: startMs
+          in: query
+          required: false
+          description: "Смещение начала сегмента от начала созвона, мс"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "WebM с камеры (комната звонка), до 8 МБ (~60 с при 300 кбит/с)"
+        content:
+          "video/webm":
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: "Сегмент сохранён файлом созвона; в БД — ничего. Видео не анализируется"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "Имя сегмента NNN-<startMs>.webm"
+                  startMs:
+                    type: integer
+                required:
+                  - name
+                  - startMs
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: "Созвон завершён, лимит сегментов или параллельная загрузка"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "413":
+          description: "Сегмент больше 8 МБ"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/call/consent":
     post:
       operationId: postCallConsent
@@ -1563,7 +1665,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "409":
-          description: "Нет согласия на оценку ИИ (`consent_required`, kind ai_assessment) или на запись (`call_consent_required`, `details.version`)"
+          description: "Нет согласия на запись (`call_consent_required`, `details.version`)"
           content:
             "application/json":
               schema:
@@ -1724,230 +1826,13 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/consents":
-    get:
-      operationId: getConsents
-      tags:
-        - consents
-      summary: "Мои согласия"
-      description: "Все согласия своей роли (ADR 0005): вид, текущая версия текста, данная версия, даты, состояние; раскрытия — по каждому приглашению с названием компании.\n\nНужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Согласия аккаунта"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        kind:
-                          type: string
-                          description: "Вид согласия"
-                        title:
-                          type: string
-                        label:
-                          type: string
-                        paragraphs:
-                          type: array
-                          items:
-                            type: string
-                        currentVersion:
-                          type: string
-                        version:
-                          oneOf:
-                            -
-                              type: string
-                            -
-                              type: "null"
-                        acceptedAt:
-                          oneOf:
-                            -
-                              type: string
-                              format: date-time
-                            -
-                              type: "null"
-                        revokedAt:
-                          oneOf:
-                            -
-                              type: string
-                              format: date-time
-                            -
-                              type: "null"
-                        state:
-                          type: string
-                          enum:
-                            - active
-                            - outdated
-                            - revoked
-                            - none
-                        requiredFor:
-                          oneOf:
-                            -
-                              type: string
-                            -
-                              type: "null"
-                        revoke:
-                          type: string
-                          enum:
-                            - button
-                            - erase
-                            - per_invitation
-                        invitationId:
-                          type: string
-                        company:
-                          type: string
-                        docUrl:
-                          type: string
-                      required:
-                        - kind
-                        - title
-                        - currentVersion
-                        - version
-                        - acceptedAt
-                        - revokedAt
-                        - state
-                        - revoke
-                required:
-                  - items
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postConsents
-      tags:
-        - consents
-      summary: "Дать согласие"
-      description: "Записать согласие на текущую версию текста. Повтор при действующем не создаёт дубля. Показ профиля снимает скрытие; раскрытие (`identity_disclosure`) — только по своему принятому приглашению (`context.invitationId`).\n\nНужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/GrantConsentBody"
-      responses:
-        "201":
-          description: "Согласие записано"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  kind:
-                    type: string
-                  version:
-                    type: string
-                  acceptedAt:
-                    type: string
-                    format: date-time
-                required:
-                  - kind
-                  - version
-                  - acceptedAt
-        "400":
-          description: "Раскрытие без `context.invitationId`"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          description: "Приглашение для раскрытия не найдено или чужое"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "409":
-          description: "Версия текста устарела или приглашение не принято (`conflict`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/consents/{kind}":
-    delete:
-      operationId: deleteConsentsKind
-      tags:
-        - consents
-      summary: "Отозвать согласие"
-      description: "Ставит `revokedAt` у действующих строк. Запись созвона — аудио удаляется сразу, новые созвоны идут текстом. Показ — профиль скрывается. Раскрытие — по `invitationId`. Согласие на обработку ПДн отзывается только удалением аккаунта.\n\nНужна сессия аккаунта любой роли (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: kind
-          in: path
-          required: true
-          schema:
-            type: string
-        -
-          name: invitationId
-          in: query
-          required: false
-          description: "Для `identity_disclosure`: приглашение, по которому отозвать раскрытие"
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Согласие отозвано"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  kind:
-                    type: string
-                  revokedAt:
-                    type: string
-                    format: date-time
-                  deletedRecordings:
-                    type: integer
-                    description: "Удалено аудиозаписей (только call_recording)"
-                required:
-                  - kind
-                  - revokedAt
-        "400":
-          description: "Неизвестный вид согласия"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          description: "Согласие на обработку ПДн отзывается удалением аккаунта (`consent_revoke_is_erase`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/consultant/aside":
     get:
       operationId: getConsultantAside
       tags:
         - consultant
       summary: "Данные правой колонки экрана консультанта («Твой путь», «Документы», «Подсказка») для текущей"
-      description: "Данные правой колонки экрана консультанта («Твой путь», «Документы», «Подсказка») для текущей роли — те же, что страница отдаёт при загрузке; лента перечитывает их после своих событий. Роль не выбрана — колонка знакомства из ответов; без знакомства — 403.\n\nНужна сессия аккаунта любой роли (кука cid)."
+      description: "Данные правой колонки экрана консультанта («Твой путь», «Документы», «Подсказка») для текущей роли — те же, что страница отдаёт при загрузке; лента перечитывает их после своих событий. Роль не выбрана — 403 (колонки у такого аккаунта нет).\n\nНужна сессия аккаунта любой роли (кука cid)."
       security:
         -
           cookieAuth: []
@@ -2392,7 +2277,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
         "409":
-          description: "Утверждение нельзя защищать в текущем состоянии, исчерпаны лимиты или нет согласия на оценку ИИ (`consent_required`)"
+          description: "Утверждение нельзя защищать в текущем состоянии или исчерпаны лимиты"
           content:
             "application/json":
               schema:
@@ -3001,7 +2886,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          description: "Ход в этом разговоре уже идёт (`busy`) или не выполнено условие хода; до начала потока; не приняты оферта или обязательство по данным (`consent_required`)"
+          description: "Ход в этом разговоре уже идёт (`busy`) или не выполнено условие хода; до начала потока"
           content:
             "application/json":
               schema:
@@ -3039,12 +2924,6 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
-        "409":
-          description: "В эфире другая компания (`room_busy`); Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/call/{id}/leave":
@@ -3184,12 +3063,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "409":
-          description: "Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/company":
@@ -3326,12 +3199,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "409":
-          description: "Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
     post:
@@ -3371,7 +3238,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
         "409":
-          description: "Открытое приглашение этому кандидату уже есть или не приняты оферта и обязательство по данным (`consent_required`)"
+          description: "Открытое приглашение этому кандидату уже есть"
           content:
             "application/json":
               schema:
@@ -3488,12 +3355,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "409":
-          description: "Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/project-submissions/{id}/invite-to-defense":
@@ -3535,12 +3396,6 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
-        "409":
-          description: "Сдача ещё не проверена или защита уже назначена; Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/project-templates":
@@ -3653,7 +3508,7 @@ paths:
       tags:
         - employer
       summary: "Поиск по базе кандидатов"
-      description: "Поиск по всему банку без привязки к потребности (R-E-04): та же выдача, что у подборки. Нужны оферта и обязательство по данным (ADR 0005).\n\nНужна сессия работодателя (кука cid)."
+      description: "Поиск по всему банку без привязки к потребности (R-E-04): та же выдача, что у подборки.\n\nНужна сессия работодателя (кука cid)."
       security:
         -
           cookieAuth: []
@@ -3723,12 +3578,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "409":
-          description: "Не приняты оферта или обязательство по данным (`consent_required`, `details.kind`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/employer/vacancies":
@@ -4022,12 +3871,6 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/ErrorBody"
-        "409":
-          description: "Не приняты оферта или обязательство по данным (`consent_required`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/evaluate":
@@ -4227,12 +4070,6 @@ paths:
                 additionalProperties: true
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "409":
-          description: "Работодатель: Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
     put:
@@ -4262,156 +4099,6 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "409":
-          description: "Работодатель: Не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/fsp-id/callback":
-    get:
-      operationId: getFspIdCallback
-      tags:
-        - fsp-id
-      summary: "Возврат из ФСП ID"
-      description: "Проверка state, обмен кода с PKCE, проверка ID-токена (подпись по JWKS, iss, aud, exp, nonce). Привязка (кука потока mode=link): кандидат сессии = кандидат потока, участник привязывается к профилю. Вход (mode=login): аккаунт по ФСП ID (новый — сразу кандидат), согласие, привязка, кука сессии. Токены в URL не попадают.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: code
-          in: query
-          required: false
-          description: "Код авторизации"
-          schema:
-            type: string
-        -
-          name: state
-          in: query
-          required: false
-          description: "Должен совпасть со state из куки старта"
-          schema:
-            type: string
-        -
-          name: error
-          in: query
-          required: false
-          description: "Присутствует при отказе"
-          schema:
-            type: string
-      responses:
-        "303":
-          description: "Привязка: /settings или /consultant с ?fsp=linked|no_achievements|unavailable|error_<код>. Вход: /consultant или next; ошибка — /auth?error=fsp_<код>"
-          headers:
-            Location:
-              schema:
-                type: string
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/fsp-id/link":
-    get:
-      operationId: getFspIdLink
-      tags:
-        - fsp-id
-      summary: "Начать привязку ФСП ID"
-      description: "Кнопка в настройках кандидата: state, nonce и PKCE verifier — в подписанной httpOnly-куке на 10 минут (path /api/fsp-id), редирект на authorization endpoint. Без сессии кандидата — на /auth.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: return
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        "303":
-          description: "Редирект на страницу входа ФСП ID"
-          headers:
-            Location:
-              schema:
-                type: string
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/fsp-id/login":
-    get:
-      operationId: getFspIdLogin
-      tags:
-        - fsp-id
-      summary: "Войти через ФСП ID"
-      description: "Вход на платформу через ФСП ID (кандидат): state, nonce, PKCE verifier, согласие и next — в подписанной httpOnly-куке на 10 минут, редирект на страницу входа провайдера (симулятор ФСП ID по env или встроенный мок).\n\nВход не нужен."
-      security: []
-      parameters:
-        -
-          name: consent
-          in: query
-          required: false
-          description: "Версия согласия с галки на /auth; иначе — /auth?error=consent_required"
-          schema:
-            type: string
-        -
-          name: next
-          in: query
-          required: false
-          description: "Куда вернуть после входа (только свой путь)"
-          schema:
-            type: string
-      responses:
-        "303":
-          description: "Редирект на страницу входа ФСП ID"
-          headers:
-            Location:
-              schema:
-                type: string
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/fsp-id/realms/fsp/protocol/openid-connect/auth":
-    get:
-      operationId: getFspIdRealmsFspProtocolOpenidConnectAuth
-      tags:
-        - fsp-id
-      summary: "Мок ФСП ID: страница входа"
-      description: "Authorization endpoint встроенного мока ФСП ID (путь как у Keycloak); только пока внешний провайдер не настроен, иначе 404. Проверяет client_id и redirect_uri по белому списку, PKCE S256, state и nonce; отдаёт HTML-страницу выбора демо-участника.\n\nВход не нужен."
-      security: []
-      responses:
-        "200":
-          description: "HTML-страница входа; ошибка запроса — редирект на redirect_uri с error или страница ошибки"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postFspIdRealmsFspProtocolOpenidConnectAuth
-      tags:
-        - fsp-id
-      summary: "Мок ФСП ID: выбор демо-участника"
-      description: "Форма страницы входа мока: одноразовый код на 60 секунд и редирект на redirect_uri с code и state; «Отмена» — error=access_denied.\n\nВход не нужен."
-      security: []
-      responses:
-        "303":
-          description: "Редирект на /api/fsp-id/callback"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
         "403":
           $ref: "#/components/responses/Forbidden"
         "500":
@@ -4509,7 +4196,7 @@ paths:
                     items:
                       type: object
                       additionalProperties: true
-                      description: "Приглашение: компания, потребность, зарплата, сообщение, статус, даты; `disclosed` — действует раскрытие имени и контактов (Г5)"
+                      description: "Приглашение: компания, потребность, зарплата, сообщение, статус, даты"
                 required:
                   - invitations
         "401":
@@ -4524,7 +4211,7 @@ paths:
       tags:
         - invitations
       summary: "Принять или отклонить приглашение"
-      description: "Ответ кандидата на приглашение (R-C-11). Принятие требует `disclosureVersion` — версию текста согласия на раскрытие (Г5, ADR 0005): работодатель видит имя и контакты, пока раскрытие не отозвано.\n\nНужна сессия кандидата (кука cid)."
+      description: "Ответ кандидата на приглашение (R-C-11). После принятия работодатель видит контакты.\n\nНужна сессия кандидата (кука cid)."
       security:
         -
           cookieAuth: []
@@ -4555,11 +4242,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          description: "У кандидата нет аккаунта — раскрытие записать некому"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: "Приглашение чужое или не существует"
           content:
@@ -4567,7 +4250,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
         "409":
-          description: "На приглашение уже отвечено; при accept без `disclosureVersion` — `consent_required`; версия текста устарела — `conflict`"
+          description: "На приглашение уже отвечено"
           content:
             "application/json":
               schema:
@@ -4633,82 +4316,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/objections":
-    get:
-      operationId: getObjections
-      tags:
-        - objections
-      summary: "Мои возражения против оценки"
-      description: "мои возражения против оценки (ст. 16 152-ФЗ) со сроком ответа. Работодателю недоступно.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      responses:
-        "200":
-          description: "Возражения кандидата, свежие первыми"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  objections:
-                    type: array
-                    items:
-                      type: object
-                      additionalProperties: true
-                      description: "Возражение: предмет, текст, статус, срок ответа, ответ"
-                required:
-                  - objections
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalError"
-    post:
-      operationId: postObjections
-      tags:
-        - objections
-      summary: "Оспорить автоматическую оценку"
-      description: "Возражение по ст. 16 152-ФЗ против оценки теста, созвона или защиты. Срок ответа — 30 дней; работодатель возражений не видит.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          "application/json":
-            schema:
-              $ref: "#/components/schemas/ObjectionBody"
-      responses:
-        "201":
-          description: "Возражение принято"
-          content:
-            "application/json":
-              schema:
-                type: object
-                additionalProperties: true
-                description: "Возражение со сроком ответа `dueAt`"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          description: "Оценка не найдена или чужая"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "409":
-          description: "Открытое возражение по этой оценке уже есть"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/onboarding":
@@ -5543,66 +5150,6 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
-  "/api/test/attempt/{id}/confirm-start":
-    post:
-      operationId: postTestAttemptIdConfirmStart
-      tags:
-        - test
-      summary: "Начать подтверждающий тест"
-      description: "Попытка в статусе `needs_confirmation` (индекс честности high, ADR-0002, дополнение 11.10): короткий тест 6–8 заданий других семейств, лимит времени ×0,7. Интервалы пересдачи не проверяются и не запускаются. Одна подтверждающая попытка на исходную.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Продолжена активная подтверждающая попытка (`resumed: true`)"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  attemptId:
-                    type: string
-                  resumed:
-                    type: boolean
-                required:
-                  - attemptId
-                  - resumed
-        "201":
-          description: "Новая подтверждающая попытка (`kind: confirm`)"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  attemptId:
-                    type: string
-                  resumed:
-                    type: boolean
-                required:
-                  - attemptId
-                  - resumed
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          description: "Подтверждение не требуется (`confirm_not_needed`), уже подтверждено (`already_confirmed`), подтверждающий тест уже пройден (`confirm_used`) или есть другая активная попытка (`active_attempt`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "500":
-          $ref: "#/components/responses/InternalError"
   "/api/test/attempt/{id}/finish":
     post:
       operationId: postTestAttemptIdFinish
@@ -5635,102 +5182,6 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  "/api/test/attempt/{id}/signal":
-    post:
-      operationId: postTestAttemptIdSignal
-      tags:
-        - test
-      summary: "Сигналы браузера во время теста"
-      description: "Дельты агрегатов браузера с прошлой отправки; сервер суммирует их в попытке для индекса честности. Только счётчики, без содержимого вставок и копий (152-ФЗ). Принимает `application/json` и `text/plain` с JSON (navigator.sendBeacon). Только активная попытка своего кандидата.\n\nНужна сессия кандидата (кука cid)."
-      security:
-        -
-          cookieAuth: []
-      parameters:
-        -
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        description: "Дельты; отсутствующее поле — 0"
-        content:
-          "application/json":
-            schema:
-              type: object
-              properties:
-                tabHidden:
-                  type: integer
-                  description: "Уходов со вкладки, 0–100"
-                hiddenMs:
-                  type: integer
-                  description: "Сколько вкладка была скрыта, мс, до суток"
-                pastes:
-                  type: integer
-                  description: "Вставок в поле ответа, 0–100"
-                pasteChars:
-                  type: integer
-                  description: "Символов вставлено, до 100000"
-                copies:
-                  type: integer
-                  description: "Копирований условия, 0–100"
-                extendedScreen:
-                  type: boolean
-                  description: "Подключён второй экран (пометка, не флаг)"
-              required: []
-      responses:
-        "200":
-          description: "Накопленные сигналы попытки"
-          content:
-            "application/json":
-              schema:
-                type: object
-                properties:
-                  signals:
-                    type: object
-                    properties:
-                      tabHidden:
-                        type: integer
-                      hiddenMs:
-                        type: integer
-                      pastes:
-                        type: integer
-                      pasteChars:
-                        type: integer
-                      copies:
-                        type: integer
-                      extendedScreen:
-                        type: boolean
-                    required:
-                      - tabHidden
-                      - hiddenMs
-                      - pastes
-                      - pasteChars
-                      - copies
-                      - extendedScreen
-                required:
-                  - signals
-        "400":
-          description: "Тело не JSON, больше 2 КБ или значения вне пределов"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          description: "Попытка завершена или истекла (`attempt_finished`, `attempt_expired`)"
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
   "/api/test/attempts":
@@ -5874,7 +5325,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "409":
-          description: "Нет согласия на оценку ИИ (`consent_required`); нельзя начать: активная попытка другой категории (`active_attempt`), смена грейда раньше срока (`grade_change_too_soon`) или пересдача раньше срока (`retake_too_soon`); в `details` — `nextAllowedAt`"
+          description: "Нельзя начать: активная попытка другой категории (`active_attempt`), смена грейда раньше срока (`grade_change_too_soon`) или пересдача раньше срока (`retake_too_soon`); в `details` — `nextAllowedAt`"
           content:
             "application/json":
               schema:
@@ -6824,39 +6275,6 @@ components:
         - targetId
         - saved
       additionalProperties: false
-    GrantConsentBody:
-      type: object
-      properties:
-        kind:
-          type: string
-          enum:
-            - pd_processing
-            - call_recording
-            - ai_assessment
-            - employer_visibility
-            - research
-            - marketing
-            - identity_disclosure
-            - employer_offer
-            - employer_data_obligation
-        version:
-          type: string
-          minLength: 1
-          maxLength: 64
-        context:
-          anyOf:
-            -
-              type: object
-              properties:
-                invitationId:
-                  type: string
-                  minLength: 1
-                  maxLength: 64
-            -
-              type: "null"
-      required:
-        - kind
-        - version
     InterruptBody:
       type: object
       properties:
@@ -6879,10 +6297,6 @@ components:
           enum:
             - accept
             - decline
-        disclosureVersion:
-          type: string
-          minLength: 1
-          maxLength: 64
       required:
         - action
     InvitationInput:
@@ -6952,27 +6366,6 @@ components:
           type: boolean
       required:
         - muted
-    ObjectionBody:
-      type: object
-      properties:
-        subject:
-          type: string
-          enum:
-            - grade_test
-            - call
-            - defense
-        subjectId:
-          type: string
-          minLength: 1
-          maxLength: 64
-        text:
-          type: string
-          minLength: 10
-          maxLength: 4000
-      required:
-        - subject
-        - subjectId
-        - text
     OnboardingView:
       type: object
       additionalProperties: true

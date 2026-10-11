@@ -21,7 +21,6 @@ import { signUserSession } from '@/server/session';
 
 import { prisma, resetDb } from '../../helpers/db';
 import { jsonRequest } from '../../helpers/requests';
-import { grantConsents } from '../../helpers/consents';
 
 const A = 'cand-a';
 const cookieA = () => `cid=${signUserSession({ userId: 'user-a', role: 'candidate', candidateId: A })}`;
@@ -35,10 +34,7 @@ const STRONG =
 async function seed() {
   await prisma.candidate.create({ data: { id: A, email: 'a@example.test', name: 'А', specialization: 'backend', subcategoryId: 'backend.web-api' } });
   await prisma.user.create({ data: { id: 'user-a', role: 'candidate', name: 'А', candidateId: A } });
-  await grantConsents('user-a', ['ai_assessment']); // Г3 (ADR 0005)
   await prisma.candidateProfile.create({ data: { candidateId: A, claimedGrade: 'middle' } });
-  // ИИнтервью открывается после теста: категория из теста (call/readiness.ts).
-  await prisma.candidateCategory.create({ data: { candidateId: A, specialization: 'backend', grade: 'middle', source: 'test', subcategoryId: 'backend.web-api' } });
   await prisma.claimCatalog.createMany({
     data: [
       { id: 'be.layering', specialization: 'backend', statement: 'Разделял код сервиса на слои', grades: ['junior', 'middle'], weight: 3, proof: [], markers: [], limits: '' },
@@ -192,5 +188,34 @@ describe('перебивание ИИ в режиме звонка (POST /api/ca
     const none = await json<TranscriptEntry>(await interruptRoute(jsonRequest(`/api/call/${id}/interrupt`, 'POST', { index: t.ai!.index, heardSentences: 0 }, cookieA()), ctx(id)));
     expect(none.text).toMatch(/не прозвучало/);
     expect(none.meta?.interrupted?.heardSentences).toBe(0);
+  });
+});
+
+describe('видео с камеры в комнате звонка (POST|GET /api/call/{id}/video)', () => {
+  it('сегмент хранится файлом, виден в CallView; кандидату отдаётся, работодателю до приглашения — 403', async () => {
+    const { POST: videoPost, GET: videoGet } = await import('@/app/api/call/[id]/video/route');
+    await consentRoute(jsonRequest('/api/call/consent', 'POST', { version: CALL_RECORDING_CONSENT_VERSION }, cookieA()));
+    const started = await json<{ sessionId: string }>(await startRoute(jsonRequest('/api/call/start', 'POST', { kind: 'interview' }, cookieA())));
+    const id = started.sessionId;
+    const body = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 1, 2, 3]);
+    const up = await videoPost(new Request(`http://localhost/api/call/${id}/video?startMs=1500`, { method: 'POST', headers: { cookie: cookieA(), 'content-type': 'video/webm' }, body }), ctx(id));
+    expect(up.status).toBe(201);
+    const seg = await json<{ name: string; startMs: number }>(up);
+    expect(seg).toEqual({ name: '000-1500.webm', startMs: 1500 });
+
+    const view = await json<CallView>(await viewRoute(jsonRequest(`/api/call/${id}`, 'GET', undefined, cookieA()), ctx(id)));
+    expect(view.videoSegments).toEqual([seg]);
+
+    const mine = await videoGet(new Request(`http://localhost/api/call/${id}/video?segment=${seg.name}`, { headers: { cookie: cookieA() } }), ctx(id));
+    expect(mine.status).toBe(200);
+    expect(mine.headers.get('content-type')).toBe('video/webm');
+    expect(new Uint8Array(await mine.arrayBuffer())).toEqual(body);
+
+    const emp = await videoGet(new Request(`http://localhost/api/call/${id}/video?segment=${seg.name}`, { headers: { cookie: cookieEmp() } }), ctx(id));
+    expect(emp.status).toBe(403);
+    const empView = await json<CallView>(await viewRoute(jsonRequest(`/api/call/${id}`, 'GET', undefined, cookieEmp()), ctx(id)));
+    expect(empView.videoSegments).toEqual([]);
+    const missing = await videoGet(new Request(`http://localhost/api/call/${id}/video?segment=009-0.webm`, { headers: { cookie: cookieA() } }), ctx(id));
+    expect(missing.status).toBe(404);
   });
 });

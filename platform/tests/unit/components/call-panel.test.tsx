@@ -20,6 +20,7 @@ const view = (over: Partial<CallView> = {}): CallView => ({
   transcript: [q(0, 'Привет! Что такое индекс?')],
   verdict: null,
   hasRecording: false,
+  videoSegments: [],
   progress: { answered: 0, minQuestions: 4, maxQuestions: 6, canFinish: false, awaitingAnswer: true },
   participants: [],
   policyVersion: 'v',
@@ -152,16 +153,6 @@ describe('CallPanel — режим звонка в сцене консульта
     expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('Созвониться');
     rerender(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callKind="interview" />);
     expect(screen.getByTestId('call-button').getAttribute('aria-label')).toBe('ИИнтервью');
-  });
-
-  it('созвон недоступен (readiness): кнопка disabled, причина в title; готовая — с подсказкой про смысл', () => {
-    const { rerender } = render(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} callBlocked="ИИнтервью откроется после теста" />);
-    const btn = screen.getByTestId('call-button') as HTMLButtonElement;
-    expect(btn.disabled).toBe(true);
-    expect(btn.title).toBe('ИИнтервью откроется после теста');
-    rerender(<Composer label="m" value="" onChange={() => {}} onSubmit={() => {}} onCall={() => {}} />);
-    expect((screen.getByTestId('call-button') as HTMLButtonElement).disabled).toBe(false);
-    expect(screen.getByTestId('call-button').title).toContain('проверено платформой');
   });
 });
 

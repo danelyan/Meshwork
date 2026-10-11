@@ -30,10 +30,6 @@ export const PAGE_ACCESS = {
   '/': 'public',
   '/auth': 'public',
   '/consent': 'public',
-  '/privacy': 'public',
-  '/terms': 'public',
-  '/employer-terms': 'public',
-  '/ai': 'public',
   '/site-access': 'public',
   '/api-docs': 'public',
   // Валидация (критерии 1–2): цифры и прогон подбора на своём наборе — жюри без регистрации.
@@ -103,23 +99,11 @@ export const API_ACCESS = {
   '/api/auth/password/reset': 'public',
   '/api/auth/yandex': 'public',
   '/api/auth/yandex/callback': 'public',
-  // ФСП ID (R-FSP-01): привязка к профилю через внешний OIDC-провайдер (старт и возврат) — только кандидату.
-  '/api/fsp-id/link': 'candidate',
-  // Возврат обслуживает и привязку (requireCandidate внутри), и вход на платформу через ФСП ID (без сессии).
-  '/api/fsp-id/callback': 'public',
-  '/api/fsp-id/login': 'public',
-  // Мок провайдера ФСП ID (страница входа «чужого» сервиса; без внешнего провайдера в env) — без входа на платформу.
-  '/api/fsp-id/realms/fsp/protocol/openid-connect/auth': 'public',
   '/api/auth/stale': 'public',
   // `{ user: null }` для гостя — отвечает всем.
   '/api/auth/me': 'public',
   '/api/auth/consent': { GET: 'public', POST: 'account' },
   '/api/auth/role': 'account',
-  // Мои согласия (ADR 0005): у кандидата и работодателя.
-  '/api/consents': 'account',
-  '/api/consents/[kind]': 'account',
-  // Возражение против оценки (ст. 16 152-ФЗ) — только кандидат, работодатель их не видит.
-  '/api/objections': 'candidate',
   // Переключение активной роли и вторая роль на той же учётке (ADR 0004).
   '/api/auth/role/switch': 'account',
   '/api/auth/onboarding/complete': 'account',
@@ -138,9 +122,7 @@ export const API_ACCESS = {
   '/api/test/attempt/[id]': 'candidate',
   '/api/test/attempt/[id]/answer': 'candidate',
   '/api/test/attempt/[id]/confirm-junior': 'candidate',
-  '/api/test/attempt/[id]/confirm-start': 'candidate',
   '/api/test/attempt/[id]/finish': 'candidate',
-  '/api/test/attempt/[id]/signal': 'candidate',
   '/api/defense': 'candidate',
   '/api/defense/[sessionId]': 'candidate',
   '/api/uploads': 'candidate',
@@ -171,6 +153,7 @@ export const API_ACCESS = {
   '/api/call/[id]': 'session',
   '/api/call/[id]/events': 'session',
   '/api/call/[id]/recording': 'session',
+  '/api/call/[id]/video': 'session',
   '/api/call/[id]/signal': 'session',
   '/api/call/[id]/turn': 'candidate',
   '/api/call/[id]/interrupt': 'candidate',
@@ -210,8 +193,6 @@ export const API_ACCESS = {
   // Прогон ранжирования на наборе пользователя: в памяти, лимиты входа и частоты (route.ts).
   '/api/evaluate': { POST: 'public' },
   '/api/dev/delete-account': 'dev',
-  // Ответ оператора на возражения против оценки (ст. 16, ADR 0005).
-  '/api/dev/objections': 'dev',
   '/api/dev/login-as': 'dev',
   '/api/dev/logout': 'dev',
   '/api/dev/new-conversation': 'dev',

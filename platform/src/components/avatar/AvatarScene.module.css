@@ -102,3 +102,49 @@
 /* Созвон: панель звонка на всю высоту справа, колонка «Твой путь»/карточки прячется — иначе карточка согласия налезает на неё. */
 .sideScene.withAside[data-in-call] { grid-template-rows: minmax(0, 1fr); grid-template-areas: 'panel stage'; }
 .sideScene[data-in-call] .sideAside { display: none; }
+
+/* Astra v2: conversation left, compact dark portrait and profile right. */
+.sideScene { grid-template-columns: var(--panel-w, 56%) minmax(0, 1fr); background: var(--glass); backdrop-filter: var(--blur); }
+.sideScene.withAside { grid-template-rows: 240px minmax(0, 1fr); }
+.sideScene:not([data-in-call]) .sidePanel { background: transparent; }
+.sidePanel { padding: 0; border-right-color: var(--line); }
+.sidePanel.sidePanel h1 { font-size: var(--fs-lg); white-space: normal; }
+.sidePanel > :first-child { border: 0; background: transparent; }
+.sideAside { padding: 16px 20px 20px; }
+.sideHead { min-height: 0; overflow: hidden; background: var(--avatar-stage-glow), var(--avatar-stage); }
+.withStats .headBox { right: 50%; }
+.withStats .sideStats { position: absolute; z-index: 1; top: 58px; bottom: 12px; left: 46%; right: 16px; display: grid; }
+.sideSubs { position: absolute; inset: auto 0 0; z-index: 2; width: 100%; padding: 4px 20px 8px; min-height: 0; max-height: 44px; background: var(--avatar-stage); }
+.splitter { left: calc(var(--panel-w, 56%) - 4px); }
+.splitter::after { background: var(--line); }
+.splitter:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (min-width: 1051px) { .sideAside { container: none; } }
+@media (max-width: 1050px) {
+ .sideStage { position: relative; top: auto; height: 220px; }
+ .sidePanel { order: 1; --landing-header-h: 0px; --chat-h: min(72svh, 720px); --chat-min-h: 440px; --feed-min-h: 480px; border-top: 0; border-bottom: 1px solid var(--line); }
+ .sideAside { order: 2; overflow: visible; padding: 16px; }
+ .sideScene[data-in-call] .sideStage { height: max(88svh, 520px); }
+}
+@media (max-width: 640px) {
+ .sideStage { height: 180px; }
+ .withStats .sideStats { top: 48px; right: 10px; bottom: 8px; }
+ .sideHead .badge { top: 10px; left: 10px; padding: 5px 7px; max-width: 65%; }
+ .sideHead .callTop { top: 8px; right: 8px; }
+ .sideHead .callTop > :last-child { display: none; }
+ .sideHead .callStop { bottom: 8px; left: 8px; }
+ .sideSubs { display: none; }
+}
+
+.sidePanel { display: flex; flex-direction: column; overflow: hidden; }
+.sideToolbar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--glass); }
+.sideTitle { flex: 1; min-width: 160px; display: grid; gap: 2px; }
+.sideTitle strong { font-size: var(--fs-lg); letter-spacing: -.02em; }
+.sideTitle span { font: 500 var(--fs-sm) var(--mono); color: var(--ink-dim); }
+.panelFeed { flex: 1; min-height: 0; overflow: auto; --feed-min-h: 100%; }
+.panelFeed [data-consultant-chat-header] { display: block; flex: none; padding: 0; border: 0; }
+.panelFeed [data-consultant-chat-header] > div, .panelFeed [data-consultant-chat-header] > nav { display: none; }
+.panelFeed [data-consultant-chat-header] > p { margin: 12px 24px; }
+.panelFeed > :first-child { border: 0; background: transparent; }
+.sideHead .callTop > :last-child { display: none; }
+@media (max-width: 1050px) { .sidePanel { overflow: visible; } .panelFeed { overflow: visible; } }
+@media (max-width: 640px) { .sideToolbar { padding: 12px 16px; gap: 8px; } .sideTitle { min-width: 120px; } }

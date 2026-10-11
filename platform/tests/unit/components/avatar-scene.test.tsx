@@ -17,7 +17,20 @@ describe('AvatarScene call-side (вариант D)', () => {
     );
     expect(screen.getByTestId('side-panel').contains(screen.getByTestId('feed'))).toBe(true);
     expect(screen.getByTestId('head-view')).toBeTruthy();
+    expect(screen.getByTestId('head-view').closest('[data-call]')).toBeTruthy();
+    expect(screen.getByTestId('side-panel').closest('[data-call]')).toBeNull();
     expect(screen.getByTestId('state-chip')).toBeTruthy();
+  });
+
+  it('marks the scrollable feed without including the fixed chat toolbar', () => {
+    render(<AvatarScene variant="call-side"><div data-testid="feed">лента</div></AvatarScene>);
+    const panel = screen.getByTestId('side-panel');
+    const scrollPane = screen.getByTestId('feed').closest('[data-feed-scroll]');
+    expect(scrollPane).not.toBeNull();
+    expect(scrollPane).not.toBe(panel);
+    expect(panel.hasAttribute('data-feed-scroll')).toBe(false);
+    expect(scrollPane?.querySelector('header')).toBeNull();
+    expect(panel.contains(scrollPane)).toBe(true);
   });
 
   it('children подменяют Chat и в других вариантах', () => {

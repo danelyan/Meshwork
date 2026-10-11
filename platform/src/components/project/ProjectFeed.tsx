@@ -7,7 +7,7 @@ import { ApiError } from '@/lib/api';
 import { takeProjectApi } from '@/lib/project-api';
 import type { FeedItem } from '@/server/project/service';
 
-import styles from '../employer/Employer.module.css';
+import styles from './Project.module.css';
 import { Button, Notice, Panel, Tag } from '../ui';
 
 import { GRADE_RU, SUBMISSION_STATUS, hours } from './labels';
@@ -17,9 +17,11 @@ export interface ProjectFeedProps {
   limit: { maxActive: number; active: number };
 }
 
-/** Лента обезличенных проектных заданий (ADR 0003, п. 6): без компании и зарплаты; «Взять» — с лимитом активных. */
+/** Лента обезличенных проектных заданий (ADR 0003, п. 6): без компании и зарплаты; «Взять» - с лимитом активных. */
 export function ProjectFeed({ items, limit }: ProjectFeedProps) {
   const router = useRouter();
+  const [filter, setFilter] = useState<'all' | 'mine' | 'available'>('all');
+  const visible = items.filter((item) => filter === 'all' || (filter === 'mine' ? item.my.taken : !item.my.taken));
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,23 +40,24 @@ export function ProjectFeed({ items, limit }: ProjectFeedProps) {
 
   return (
     <div className={styles.page}>
-      <div>
-        <h1>Проектные задания</h1>
+      <header className={styles.heading}>
+        <h1>Проекты<i>.</i></h1>
         <p className={styles.lead}>
-          Задачи от работодателей твоего направления — без названия компании и зарплаты: это не вакансия, а проект, по которому
-          тебя могут позвать на защиту. ИИ-ассистенты разрешены. Взятых несданных — не больше {limit.maxActive} (сейчас {limit.active}).
+          Задачи от работодателей твоего направления - без названия компании и зарплаты: это не вакансия, а проект, по которому
+          тебя могут позвать на защиту. ИИ-ассистенты разрешены. Взятых несданных - не больше {limit.maxActive} (сейчас {limit.active}).
         </p>
-      </div>
+      </header>
+      <div className={styles.feedTabs} aria-label="Фильтр заданий">{([{ id: 'all', label: 'Для вас' }, { id: 'mine', label: 'Мои' }, { id: 'available', label: 'Доступно' }] as const).map((tab) => <Button size="sm" key={tab.id} aria-pressed={filter === tab.id} onClick={() => setFilter(tab.id)}>{tab.label} · {items.filter((item) => tab.id === 'all' || (tab.id === 'mine' ? item.my.taken : !item.my.taken)).length}</Button>)}</div>
       {error && <Notice tone="error">{error}</Notice>}
-      {items.length === 0 ? (
-        <Notice>Пока нет открытых заданий для твоего направления и грейда. Загляни позже или пройди тест — категория уточнит подборку.</Notice>
+      {visible.length === 0 ? (
+        <Notice>{items.length ? 'В этой группе пока нет заданий. Выберите другую вкладку.' : 'Пока нет открытых заданий для твоего направления и грейда. Загляни позже или пройди тест - категория уточнит подборку.'}</Notice>
       ) : (
         <ul className={styles.list} aria-label="Задания">
-          {items.map((t) => (
+          {visible.map((t) => (
             <Panel as="li" key={t.id} className={styles.card}>
               <div className={styles.cardHead}>
                 <h2>{t.title}</h2>
-                {t.invited && <Tag tone="solid">по приглашению</Tag>}
+                <Tag tone={t.my.taken ? 'solid' : 'outline'}>{t.my.last?.status === 'checked' ? 'Проверено' : t.my.taken ? 'В работе' : t.invited ? 'По приглашению' : 'Доступно'}</Tag>
               </div>
               <div className={styles.meta}>
                 <Tag tone="outline">{t.specializationLabel}</Tag>
@@ -65,7 +68,7 @@ export function ProjectFeed({ items, limit }: ProjectFeedProps) {
                 <span>{t.stack.join(', ')}</span>
               </div>
               <p className={styles.text}>{t.domainStory}</p>
-              <div className={styles.actions}>
+              <footer className={styles.actions}>
                 {t.my.taken ? (
                   <Button href={`/projects/${encodeURIComponent(t.id)}`} variant="primary" size="sm">
                     {t.my.last ? `Открыть (${SUBMISSION_STATUS[t.my.last.status]})` : 'Открыть'}
@@ -80,7 +83,7 @@ export function ProjectFeed({ items, limit }: ProjectFeedProps) {
                     </Button>
                   </>
                 )}
-              </div>
+              </footer>
             </Panel>
           ))}
         </ul>

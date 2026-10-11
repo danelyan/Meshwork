@@ -21,16 +21,22 @@ function configure(input = `${clientId}\n${clientSecret}\n`) {
 }
 
 describe('stand Yandex OAuth configuration', () => {
-  it('preserves unrelated settings, restricts permissions and never logs values', () => {
+  it('preserves unrelated settings and never logs values', () => {
     const original = 'APP_URL=https://fsp2.ru\nSMTP_PASSWORD="test mail fixture"\n# comment\n';
     writeFileSync(envFile, original, { mode: 0o644 });
     const result = configure();
     expect(result.status).toBe(0);
     expect(readFileSync(envFile, 'utf8')).toBe(`${original}YANDEX_CLIENT_ID=${clientId}\nYANDEX_CLIENT_SECRET=${clientSecret}\n`);
-    expect(statSync(envFile).mode & 0o777).toBe(0o600);
     expect(result.stdout + result.stderr).not.toContain(clientSecret);
     expect(result.stdout + result.stderr).not.toContain(clientId);
     expect(readdirSync(directory)).toEqual(['.env']);
+  });
+
+  // Windows stat reports synthesized mode bits; production permissions are POSIX.
+  it.skipIf(process.platform === 'win32')('restricts POSIX permissions to the owner', () => {
+    writeFileSync(envFile, 'APP_URL=https://fsp2.ru\n', { mode: 0o644 });
+    expect(configure().status).toBe(0);
+    expect(statSync(envFile).mode & 0o777).toBe(0o600);
   });
 
   it('replaces all old and exported values and is idempotent', () => {
@@ -60,8 +66,13 @@ describe('stand Yandex OAuth configuration', () => {
     expect(readdirSync(directory)).toEqual(['.env']);
   });
 
-  it('requires an existing .env and refuses symlinks', () => {
+  it('requires an existing .env', () => {
     expect(configure().status).not.toBe(0);
+    expect(readdirSync(directory)).toEqual([]);
+  });
+
+  // Creating a file symlink on Windows requires a machine privilege.
+  it.skipIf(process.platform === 'win32')('refuses symlinks without modifying their target', () => {
     const target = join(directory, 'target');
     writeFileSync(target, 'APP_URL=https://fsp2.ru\n');
     symlinkSync(target, envFile);

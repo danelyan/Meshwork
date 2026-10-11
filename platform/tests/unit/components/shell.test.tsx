@@ -53,24 +53,24 @@ describe('SiteHeader', () => {
 
   it('кандидат: Консультант / Тест на грейд / Проекты / Приглашения / Профиль, активная — по пути, гость-кнопки нет', async () => {
     const h = await renderHeader(principal('candidate'), '/profile');
-    const links = h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/');
+    const links = h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/' && !a.getAttribute('href')?.startsWith('https://'));
     expect(links.map((a) => a.textContent)).toEqual(['Консультант', 'Тест на грейд', 'Проекты', 'Приглашения', 'Профиль']);
     expect(h.getByRole('link', { name: 'Профиль' }).getAttribute('aria-current')).toBe('page');
     expect(h.getByRole('link', { name: 'Тест на грейд' }).getAttribute('aria-current')).toBeNull();
     expect(h.queryByRole('link', { name: 'Войти' })).toBeNull();
   });
 
-  it('кабинет с сайдбаром: в шапке те же вкладки роли, без переключателя «Ищу работу | Нанимаю»', async () => {
+  it('кабинет с сайдбаром: в шапке бренд и аккаунт без дублирования навигации', async () => {
     const account = { userName: 'Анна', email: 'a@x.ru', roles: { role: 'candidate', otherExists: false, canCreateOther: true, companyName: null } };
     const h = await renderHeader(principal('candidate'), '/profile', account);
-    expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/').map((a) => a.textContent)).toEqual(['Консультант', 'Тест на грейд', 'Проекты', 'Приглашения', 'Профиль']);
-    expect(h.getByRole('link', { name: 'Профиль' }).getAttribute('aria-current')).toBe('page');
+    expect(h.queryByRole('navigation', { name: 'Основная навигация' })).toBeNull();
+    expect(h.getByRole('link', { name: 'ФСП, официальный сайт' }).getAttribute('href')).toBe('https://fsp-russia.ru/');
     expect(h.queryByRole('button', { name: 'Нанимаю' })).toBeNull();
   });
 
   it('работодатель: свои ссылки; «Подборка» активна только на /employer', async () => {
     let h = await renderHeader(principal('employer'), '/employer');
-    expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/').map((a) => a.textContent)).toEqual(['ИИ-помощник', 'Подборка', 'Поиск по базе', 'Вакансии', 'Приглашения', 'Собеседования']);
+    expect(h.getAllByRole('link').filter((a) => a.getAttribute('href') !== '/' && !a.getAttribute('href')?.startsWith('https://')).map((a) => a.textContent)).toEqual(['ИИ-помощник', 'Подборка', 'Поиск по базе', 'Вакансии', 'Приглашения', 'Собеседования']);
     expect(h.getByRole('link', { name: 'Подборка' }).getAttribute('aria-current')).toBe('page');
     cleanup();
     h = await renderHeader(principal('employer'), '/employer/search');
@@ -98,7 +98,7 @@ describe('SiteHeader', () => {
     expect(h.queryAllByRole('link').filter((a) => a.getAttribute('aria-current') === 'page')).toHaveLength(0);
     cleanup();
     h = await renderHeader(principal('employer'), '/employer/needs/n1', roles('employer'));
-    expect(h.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');
+    expect(h.queryByRole('navigation')).toBeNull();
     cleanup();
     h = await renderHeader(principal('employer'), '/consultant', roles('employer'));
     expect(h.getByText('для работодателей')).toBeDefined();

@@ -66,8 +66,7 @@
 .vacancyRow > span:nth-child(2) { display: grid; gap: 4px; flex: 1; min-width: 0; }
 .vacancyRow b { font-size: 14px; }
 .vacancyRow span span, .vacancyRow small { color: var(--muted); font-size: 12px; }
-.vacancyRow strong { font: 18px var(--mono); color: var(--blue); display: grid; justify-items: end; gap: 2px; text-align: right; }
-.vacancyRow strong small { font-family: inherit; font-size: var(--fs-xs); font-weight: 400; white-space: nowrap; }
+.vacancyRow strong { font: 18px var(--mono); color: var(--blue); }
 .activeRow { background: var(--surface-hover); }
 .nextStep { display: flex; justify-content: space-between; gap: 22px; align-items: center; }
 .nextStep p { margin: 8px 0 0; font-size: 14px; }
@@ -202,3 +201,58 @@
   --stage-ring: var(--border-soft); --avatar-stage-line: var(--line); --stage-track: var(--surface-input);
   --stage-accent: var(--blue); --stage-on-accent: var(--on-ink); --stage-btn: var(--ink);
 }
+
+/* Геометрия кабинета из Kabinet v2. */
+.page { padding: 32px 32px 48px; gap: 20px; align-content: start; }
+.heading { gap: 8px; }
+.heading h1 { font-size: var(--fs-screen-title); line-height: 1; }
+.heading p { font-size: var(--fs-md); border: 0; padding: 0; }
+.basicCard, .categoryCard, .card { background: var(--surface-card); border: 1px solid var(--glass-border); backdrop-filter: var(--blur); }
+.basicCard { padding: 24px; }
+.sectionLabel { font: 600 var(--fs-lg) var(--font); text-transform: none; letter-spacing: -.02em; border: 0; padding-bottom: 0; }
+.basicFacts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.basicFacts > div { gap: 6px; border: 0; padding: 0; }
+.basicFacts dt { text-transform: none; font: 500 var(--fs-sm) var(--font); letter-spacing: 0; color: var(--text-soft); }
+.basicFacts dd { padding: 12px 14px; min-height: 48px; background: var(--surface-input); border: 1px solid var(--border-input); font-size: var(--fs-md); }
+.personIdentity h2 { font-size: var(--fs-2xl); }
+.skillsSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.summaryCard { padding: 22px; display: grid; align-content: start; gap: 8px; background: var(--surface-card); border-color: var(--glass-border); }
+.summaryCard > span, .summaryCard > small { font: var(--fs-xs)/1.5 var(--mono); color: var(--muted); }
+.summaryCard > b { font-size: var(--fs-2xl); letter-spacing: -.03em; line-height: 1.25; }
+.summaryCard > .claimedGrade { justify-self: start; color: var(--blue); }
+.evidenceSegments { display: flex; flex-wrap: wrap; gap: 3px; }
+.evidenceSegments i { height: 6px; width: 14px; background: var(--track); }
+.evidenceSegments i[data-proven=true] { background: var(--blue); }
+.twoColumns { grid-template-columns: minmax(0, 1fr) 320px; }
+.card { padding: 22px; gap: 14px; }
+.cardHead { align-items: center; }
+.cardHead h2 { font-size: var(--fs-lg); }
+.card p { font-size: var(--fs); }
+.card .salary { font-size: var(--fs-3xl) !important; font-weight: 700; }
+.timeline { gap: 6px; }
+.timeline span, .timeline b { font-size: var(--fs-xs); }
+.timeline b { color: var(--muted); }
+.savedHeading { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+.savedWorkspace { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
+.savedViewport { height: 560px; overflow: auto; }
+.savedScrollArea { position: relative; margin-inline: auto; }
+.savedSurface { position: absolute; width: 760px; height: 560px; left: 0; top: 0; transform-origin: top left; }
+.savedNode > b { width: 64px; height: 64px; font-size: var(--fs-3xl); }
+.savedNode strong { position: absolute; top: 48px; left: 76px; padding: 4px 7px; color: var(--on-ink); background: var(--ink); font: 600 var(--fs-xs) var(--mono); }
+.savedNode[aria-pressed=true] strong { background: var(--blue); }
+.savedDetail { padding: 24px; background: var(--surface-card); border-color: var(--glass-border); }
+.savedDetail .selectedCompany { gap: 12px; }
+.savedDetail .selectedCompany > div { min-width: 0; flex: 1; }
+.savedDetail .selectedCompany h2 { font-size: var(--fs-xl); }
+.savedDetail .selectedCompany > span { width: 48px; height: 48px; font-size: var(--fs-2xl); }
+.savedDetail h3 { font-size: var(--fs-sm); }
+.savedDetail p { font-size: var(--fs-sm); }
+.savedScore { display: flex; align-items: flex-end; gap: 14px; }
+.savedScore b { color: var(--blue); font-size: var(--fs-score); line-height: 1; letter-spacing: -.06em; }
+.savedScore span { font-size: var(--fs-sm); color: var(--muted); padding-bottom: 5px; }
+.missingRequirements { color: var(--danger-accent); }
+.savedListPanel { padding: 22px; background: var(--surface-card); border-color: var(--glass-border); }
+.savedListPanel h2 { font-size: var(--fs-lg); margin: 0 0 14px; }
+.savedRemove { flex: none; }
+@media (max-width: 1200px) { .savedWorkspace, .twoColumns { grid-template-columns: minmax(0, 1fr); } .savedDetail { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 650px) { .page { padding: 24px 16px 40px; } .heading h1 { font-size: var(--fs-screen-title); } .heading p { font-size: var(--fs-md); } .skillsSummary, .basicFacts { grid-template-columns: minmax(0, 1fr); } .summaryCard, .card, .savedDetail { padding: 18px; } .timeline { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); } .savedViewport { height: 480px; } .savedSurface { height: 560px; } }

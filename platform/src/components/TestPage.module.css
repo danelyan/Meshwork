@@ -86,3 +86,28 @@
 .jury p { margin: 0; }
 /* Ловушка для нейросети: не видна, но остаётся в выделении и копировании (не display:none / visibility:hidden). */
 .canary { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Старт теста Astra: форма и правила слева, история и консультант справа. */
+.introPage { padding: 32px 32px 48px; gap: 20px; }
+.introPage .h1 { font-size: var(--fs-screen-title); }
+.introPage .lead { border: 0; padding: 0; font-size: var(--fs-md); }
+.startGrid { grid-template-columns: minmax(0, 1fr) 320px; }
+.choice, .rulesPanel, .afterTest, .historyCard { background: var(--surface-card); border-color: var(--glass-border); backdrop-filter: var(--blur); padding: 22px; }
+.introAside { min-width: 0; display: grid; gap: 14px; }
+.historyCard { display: grid; gap: 14px; }
+.historyCard h2 { margin: 0; font-size: var(--fs); }
+.historyCard ol { padding: 0; margin: 0; list-style: none; display: grid; gap: 10px; }
+.historyCard li { display: grid; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.historyCard small { font: var(--fs-xs) var(--mono); color: var(--muted); }
+.historyCard b { font-size: var(--fs); }
+.historyCard span, .historyCard p { font-size: var(--fs-sm); color: var(--muted); margin: 0; }
+.gradeChoices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.gradeChoices button { display: grid; gap: 4px; padding: 14px; text-align: left; background: var(--surface-quote); border-color: transparent; }
+.gradeChoices button[aria-pressed=true] { color: var(--blue); background: var(--surface-input); border: 1.5px dashed var(--blue); }
+.gradeChoices small { font: var(--fs-xs) var(--mono); }
+.consultantLink { padding: 16px; background: var(--ink); color: var(--on-ink); font-size: var(--fs-sm); text-align: left; line-height: 1.5; }
+.exampleDisclosure > summary { padding: 14px; border: 1px solid var(--border-soft); cursor: pointer; font-size: var(--fs-sm); }
+.exampleDisclosure .example { margin-top: 12px; padding: 18px; background: var(--surface-card); border-color: var(--glass-border); }
+.exampleDisclosure .example h2 { font-size: var(--fs-xl); }
+@media (max-width: 1050px) { .startGrid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 650px) { .introPage { padding: 24px 16px 40px; } .gradeChoices { grid-template-columns: minmax(0, 1fr); } }

@@ -40,10 +40,11 @@
 /* Созвон (тёмная сцена при любой теме) заходит под полупрозрачную шапку и серит её — тогда шапка сплошная.
    Тёмная тема страницы шапку не трогает: её стекло и рамка — смысловые токены (tokens.css, data-theme на <html>). */
 .frame:has([data-call]) .header { background: var(--paper); }
-.brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: var(--fs-xl); }
-.brand:hover { color: var(--blue); }
-.brand img { height: 34px; width: auto; display: block; filter: var(--logo-filter); }
-.brand span { font-weight: 500; font-size: var(--fs-md); color: var(--muted); }
+.brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 18px; }
+.wordmark { font: 700 var(--fs-2xl)/1 var(--mono); letter-spacing: -.02em; }
+.wordmark span { color: var(--candidate-accent); }
+.federation { display: flex; align-items: center; padding-left: 18px; border-left: 1px solid var(--border-input); min-height: 32px; }
+.federation img { height: 28px; width: auto; display: block; filter: var(--logo-filter); }
 .nav { display: flex; gap: 4px; margin-left: 56px; align-items: center; min-width: 0; }
 .nav a { padding: 12px 18px; font-weight: 500; font-size: var(--fs-md); color: var(--muted); white-space: nowrap; }
 .nav a:hover { color: var(--ink); background: var(--surface-hover); }
@@ -170,8 +171,13 @@
   .header { gap: 8px; }
   .accountBtn { height: 44px; padding-right: 8px; }
   .accountRole { font-size: var(--fs); }
-  .brand img { height: 30px; }
-  .brand span { display: none; }
+  .brand { gap: 10px; }
+  .wordmark { font-size: var(--fs-lg); }
+  .federation { padding-left: 10px; }
+  .federation img { height: 22px; }
+  .frame:has([data-dashboard]) .accountRole { display: none; }
+  .frame:has([data-dashboard]) .action { gap: 0; }
+  .frame:has([data-dashboard]) .jury { font-size: var(--fs-xs); padding: 0 6px; }
   .login { height: 44px; padding: 0 12px; font-size: var(--fs); }
   .jury { height: 44px; padding: 0 10px; font-size: var(--fs); }
   .juryHint { display: none; }

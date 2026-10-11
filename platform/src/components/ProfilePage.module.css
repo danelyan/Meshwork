@@ -68,3 +68,38 @@
 @media(max-width:650px) { .evidencePanel { padding: 18px; } }
 .homeLinks { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: var(--fs); }
 .homeLinks a { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Кабинет Astra v2: открытый профиль и служебная правая колонка. */
+.page { grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; padding: 32px 32px 48px; }
+.heading { align-items: start; }
+.heading h1 { font-size: var(--fs-screen-title); margin-bottom: 8px; }
+.heading p { font-size: var(--fs-md); border: 0; padding: 0; }
+.heading > .actions { display: none; }
+.main { gap: 20px; }
+.side { gap: 14px; }
+.sourceTiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.sourceTile { justify-content: start; text-align: left; padding: 14px; gap: 12px; background: var(--surface-input); border-color: var(--line); min-width: 0; }
+.sourceTile:first-child { border: 1px dashed var(--blue); }
+.sourceTile > span:last-child { display: grid; gap: 3px; min-width: 0; }
+.sourceTile b { font-size: var(--fs); }
+.sourceTile small { font: var(--fs-xs) var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.sourceMark { display: grid; place-items: center; width: 40px; height: 40px; flex: none; background: var(--ink); color: var(--on-ink); font-size: var(--fs-2xl); }
+.sourceTile:first-child .sourceMark { background: var(--blue); }
+.railCard { padding: 22px; display: grid; gap: 14px; background: var(--surface-card); border-color: var(--glass-border); backdrop-filter: var(--blur); }
+.railCard h2 { font-size: var(--fs-2xl); line-height: 1.2; letter-spacing: -.03em; margin: 0; }
+.railCard p { color: var(--text-soft); font-size: var(--fs-sm); line-height: 1.6; margin: 0; }
+.railLabel { display: flex; justify-content: space-between; gap: 12px; font-size: var(--fs-sm); }
+.railLabel b { color: var(--blue); font-family: var(--mono); }
+.completionTrack { height: 6px; background: var(--track); }
+.completionTrack i { display: block; height: 100%; background: var(--blue); }
+.consultantLink { padding: 16px; text-align: left; background: var(--ink); color: var(--on-ink); font-size: var(--fs-sm); line-height: 1.5; }
+.previewDisclosure { display: grid; }
+.previewDisclosure summary { cursor: pointer; font-size: var(--fs-sm); padding: 8px 2px; }
+.previewDisclosure[open] summary { margin-bottom: 10px; }
+.evidencePanel { background: var(--surface-card); border-color: var(--glass-border); }
+.visibility { background: var(--glass); border-color: var(--glass-border); }
+@media (max-width: 1050px) { .page { grid-template-columns: minmax(0, 1fr); } .side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 0; } .previewDisclosure, .sideActions { grid-column: 1 / -1; } }
+@media (max-width: 650px) { .page { padding: 24px 16px 40px; } .sourceTiles, .side { grid-template-columns: minmax(0, 1fr); } .sourceTile { padding: 12px; } }
+@media print { .page { display: block; padding: 0; } .side { display: none; } .sourceTiles { display: none; } .heading > .actions { display: none; } }
+
+@media (min-width: 1051px) { .page { grid-template-areas: 'heading side' 'main side'; } }

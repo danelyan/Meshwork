@@ -119,3 +119,14 @@ describe('ProfilePage: индекс честности и история опр�
     expect(history.textContent).toContain('Цель - Ищу работу → удалено (сброс опроса)');
   });
 });
+
+it('downloads the server PDF from every profile PDF action', async () => {
+  stub([], { attempts: [], revisions: [], targets: [], gaps: [], tasks: [] });
+  render(<ProfilePage />);
+  const links = await screen.findAllByRole('link', { name: 'PDF-профиль' });
+  for (const link of links) {
+    expect(link.getAttribute('href')).toBe('/api/profile/pdf');
+    expect(link.getAttribute('download')).toBe('fsp-career-profile.pdf');
+  }
+  expect(screen.queryByRole('button', { name: /PDF-профиль/ })).toBeNull();
+});

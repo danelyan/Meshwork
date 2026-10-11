@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import type { HeaderAccount } from '@/server/auth/role-plan';
 import { JURY_HINT, JURY_HOME, isJuryPath } from '@/components/demo/jury';
 
-import { HOME_ANCHORS, activeLinkHref, navFor, type NavLink } from './nav';
+import { HOME_ANCHORS, dashboardPath, activeLinkHref, navFor, type NavLink } from './nav';
 import { LogoutButton } from './LogoutButton';
 import { Brand } from './Brand';
 import { OnboardingBanner } from './OnboardingBanner';
@@ -23,6 +23,7 @@ import styles from './shell.module.css';
 export function HeaderBar({ signedIn, links, account = null, jury = false }: { signedIn: boolean; links: NavLink[]; account?: HeaderAccount | null; jury?: boolean }) {
   const pathname = usePathname();
   const home = pathname === '/';
+  const hasSidebar = Boolean(account?.roles) && dashboardPath(pathname);
   const role = account?.roles?.role ?? null;
   const active = activeLinkHref(pathname, links, navFor(role));
   return (
@@ -30,7 +31,7 @@ export function HeaderBar({ signedIn, links, account = null, jury = false }: { s
       <header className={styles.header}>
         <Brand />
         {role === 'employer' && <span className={styles.employerBadge}>для работодателей</span>}
-        {links.length > 0 ? (
+        {!hasSidebar && (links.length > 0 ? (
           <nav className={styles.nav} aria-label="Основная навигация">
             {links.map((l) => (
               <Link key={l.href} href={l.href} aria-current={l.href === active ? 'page' : undefined}>
@@ -48,7 +49,7 @@ export function HeaderBar({ signedIn, links, account = null, jury = false }: { s
               ))}
             </nav>
           )
-        )}
+        ))}
         <div className={styles.action}>
           {jury && (
             <span className={styles.juryWrap}>

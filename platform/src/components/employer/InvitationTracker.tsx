@@ -10,8 +10,8 @@ import { formatDate } from '@/lib/labels';
 import { INVITATION_STATUS_LABEL, NO_CANDIDATE_CONTACT, salaryRange } from './labels';
 import styles from './Employer.module.css';
 
-const FILTERS = [{ id: 'all', label: 'Все' }, { id: 'pending', label: 'Ждут ответа' }, { id: 'answered', label: 'С ответом' }] as const;
-const matches = (status: string, filter: string) => filter === 'all' || (filter === 'pending' ? status === 'sent' || status === 'viewed' : status === 'accepted' || status === 'declined' || status === 'hired' || status === 'withdrawn' || status === 'closed_hired');
+const FILTERS = [{ id: 'all', label: 'Все' }, { id: 'pending', label: 'Ждут ответа' }, { id: 'answered', label: 'В процессе' }, { id: 'closed', label: 'Закрытые' }] as const;
+const matches = (status: string, filter: string) => filter === 'all' || (filter === 'pending' ? status === 'sent' || status === 'viewed' : filter === 'answered' ? status === 'accepted' : status === 'declined' || status === 'hired' || status === 'withdrawn' || status === 'closed_hired');
 /** lane invite-cancel: отозвать можно до найма и до отказа кандидата. */
 const withdrawable = (status: string) => status === 'sent' || status === 'viewed' || status === 'accepted';
 
@@ -61,7 +61,7 @@ export function InvitationTracker({ invitations: initial }: { invitations: Emplo
     <div className={styles.tabs} aria-label="Статус приглашения">{FILTERS.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}<span>{invitations.filter((inv) => matches(inv.status, item.id)).length}</span></button>)}</div>
     {error && <Notice tone="error">{error}</Notice>}
     {visible.length === 0 ? <Notice>Приглашений с таким статусом пока нет. Подходящих кандидатов можно найти в подборке или поиске по базе.</Notice> :
-      <ul className={styles.list}>{visible.map((inv) => <Panel as="li" key={inv.id} className={styles.card}>
+      <div className={styles.invitationColumns}><ul className={styles.list}>{visible.map((inv) => <Panel as="li" key={inv.id} className={`${styles.card} ${styles.invitationCard}`}>
         <div className={styles.cardHead}><div className={styles.identity}><CandidateSilhouette /><div><h2>{inv.candidate.displayName}</h2><p className={styles.meta}>{inv.vacancy?.title ?? 'Без привязки к вакансии'} · {salaryRange(inv.salaryFrom, inv.salaryTo)}</p></div></div><span className={styles.invitationStatus} data-status={inv.status}>{INVITATION_STATUS_LABEL[inv.status]}</span><LiveSubStatus live={inv.liveDefense} /></div>
         <div className={styles.timeline} aria-label="История приглашения">
           <div data-complete="true"><span>Отправлено</span><small>{formatDate(inv.createdAt)}</small></div>
@@ -86,6 +86,6 @@ export function InvitationTracker({ invitations: initial }: { invitations: Emplo
           {withdrawable(inv.status) && withdrawing !== inv.id && <Button size="sm" disabled={busy !== null} onClick={() => { setWithdrawing(inv.id); setReason(''); }} data-testid="withdraw-invitation">Отозвать приглашение</Button>}
           {inv.vacancy && <Button size="sm" href={`/employer/needs/${encodeURIComponent(inv.vacancy.id)}`}>К подборке →</Button>}
         </div>}
-      </Panel>)}</ul>}
+      </Panel>)}</ul><aside className={styles.invitationSummary} aria-label="Сводка приглашений"><h2>Воронка приглашений</h2><dl>{FILTERS.slice(1).map((item) => <div key={item.id}><dt>{item.label}</dt><dd>{invitations.filter((inv) => matches(inv.status, item.id)).length}</dd></div>)}</dl><p>Имя и контакт доступны только после согласия кандидата. Отзыв закрывает доступ к его контактам.</p><Button href="/employer/search" variant="cta">Найти кандидатов →</Button></aside></div>}
   </section>;
 }

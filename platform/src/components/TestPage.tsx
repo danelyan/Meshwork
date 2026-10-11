@@ -11,6 +11,8 @@ import {
   confirmJuniorApi,
   finishTestApi,
   getRecommendations,
+  listTestAttemptsApi,
+  type AttemptSummary,
   getTestAttemptApi,
   startConfirmTestApi,
   startTestApi,
@@ -19,7 +21,6 @@ import {
 import { GRADE_LABEL, GRADES, isGrade, type Grade } from '@/lib/grades';
 import { isSpecialization, SPEC_LABEL, SPECIALIZATIONS, subcategoriesFor, subcategoryLabel, type Specialization } from '@/lib/directions';
 import { formatDate } from '@/lib/labels';
-import { DEFAULT_ITEM_LIMITS, formatItemRange, type ItemLimits } from '@/lib/test-limits';
 
 import { ObjectionButton } from './consent/ObjectionButton';
 import { useBareShell } from './shell/ShellFrame';
@@ -197,13 +198,12 @@ export function JuryResultPlate({ jury }: { jury: JuryResult }) {
 function IntroScreen({
   onStart,
   initial,
-  itemLimits,
 }: {
   onStart: (s: Spec, g: Grade, sub: string | null) => Promise<void>;
   initial: { spec: Spec | null; grade: Grade | null };
-  /** Лимиты основной фазы из policy (с учётом TEST_ITEM_LIMITS) — для текста «N–M коротких заданий». */
-  itemLimits: ItemLimits;
 }) {
+  const [history, setHistory] = useState<AttemptSummary[]>([]);
+  useEffect(() => { let alive = true; listTestAttemptsApi().then((attempts) => { if (alive) setHistory(attempts); }, () => undefined); return () => { alive = false; }; }, []);
   const [spec, setSpec] = useState<Spec>(initial.spec ?? 'backend');
   const [grade, setGrade] = useState<Grade>(initial.grade ?? 'junior');
   // Подкатегория теста: null — сервер берёт из профиля (если она этого направления) и возвращает в допуске.
@@ -258,7 +258,7 @@ function IntroScreen({
         <Kicker>Тест на грейд</Kicker>
         <h1 className={styles.h1}>Тест на грейд<i>.</i></h1>
         <p className={`${ui.muted} ${styles.lead}`}>
-          {formatItemRange(itemLimits)} коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
+          7–10 коротких заданий с вычисляемым ответом: число, строка, номер строки. Следующее задание подбирается по вашим ответам. Категорию
           (направление × грейд) даёт только этот тест; выбор грейда - за вами. Созвон с ИИ, проект и защита - дополнительные проверки опыта: они
           подтверждают утверждения профиля и видны работодателю, но для категории не обязательны.
         </p>
@@ -297,10 +297,10 @@ function IntroScreen({
         </div>
         <div className={styles.choiceRow}>
           <span className={ui.label}>Грейд, который хотите подтвердить</span>
-          <div className={styles.chips} role="group" aria-label="Грейд">
+          <div className={styles.gradeChoices} role="group" aria-label="Грейд">
             {GRADES.map((g) => (
-              <Chip key={g} pressed={grade === g} onClick={() => setGrade(g)} disabled={pending}>
-                {GRADE_LABEL[g]}
+              <Chip key={g} aria-label={GRADE_LABEL[g]} pressed={grade === g} onClick={() => setGrade(g)} disabled={pending}>
+                <b>{GRADE_LABEL[g]}</b><small>{grade === g ? 'Выбранный уровень' : 'Проверка тестом'}</small>
               </Chip>
             ))}
           </div>
@@ -336,7 +336,11 @@ function IntroScreen({
         <Button href="/profile">В профиль</Button>
       </div>
       <Panel className={styles.afterTest}><Kicker>Что произойдёт после</Kicker><h2>Результат станет частью профиля.</h2><p>Успешный тест подтвердит категорию. Если не получится, текущая категория сохранится, а рекомендации помогут подготовиться к следующей попытке.</p><p>Диалог с консультантом, проект и защита остаются отдельными этапами проверки опыта.</p></Panel>
-      </div><ExampleTask /></div>
+      </div><aside className={styles.introAside}>
+        <Panel className={styles.historyCard}><h2>История</h2>{history.length ? <ol>{history.slice(0, 5).map((attempt) => <li key={attempt.id}><small>{formatDate(attempt.startedAt)}</small><b>{SPEC_LABEL[attempt.specialization]} · {GRADE_LABEL[attempt.grade]}</b><span>{attempt.status === 'passed' ? 'Подтверждён' : attempt.status === 'active' ? 'Не завершён' : attempt.status === 'abandoned' ? 'Попытка не засчитана' : 'Грейд не подтверждён'} · {attempt.correct} из {attempt.answered}</span><Button size="sm" href={`/test?attempt=${encodeURIComponent(attempt.id)}`}>Открыть попытку →</Button></li>)}</ol> : <p>Завершённых попыток пока нет.</p>}</Panel>
+        <Button href="/consultant" className={styles.consultantLink}>Кира · Разберём пробелы перед тестом ↗</Button>
+        <details className={styles.exampleDisclosure}><summary>Попробовать формат задания</summary><ExampleTask /></details>
+      </aside></div>
     </div>
   );
 }
@@ -545,8 +549,8 @@ function ResultScreen({
         </p>
         <dl className={styles.facts}>
           <div>
-            <dt>Вероятность, что уровень не ниже {grade}</dt>
-            <dd>{Math.round(r.pPass * 100)} %</dd>
+            <dt>Уверенность в {grade}</dt>
+            <dd>{Math.round(r.pPass * 100)}%</dd>
           </div>
           {attempt.grade !== 'junior' && (
             <div>
@@ -559,9 +563,6 @@ function ResultScreen({
             <dd>{r.answered}</dd>
           </div>
         </dl>
-        <p className={ui.muted} data-testid="confidence-note">
-          Это уверенность теста по вашим ответам, а не вероятность найма.
-        </p>
         <p className={ui.muted}>
           <ObjectionButton subject="grade_test" subjectId={attempt.id} />
         </p>
@@ -656,8 +657,7 @@ function ResultScreen({
   );
 }
 
-/** itemLimits — действующие лимиты длины (страница передаёт activeItemLimits()); без пропа — дефолт policy. */
-export function TestPage({ itemLimits = DEFAULT_ITEM_LIMITS }: { itemLimits?: ItemLimits } = {}) {
+export function TestPage() {
   const params = useSearchParams();
   const router = useRouter();
   const attemptParam = params.get('attempt');
@@ -721,7 +721,7 @@ export function TestPage({ itemLimits = DEFAULT_ITEM_LIMITS }: { itemLimits?: It
     );
   }
   if (!attempt) {
-    return <IntroScreen onStart={start} itemLimits={itemLimits} initial={{ spec: isSpec(initialSpec) ? initialSpec : null, grade: isGrade(initialGrade) ? initialGrade : null }} />;
+    return <IntroScreen onStart={start} initial={{ spec: isSpec(initialSpec) ? initialSpec : null, grade: isGrade(initialGrade) ? initialGrade : null }} />;
   }
   if (attempt.status === 'active' && attempt.current) {
     return (

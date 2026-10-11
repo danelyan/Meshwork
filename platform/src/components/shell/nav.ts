@@ -94,3 +94,9 @@ export function activeLinkHref(pathname: string, links: NavLink[], sections: Nav
   const alias = Object.keys(TAB_ALIASES).find((k) => under(pathname, k));
   return alias ? TAB_ALIASES[alias]?.find((t) => links.some((l) => l.href === t)) : undefined;
 }
+
+/** Cabinet routes share a single sidebar, including the consultant. */
+export function dashboardPath(pathname: string): boolean {
+  return pathname === '/employer' || pathname.startsWith('/employer/')
+    || CANDIDATE_NAV.some(({ href }) => (pathname === href || pathname.startsWith(`${href}/`)));
+}

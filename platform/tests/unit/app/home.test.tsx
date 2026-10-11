@@ -33,7 +33,7 @@ describe('главная', () => {
     expect(why.getAllByRole('heading', { level: 3 }).map(h => h.textContent)).toEqual([
       'Навыки с источниками', 'Категория по тесту', 'Практика дополняет профиль', 'Зарплатная вилка заранее', 'Контакты после принятия',
     ]);
-    const hero = within(screen.getByRole('region', { name: /Твой код\. Твоя карьера\s*\./ }));
+    const hero = within(screen.getByRole('region', { name: /Не ищи работу\. Пусть найдут тебя\s*\./ }));
     expect(hero.getByRole('list').textContent).toContain('ФСП ID и достижения');
     expect(screen.queryByRole('heading', { name: 'Достижения по ФСП ID' })).toBeNull();
     expect(screen.queryByText('Данные на этой странице - иллюстрация')).toBeNull();

@@ -21,13 +21,35 @@ test('С1: вход → резюме и ссылка → шаги → карто
   // внутри ожидания до 30 + 60 с (шаги и карточки на stub-LLM под нагрузкой): общий лимит 30 с им мало
   test.setTimeout(150_000);
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Твой код.');
-  // «Приступим» открывает окно входа и сохраняет режим знакомства после входа.
-  await page.getByRole('link', { name: /Приступим/ }).first().click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Не ищи работу.');
+  // Демо доступно отдельной страницей; входим настоящей персоной из её списка.
+  await page.getByRole('link', { name: /Для жюри: маршрут/ }).click();
   await signInAsDemoCandidate(page);
-  // Демо-вход ведёт в консультанта; режим знакомства (?mode=intake) зависит от персоны и маршрута /demo (11.10).
   await page.waitForURL(/\/consultant(\?.*)?$/);
-  await expect(page.getByRole('heading', { name: 'Карьерный консультант' })).toBeVisible();
+  const navigation = page.getByRole('navigation', { name: 'Разделы кабинета' });
+  await expect(navigation.getByRole('link', { name: 'Консультант', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByTestId('scene-call-side')).toBeVisible();
+  await expect(page.getByText('Кира', { exact: true }).first()).toBeVisible();
+  const message = page.getByRole('textbox', { name: 'Сообщение', exact: true });
+  await expect(message).toBeVisible();
+  // Без scrollIntoView: поле должно помещаться сразу, иначе shell снова отодвинул ввод за экран.
+  await expect.poll(async () => {
+    const box = await message.boundingBox();
+    const viewport = page.viewportSize();
+    return Boolean(box && viewport && box.width > 0 && box.height > 0 && box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width + 1 && box.y + box.height <= viewport.height + 1);
+  }, { message: 'Поле сообщения целиком находится в desktop viewport до загрузки резюме' }).toBe(true);
+  const history = page.getByRole('region', { name: 'История разговора', exact: true });
+  const composer = page.getByTestId('composer');
+  const demoNote = page.getByRole('note').filter({ hasText: 'Демо-режим без языковой модели' }).first();
+  await expect(history).toBeVisible();
+  await expect.poll(async () => (await history.boundingBox())?.height ?? 0, {
+    message: 'История разговора сохраняет не меньше 120px высоты на desktop',
+  }).toBeGreaterThan(120);
+  await expect.poll(async () => {
+    const [historyBox, composerBox, noteBox] = await Promise.all([history.boundingBox(), composer.boundingBox(), demoNote.boundingBox()]);
+    return Boolean(historyBox && composerBox && noteBox && historyBox.y + historyBox.height <= composerBox.y + 1 && noteBox.y + noteBox.height <= historyBox.y + 1);
+  }, { message: 'История разговора размещена между демо-пометкой и composer без перекрытия' }).toBe(true);
+
 
   // резюме скрепкой (чип вложения) + ссылка прямо в тексте сообщения
   // до гидратации onChange у input ещё нет и файл теряется молча - повторяем, пока чип не появится
@@ -36,47 +58,58 @@ test('С1: вход → резюме и ссылка → шаги → карто
     if (!(await chips.isVisible())) await page.getByTestId('composer').locator('input[type=file]').setInputFiles(RESUME);
     await expect(chips).toContainText(/КБ|МБ/, { timeout: 20_000 });
   }).toPass({ timeout: 60_000 });
-  await page.getByLabel('Сообщение', { exact: true }).fill('Собери мне профиль, код — github.com/demo-ryabinin');
+  const claimRegions = page.getByRole('region', { name: 'Найденные утверждения' });
+  const previousClaimRegions = await claimRegions.count();
+  await message.fill('Собери мне профиль, код - github.com/demo-ryabinin');
   await page.getByRole('button', { name: 'Отправить' }).click();
 
   // лента шагов появляется, затем карточки утверждений с цитатой, источником и уровнем
   // шаги группируются в блоки между сообщениями: списков с этим именем может быть несколько
   await expect(page.getByRole('list', { name: 'Шаги консультанта' }).first()).toBeVisible({ timeout: 30_000 });
-  // Карточки — только внутри региона найденных утверждений: другие article на странице (шаги, сводка) не считаются.
-  const claims = page.getByRole('region', { name: 'Найденные утверждения' });
-  const cards = claims.getByRole('article');
-  // на общей БД прошлый прогон уже занёс эти утверждения в профиль: тогда помощник честно пишет «Новых утверждений нет»
-  const known = claims.getByText(/Новых утверждений нет/);
-  await expect(cards.first().or(known).first()).toBeVisible({ timeout: 60_000 });
+  await expect.poll(() => claimRegions.count(), { timeout: 60_000 }).toBeGreaterThan(previousClaimRegions);
+  const latestClaims = claimRegions.last();
+  const cards = latestClaims.getByRole('article');
+  const known = latestClaims.getByText(/Новых утверждений нет/);
+  // Повторный прогон допускает уже известное; чистый QA-прогон требует новых карточек и клика Да.
+  const requireNew = process.env.E2E_REQUIRE_NEW_CLAIMS === 'true';
+  let confirmedClaim: { statement: string; level: string } | null = null;
+  await expect(requireNew ? cards.first() : cards.first().or(known).first()).toBeVisible({ timeout: 60_000 });
   if (await cards.first().isVisible()) {
-    // Цитата в кавычках; если формулировка совпадает с цитатой дословно, карточка пишет «Дословно из вашего документа».
-    await expect(cards.first().locator('blockquote').or(cards.first().getByText('Дословно из вашего документа')).first()).toBeVisible();
+    await expect(cards.first().locator('blockquote').or(cards.first().getByText('Дословно из вашего документа'))).toBeVisible();
     await expect(cards.first().getByText(/Источник:/)).toBeVisible();
     await expect(cards.first().getByText(/Не доказывает:/)).toBeVisible();
-
-    // подтверждаем первую ещё не решённую карточку: на общей БД часть карточек уже подтверждена прошлым прогоном
-    const fresh = cards.filter({ has: page.getByRole('button', { name: 'Да' }) }).first();
+    const fresh = cards.filter({ has: page.getByRole('button', { name: 'Да', exact: true }) }).first();
+    if (requireNew) await expect(fresh).toBeVisible();
     if (await fresh.isVisible()) {
-      // после клика кнопки «Да» в карточке нет, и фильтр нашёл бы другую: держим карточку по её названию
       const name = (await fresh.getAttribute('aria-label')) ?? '';
-      await fresh.getByRole('button', { name: 'Да' }).click();
-      await expect(claims.getByRole('article', { name, exact: true }).getByText('Подтверждено')).toBeVisible({ timeout: 30_000 });
+      const level = await fresh.locator('[data-level]').getAttribute('data-level');
+      expect(level).toBeTruthy();
+      confirmedClaim = { statement: name.replace(/^Утверждение:\s*/, ''), level: level! };
+      await fresh.getByRole('button', { name: 'Да', exact: true }).click();
+      await expect(latestClaims.getByRole('article', { name, exact: true }).getByText('Подтверждено')).toBeVisible({ timeout: 30_000 });
     }
-
-    // подтвердить остальные со слов
-    const bulk = page.getByRole('button', { name: /Подтвердить все со слов/ });
+    const bulk = latestClaims.getByRole('button', { name: /Подтвердить все со слов/ });
     if (await bulk.isVisible()) await bulk.click();
   }
 
   // профиль: утверждения сгруппированы по уровням
-  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'Профиль' }).click();
+  await page.getByRole('navigation', { name: 'Разделы кабинета' }).getByRole('link', { name: 'Профиль' }).click();
   await page.waitForURL('**/profile');
-  await expect(page.getByRole('link', { name: 'PDF-профиль' })).toHaveAttribute('href', '/api/profile/pdf');
-  await expect(page.getByText(/со слов|артефакт/).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'PDF-профиль', exact: true })).toHaveAttribute('href', '/api/profile/pdf');
+  const evidence = page.getByRole('region', { name: 'Утверждения о навыках', exact: true });
+  await expect(evidence).toBeVisible();
+  if (confirmedClaim) {
+    await expect(evidence.getByText(confirmedClaim.statement, { exact: true })).toBeVisible();
+    await expect(evidence.locator(`[data-level="${confirmedClaim.level}"]`)).toBeVisible();
+    const persistedClaim = evidence.getByRole('listitem').filter({ has: page.getByText(confirmedClaim.statement, { exact: true }) });
+    await expect(persistedClaim.getByRole('button', { name: 'Да', exact: true })).toHaveCount(0);
+  } else {
+    await expect(evidence.locator('[data-level]').first()).toBeVisible();
+  }
 });
 
 test('С1: файл больше 5 МБ отклоняется сообщением, до сервера не уходит', async ({ page }) => {
-  await page.goto('/auth');
+  await page.goto('/demo');
   await signInAsDemoCandidate(page);
   await page.waitForURL('**/consultant');
   const uploadRequests: string[] = [];

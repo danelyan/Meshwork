@@ -10,3 +10,21 @@
 .flag { font-family: var(--mono); font-size: var(--fs-xs); color: var(--danger-text); }
 .textarea { min-height: 120px; resize: vertical; }
 .aiDefense { display: grid; gap: 8px; justify-items: start; padding-top: 8px; border-top: 1px solid var(--line); }
+
+/* Лента проектов Astra v2. Задания сохраняют настоящие сроки и лимиты. */
+.page { display: grid; align-content: start; gap: 20px; padding: 32px 32px 48px; min-width: 0; }
+.heading { display: grid; gap: 8px; }
+.heading h1 { margin: 0; font-size: var(--fs-screen-title); letter-spacing: -.05em; font-weight: 700; line-height: 1; }
+.heading h1 i { font-style: normal; color: var(--blue); }
+.lead { margin: 0; color: var(--text-soft); font-size: var(--fs-md); line-height: 1.6; max-width: 800px; }
+.feedTabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.feedTabs [aria-pressed=true] { background: var(--ink); color: var(--on-ink); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.card { padding: 22px; display: flex; flex-direction: column; gap: 14px; background: var(--surface-card); border-color: var(--glass-border); backdrop-filter: var(--blur); min-width: 0; }
+.cardHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.cardHead h2 { margin: 0; font-size: var(--fs-lg); line-height: 1.35; letter-spacing: -.02em; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; font: var(--fs-xs)/1.6 var(--mono); color: var(--muted); }
+.text { margin: 0; color: var(--text-soft); font-size: var(--fs); line-height: 1.6; }
+.actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--line); margin-top: auto; }
+@media (max-width: 900px) { .list { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 650px) { .page { padding: 24px 16px 40px; } .card { padding: 18px; } .cardHead { flex-wrap: wrap; } }

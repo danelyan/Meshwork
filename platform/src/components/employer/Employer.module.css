@@ -273,19 +273,91 @@
 
 /* lane invite-cancel: причина отзыва приглашения */
 .textarea { padding: 8px 10px; border: 1px solid var(--border-input, var(--line)); background: var(--surface-input, transparent); color: var(--ink); font: var(--fs-sm) var(--font); width: 100%; min-height: 64px; resize: vertical; }
+/* Astra v2: employer cabinet geometry from Kabinet v2.dc.html. */
+.page { padding: 32px 32px 48px; gap: 20px; align-content: start; }
+.page h1, .head h1 { font-size: var(--fs-screen-title, var(--fs-3xl)); line-height: 1; letter-spacing: -.05em; }
+.lead { margin-top: 8px; border: 0; padding: 0; max-width: 960px; font-size: var(--fs-md); line-height: 1.55; }
+.sectionTitle { font-size: var(--fs-lg); letter-spacing: -.02em; }
+.grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.vacancyCard { gap: 12px; }
+.vacancyCard h2 { font-size: var(--fs-lg); letter-spacing: -.02em; }
+.vacancyCard .salary { font-size: var(--fs-2xl); letter-spacing: -.03em; }
+.vacancyCard .chips { gap: 4px; }
+.tabs button { font: var(--fs-sm) var(--font); font-weight: 500; }
+.explorer { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; }
+.explorerOverview { width: 100%; height: 624px; overflow: hidden; }
+.mapViewport { position: absolute; inset: 0 0 64px; overflow: hidden; }
+.matchMap { inset: 80px 60px 80px; transform-origin: center; }
+.mapSpokes .mapRing { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 7; }
+.mapSpokes line { stroke-dasharray: 5 6; opacity: .55; }
+.mapCenter { width: 72px; height: 72px; box-shadow: 0 0 0 8px var(--employer-ring); }
+.mapCenter > span { font-size: var(--fs-display-mark, var(--fs-3xl)); }
+.mapCenter strong { top: calc(100% + 8px); width: 160px; font-size: var(--fs-sm); background: var(--paper); padding: 1px 4px; }
+.mapCenter small { top: calc(100% + 28px); font-size: var(--fs-xs); }
+.mapHeading { top: 16px; left: 18px; right: 18px; z-index: 2; }
+.mapHeading > span { padding: 6px 10px; font-size: var(--fs-xs); }
+.mapHeading small { font-size: var(--fs-xs); }
+.mapNode .silhouette { width: 52px; height: 52px; }
+.mapNode strong, .mapNode small { width: 120px; font-size: var(--fs-xs); background: var(--paper); padding: 1px 4px; }
+.mapNode strong { text-transform: uppercase; }
+.mapNode small { font-family: var(--mono); }
+.mapFooter { left: 0; right: 0; bottom: 0; padding: 12px 18px 16px; min-height: 64px; border-top: 1px solid var(--line); align-items: center; flex-wrap: wrap; background: var(--employer-panel); }
+.mapFooter p { font-size: var(--fs-xs); line-height: 1.5; margin-left: auto; }
+.mapZoom { display: flex; gap: 6px; align-items: center; }
+.mapZoom button { width: 36px; height: 36px; border: 1px solid var(--border-input); color: var(--ink); background: var(--glass); font-size: var(--fs-lg); }
+.mapZoom button:disabled { opacity: .4; cursor: default; }
+.mapZoom output { min-width: 44px; text-align: center; font: var(--fs-sm) var(--mono); color: var(--muted); }
+.modeButtons button { min-height: 36px; padding: 6px 9px; font-size: var(--fs-sm); }
+.selectedCandidate { width: 360px; padding: 22px; }
+.compactCard { gap: 16px; }
+.identity h3 { font-size: var(--fs-xl); letter-spacing: -.02em; }
+.coverage strong { font-size: var(--fs-display-score, var(--fs-3xl)); letter-spacing: -.06em; line-height: .9; }
+.coverage strong span { font-size: inherit; }
+.skillChips > span { font: var(--fs-sm) var(--mono); padding: 4px 8px; }
+.reasonBox { padding: 12px 14px; }
+.reasonBox dl { font-size: var(--fs-sm); }
+.invitationColumns { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.invitationCard { padding: 22px; gap: 14px; border: 1px solid var(--glass-border); background: var(--employer-panel); }
+.invitationCard h2 { font-size: var(--fs-lg); letter-spacing: -.02em; }
+.invitationCard .silhouette { width: 44px; height: 44px; }
+.invitationSummary, .formPreview { display: grid; gap: 14px; padding: 22px; background: var(--employer-panel); border: 1px solid var(--glass-border); min-width: 0; }
+.invitationSummary h2 { margin: 0; font-size: var(--fs-lg); }
+.invitationSummary dl { display: grid; gap: 10px; margin: 0; }
+.invitationSummary dl > div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
+.invitationSummary dd { margin: 0; font-family: var(--mono); font-weight: 600; }
+.invitationSummary p, .formPreview p { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.6; }
+.timeline { gap: 6px; }
+.timeline > div { padding-top: 8px; font: var(--fs-xs) var(--mono); }
+.contacts { padding: 12px 14px; background: var(--surface-quote); color: var(--ink); font-size: var(--fs-sm); }
+.companyColumns, .vacancyFormLayout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+.formPanel { padding: 24px; background: var(--employer-panel); border: 1px solid var(--glass-border); }
+.formPanel .lead { font-size: var(--fs-sm); }
+.formPreview { position: sticky; top: 24px; }
+.formPreview h2 { margin: 0; font-size: var(--fs-xl); overflow-wrap: anywhere; }
+.previewCount { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px; }
+.previewCount b { font-size: var(--fs-screen-title, var(--fs-3xl)); letter-spacing: -.05em; line-height: 1; }
+.previewCount span { font: var(--fs-xs) var(--mono); color: var(--muted); }
+.vacancySwitcher { max-width: 760px; padding: 0; gap: 6px; grid-template-columns: 48px minmax(0, 1fr) 48px; background: transparent; border: 0; align-items: stretch; }
+.vacancySwitcher > a { height: auto; font-size: var(--fs-2xl); }
+.vacancyPicker { background: var(--surface-input); border: 1px solid var(--line); padding: 10px 16px; }
+.vacancyPicker summary { gap: 3px; }
+.searchFilters { padding: 20px 22px; }
+.candidateRow { padding: 16px 22px; }
+.companyProfile, .companyPreview { padding: 24px; }
+.companyMark { width: 56px; height: 56px; font-size: var(--fs-2xl); background: var(--blue); }
+:global(:root[data-theme='dark']) :is(.formPreview, .formPanel, .invitationCard, .invitationSummary, .mapFooter) { background: var(--glass); }
+@media (max-width: 1250px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explorer { grid-template-columns: minmax(0, 1fr); } .selectedCandidate { width: 100%; } .compactCard { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1000px) { .companyColumns, .vacancyFormLayout, .invitationColumns { grid-template-columns: minmax(0, 1fr); } .formPreview { position: static; } }
+@media (max-width: 640px) { .page { padding: 24px 16px 80px; } .grid { grid-template-columns: minmax(0, 1fr); } .explorerOverview { height: 600px; } .matchMap { inset: 80px 36px 110px; } .mapFooter { gap: 8px; } .mapFooter p { width: 100%; margin-left: 0; } .mapHeading { flex-wrap: wrap; } .timeline { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); } .invitationCard, .formPanel { padding: 18px; } .candidateRow { padding: 16px; } }
 
-/* Сравнение двух кандидатов подборки («Почему A выше B») */
-.resultItem { position: relative; }
-.resultItem .resultRow { padding-left: 44px; }
-.compareCheck { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 1; width: 18px; height: 18px; accent-color: var(--blue); cursor: pointer; }
-.compareBar { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 18px; border: 1px solid var(--line); background: var(--glass-strong); font: var(--fs-xs) var(--mono); }
-.compareBar span { margin-right: auto; }
-.compareDialog { width: min(720px, calc(100vw - 32px)); }
-.compareHeadline { margin: 0 0 16px; font-size: var(--fs); font-weight: 500; }
-.compareTable { width: 100%; border-collapse: collapse; font-size: var(--fs); }
-.compareTable caption { text-align: left; color: var(--muted); font: var(--fs-xs) var(--mono); padding-bottom: 8px; }
-.compareTable th, .compareTable td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
-.compareTable th:first-child { text-align: left; font-weight: 400; }
-.compareTable thead th { color: var(--muted); font: var(--fs-xs) var(--mono); font-weight: 400; overflow-wrap: anywhere; }
-.compareTable tr[data-lead='true'] { box-shadow: inset 3px 0 0 var(--blue); background: var(--accent-fill); }
-.compareTable tfoot th, .compareTable tfoot td { font-weight: 600; border-bottom: 0; }
+/* Compact map labels stay clear of each other on phones; full details remain in the selected card. */
+@media (max-width: 640px) {
+  .mapNode strong, .mapNode small { width: 88px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mapNode strong { top: calc(100% + 6px); }
+  .mapNode small { top: calc(100% + 23px); }
+  .spokeScore { display: none; }
+  .mapCenter small { display: none; }
+  .mapCenter strong { width: 104px; max-height: 36px; overflow: hidden; }
+  .mapViewport { bottom: 132px; }
+  .explorerOverview .mapFooter { flex-direction: row; flex-wrap: wrap; }
+}

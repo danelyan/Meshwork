@@ -70,6 +70,7 @@
   --text: var(--ink);
   --red: var(--p-red-700);
 
+  --surface-card: rgba(255, 255, 255, 0.72);
   --surface-input: rgba(255, 255, 255, 0.8);
   --surface-hover: rgba(17, 17, 17, 0.05);
   --surface-notice: rgba(255, 255, 255, 0.7);
@@ -132,6 +133,10 @@
   --fs-xl: 20px;  /* заголовок карточки, крупный лид */
   --fs-2xl: 24px; /* заголовок панели, вопрос, цифра статистики */
   --fs-3xl: 28px; /* крупная цифра, заголовок экрана */
+  --fs-screen-title: 48px;
+  --fs-display-score: 64px;
+  --fs-display-mark: 36px;
+  --fs-score: 72px;
   --fs-landing-section: clamp(32px, 3.4vw, 52px);
   --fs-landing-role: clamp(24px, 2.2vw, 32px);
 
@@ -183,7 +188,7 @@ input::placeholder, textarea::placeholder { color: var(--placeholder); }
 input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color: var(--blue); }
 
 @media (max-width: 1150px) { :root { --page-pad: 28px; } }
-@media (max-width: 640px) { :root { --page-pad: 16px; } }
+@media (max-width: 640px) { :root { --page-pad: 16px; --fs-screen-title: 36px; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
@@ -301,6 +306,7 @@ input[type='checkbox'], input[type='radio'], input[type='range'] { accent-color:
     --text: var(--ink);
     --red: var(--p-red-300);
 
+    --surface-card: rgba(255, 255, 255, 0.07);
     --surface-input: rgba(255, 255, 255, 0.07);
     --surface-hover: rgba(255, 255, 255, 0.08);
     --surface-notice: rgba(255, 255, 255, 0.07);

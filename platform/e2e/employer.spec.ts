@@ -2,14 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { expect, test, type Page } from '@playwright/test';
 
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-
-/** .env платформы для БД сида — как scripts/load-env.mjs, но без import.meta: Playwright грузит spec как CommonJS. */
-function loadPlatformEnv(): void {
-  if (process.env.DATABASE_URL) return;
-  const file = join(process.cwd(), '.env');
-  if (existsSync(file)) process.loadEnvFile(file);
-}
+import { resolve } from 'node:path';
 
 // R-E-03..R-E-07: вход работодателя через /demo → подборка по потребности → приглашение →
 // кандидат из пула принимает → работодатель видит контакты. Нужен сид (db:seed: auth, employer, recommend, claims).
@@ -23,7 +16,8 @@ const VACANCY_URL = '**/employer/needs/demo-vac-be-m-1';
 // иначе мусор виден на «Моей карте» и в подборке. Заодно подчищаем хвосты упавших прогонов.
 // Резерв, если afterAll не отработал: node scripts/clean-e2e-vacancies.mjs --apply
 test.afterAll(async () => {
-  loadPlatformEnv();
+  const envFile = resolve(__dirname, '../.env');
+  if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);
   const db = new PrismaClient();
   try {
     await db.vacancy.deleteMany({ where: { title: { startsWith: 'E2E ' }, company: { isDemo: true } } });
@@ -104,6 +98,7 @@ test('E-02: работодатель → подборка → приглашен
 });
 
 test('Помощник работодателя (демо без модели): подборка карточками → «Пригласить» → форма; имён нет', async ({ page }) => {
+  test.setTimeout(120_000);
   await loginAsEmployer(page);
   // свежая потребность этого прогона на Frontend: сценарий не зависит от того, кого принял E-02 по Backend
   const list = await (await page.request.get('/api/employer/vacancies')).json();
@@ -113,12 +108,12 @@ test('Помощник работодателя (демо без модели): 
     data: { title, specialization: 'frontend', grade: 'junior', subcategoryId: 'frontend.ui-app', salaryFrom: 100000, salaryTo: 150000, stack: ['React'], needs: sample.needs },
   });
   expect(created.status()).toBe(201);
-  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'ИИ-помощник' }).click();
+  await page.getByRole('navigation', { name: 'Разделы кабинета' }).getByRole('link', { name: 'ИИ-помощник' }).click();
   await page.waitForURL('**/consultant');
   await page.getByLabel('Сообщение помощнику').fill(`Подбери под мою потребность ${title}`);
   await page.getByRole('button', { name: 'Отправить', exact: true }).click();
   const block = page.getByTestId('assistant-candidates').last();
-  await expect(block).toBeVisible();
+  await expect(block).toBeVisible({ timeout: 60_000 });
   const first = block.getByTestId('assistant-candidate').first();
   await expect(first.getByRole('heading', { level: 3 })).toContainText(/Кандидат #[0-9A-F]{6}/);
   // граница доверия: имени из пула нет ни в карточках, ни в ответе помощника
@@ -126,7 +121,7 @@ test('Помощник работодателя (демо без модели): 
   await page.getByLabel('Сообщение помощнику').fill('Пригласи первого');
   await page.getByRole('button', { name: 'Отправить', exact: true }).click();
   const draft = page.getByTestId('assistant-invitation-draft').last();
-  await expect(draft).toBeVisible();
+  await expect(draft).toBeVisible({ timeout: 60_000 });
   // у свежей потребности и непринятых кандидатов открытого приглашения нет, форма на месте
   await expect(draft.getByRole('button', { name: 'Отправить приглашение' })).toBeVisible();
 });

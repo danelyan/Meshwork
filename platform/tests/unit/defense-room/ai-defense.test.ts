@@ -70,6 +70,7 @@ const accepted = (yes: boolean) => {
 beforeEach(() => {
   vi.resetAllMocks();
   db.callSession.findMany.mockResolvedValue([session]);
+  db.callSession.count.mockResolvedValue(1);
   db.consent.findMany.mockResolvedValue([]);
 });
 
@@ -144,6 +145,22 @@ describe('созвон-защита через /api/call/{id} до accepted', ()
     db.callSession.count.mockResolvedValue(0);
     await expect(resolveCallAccess(employer, { id: 'cs-foreign', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).rejects.toMatchObject({ status: 404 });
     expect(db.callSession.count).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: 'cs-foreign' }) }));
+  });
+});
+
+describe('принадлежность защиты при раскрытии контактов', () => {
+  it('accepted не открывает защиту чужой компании; проверка ограничена ИИ-защитой или своей живой', async () => {
+    db.employerProfile.findUnique.mockResolvedValue({ companyId: 'co-1' });
+    accepted(true);
+    db.callSession.count.mockResolvedValue(0);
+    await expect(resolveCallAccess({ role: 'employer', userId: 'u-emp', employerProfileId: 'ep-1' }, { id: 'cs-foreign', candidateId: 'cand-1', status: 'finished', kind: 'defense' })).rejects.toMatchObject({ status: 404 });
+    expect(db.callSession.count).toHaveBeenCalledWith({ where: {
+      id: 'cs-foreign',
+      OR: [{ aiDefense: true }, { aiDefense: false, OR: [
+        { projectSubmission: { projectTask: { vacancy: { companyId: 'co-1' } } } },
+        { projectSubmissionId: null, questions: { some: { companyId: 'co-1' } } },
+      ] }],
+    } });
   });
 });
 

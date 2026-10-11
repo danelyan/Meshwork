@@ -1,11 +1,11 @@
 import { expect, type Page } from '@playwright/test';
 
-/**
- * Вход демо-кандидатом через модальное окно входа (оно открывается на `/auth` и по ссылкам на `/auth`):
- * роль не спрашивается — персона этапа 3 «Юлия Власова» (профиль из резюме) из группы «Специалисты». Дальше окно само ведёт на `next` или `/consultant`.
- */
+/** Curated resume-stage candidate through the real jury demo page. Keep the guard's return path. */
 export async function signInAsDemoCandidate(page: Page) {
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', { name: 'Войти как Юлия Власова' }).click();
+  const next = new URL(page.url()).searchParams.get('next');
+  await page.goto(`/demo${next ? `?next=${encodeURIComponent(next)}` : ''}`);
+  await page.getByText('Все профили по этапам пути', { exact: true }).click();
+  const specialists = page.getByRole('group', { name: 'Специалисты', exact: true });
+  await expect(specialists).toBeVisible();
+  await specialists.getByRole('button', { name: 'Войти как Юлия Власова', exact: true }).click();
 }

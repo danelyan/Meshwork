@@ -124,8 +124,8 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
   }
 
   return (
-    <form className={styles.form} onSubmit={submit} noValidate>
-      <Panel className={styles.form}>
+    <form className={styles.vacancyFormLayout} onSubmit={submit} noValidate><div className={styles.form}>
+      <Panel className={`${styles.form} ${styles.formPanel}`}><h2 className={styles.sectionTitle}>Основное</h2>
         <Field label="Кого ищешь" hint="Например: «Backend-разработчик платежей»" error={errs.title}>
           <input className={ui.input} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
         </Field>
@@ -170,17 +170,8 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
             <input className={ui.input} inputMode="numeric" value={salaryTo} onChange={(e) => setSalaryTo(e.target.value)} />
           </Field>
         </div>
-        <Field label="Чем занимается команда" hint="Кандидат увидит это в приглашении">
-          <textarea className={ui.input} rows={3} maxLength={2000} value={team} onChange={(e) => setTeam(e.target.value)} />
-        </Field>
-        <Field label="Стек" hint="Через запятую: Go, PostgreSQL, Kafka. Ищется в подтверждённых цитатах кандидатов">
-          <input className={ui.input} value={stack} onChange={(e) => setStack(e.target.value)} />
-        </Field>
-        <Field label="Комментарий (необязательно)">
-          <textarea className={ui.input} rows={2} maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} />
-        </Field>
       </Panel>
-      <Panel className={styles.form} aria-labelledby="needs-title">
+      <Panel className={`${styles.form} ${styles.formPanel}`} aria-labelledby="needs-title">
         <div>
           <h2 id="needs-title" className={styles.sectionTitle}>
             Требования
@@ -200,6 +191,17 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
         {options.length === 0 && <Notice>Для этого направления в каталоге навыков пока нет требований - вакансию сохранить не получится.</Notice>}
         {errs.needs && <Notice tone="error">{errs.needs}</Notice>}
       </Panel>
+      <Panel className={`${styles.form} ${styles.formPanel}`}><h2 className={styles.sectionTitle}>О команде</h2>
+        <Field label="Чем занимается команда" hint="Кандидат увидит это в приглашении">
+          <textarea className={ui.input} rows={3} maxLength={2000} value={team} onChange={(e) => setTeam(e.target.value)} />
+        </Field>
+        <Field label="Стек" hint="Через запятую: Go, PostgreSQL, Kafka. Ищется в подтверждённых цитатах кандидатов">
+          <input className={ui.input} value={stack} onChange={(e) => setStack(e.target.value)} />
+        </Field>
+        <Field label="Комментарий (необязательно)">
+          <textarea className={ui.input} rows={2} maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </Field>
+      </Panel>
       <RedFlagNotice flags={flags} />
       {error && <Notice tone="error">{error}</Notice>}
       <div className={styles.actions}>
@@ -208,6 +210,6 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
         </Button>
         <Button href={vacancyId ? `/employer/needs/${encodeURIComponent(vacancyId)}` : '/employer'}>Отмена</Button>
       </div>
-    </form>
+      </div><aside className={styles.formPreview} aria-label="Черновик вакансии"><span className={styles.status}>Ваше предложение</span><h2>{title.trim() || 'Название вакансии'}</h2><p>{specLabel(spec)} · {GRADE_LABEL[grade]}</p><strong className={styles.salary}>{salaryFrom && salaryTo ? salaryFrom + ' - ' + salaryTo + ' ₽' : 'Укажите зарплатную вилку'}</strong><div className={styles.previewCount}><b>{options.filter((option) => picked.has(option.e.id)).length}</b><span>требований для подборки</span></div><div className={styles.skillChips}>{options.filter((option) => picked.has(option.e.id)).slice(0, 6).map((option) => <span key={option.e.id}>{option.e.statement}</span>)}</div><p className={styles.meta}>Подборка по подтверждённым данным появится после сохранения. Здесь показаны ваши требования, а не прогноз числа кандидатов.</p><Button href="/employer/assistant">Помощник уточнит требования ↗</Button></aside></form>
   );
 }

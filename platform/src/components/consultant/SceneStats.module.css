@@ -4,3 +4,11 @@
 .label { font: 500 var(--fs-xs) var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--stage-text-soft); }
 .value { margin: 0; font-size: var(--fs-xl); line-height: 1.1; letter-spacing: -0.03em; color: var(--stage-text); overflow-wrap: anywhere; }
 .note { margin: 0; font-size: var(--fs-xs); line-height: 1.4; color: var(--stage-ink-faint); }
+
+@media (max-width: 640px) {
+ .stats { gap: 4px; }
+ .stat { padding: 5px 7px; }
+ .value { font-size: var(--fs-lg); }
+ .label { letter-spacing: 0; }
+ .note { display: none; }
+}

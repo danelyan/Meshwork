@@ -10,6 +10,8 @@ import { SceneStats } from '../consultant/SceneStats';
 import type { SceneAsideData } from '@/server/consultant/aside';
 
 import { Chat } from '../Chat';
+import { Button } from '../ui';
+import { COMPANION_NAME } from '@/lib/persona';
 import type { RestoredChat } from '@/server/agent/restore';
 import type { ChatDemoContext } from '@/server/demo/context';
 
@@ -126,7 +128,7 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
           <CallPanel />
         ) : (
           <>
-            <div className={`${styles.sideHead}${aside?.stats?.length ? ` ${styles.withStats}` : ''}`}>
+            <div className={`${styles.sideHead}${aside?.stats?.length ? ` ${styles.withStats}` : ''}`} data-call>
               <div className={styles.headBox}>
                 <HeadView />
               </div>
@@ -145,9 +147,17 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
         )}
       </section>
       {aside && <SceneAside data={aside} className={styles.sideAside} />}
-      <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll inert={inCall || undefined} aria-hidden={inCall || undefined}>
+      <div className={styles.sidePanel} data-testid="side-panel" inert={inCall || undefined} aria-hidden={inCall || undefined}>
         {inCall && <p className={styles.callPause}>Идёт созвон - чат на паузе</p>}
-        {children}
+        <header className={styles.sideToolbar}>
+          <div className={styles.sideTitle}>
+            <strong>{COMPANION_NAME}</strong>
+            <span>{label.replace(COMPANION_NAME + ' · ', '')}</span>
+          </div>
+          <MuteToggle />
+          {call && <Button size="sm" disabled={call.readiness?.ready === false} title={call.readiness?.reason} onClick={() => call.start()}>Созвониться</Button>}
+        </header>
+        <div className={styles.panelFeed} data-feed-scroll>{children}</div>
       </div>
     </div>
   );

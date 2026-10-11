@@ -70,7 +70,7 @@ export function LandingSections({ signedIn }: { signedIn: boolean }) {
   return <>
     <section id="proof" className={`${styles.section} ${styles.split}`} aria-labelledby="proof-title">
       <div><h2 id="proof-title" className={styles.title}>За каждым навыком есть доказательство<i>.</i></h2><p className={styles.lead}>Резюме рассказывает об опыте. Профиль показывает, на чём основан каждый навык.</p><ul className={styles.proofFeatures}>{([
-        ['Источник у каждого навыка', 'Резюме, репозиторий, реестр ФСП или проверка на платформе.', 'link'],
+        ['Источник у каждого навыка', 'Резюме, репозиторий, демореестр ФСП или проверка на платформе.', 'link'],
         ['Видно, что проверено', 'Работодатель отличает «написал в резюме» от «решил на платформе».', 'eye'],
         ['Решаешь ты', 'Кира предлагает факты, ты выбираешь, что сохранить.', 'check'],
       ] as const).map(([title, description, icon], index) => <li key={title} style={{ '--delay': `${index * 0.6}s` } as CSSProperties}><Icon name={icon} large /><span><b>{title}</b><span>{description}</span></span></li>)}</ul></div>

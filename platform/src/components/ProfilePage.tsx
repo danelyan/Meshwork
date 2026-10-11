@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { gradeLabel } from '@/lib/grades';
 import { specLabel } from '@/lib/directions';
 import { claimTopics } from '@/lib/claim-topics';
 import { shownWording } from '@/lib/claims-view';
@@ -16,7 +17,7 @@ import { ProfileBasics, ProfilePublicPreview } from './candidate/ProfileCards';
 import { ResumeFieldsCard } from '@/components/candidate/ResumeFields';
 import type { ProfileDetails } from '@/server/claims/profile-details';
 import { LevelBadge } from './LevelBadge';
-import { Button, Kicker, Notice } from './ui';
+import { Button, Kicker, Notice, Panel } from './ui';
 import styles from './ProfilePage.module.css';
 import ui from './ui.module.css';
 
@@ -159,7 +160,7 @@ function OnboardingHistory({ revisions }: { revisions: AnswerRevisionView[] }) {
 export function ProfilePage() {
   const [details, setDetails] = useState<ProfileDetails | null>(null);
   const [profile, setProfile] = useState<ProfileView | null>(null);
-    const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
+  const [attempts, setAttempts] = useState<AttemptSummary[]>([]);
   const [revisions, setRevisions] = useState<AnswerRevisionView[]>([]);
   const [error, setError] = useState<ApiError | Error | null>(null);
 
@@ -228,21 +229,48 @@ export function ProfilePage() {
   }
 
   const claims = profile.claims.filter((c) => c.status !== 'rejected');
+  const filled = details?.completion?.filled ?? 0;
+  const total = details?.completion?.total ?? 0;
+  const completion = total > 0 ? Math.round(filled / total * 100) : 0;
+  const sourceGroups = [
+    { label: 'Резюме', mark: '↑', kind: 'resume' },
+    { label: 'GitHub', mark: '⌘', kind: 'github' },
+    { label: 'ФСП ID', mark: '✳', kind: 'fsp' },
+  ];
 
 
 
   return (
     <div className={styles.page}>
       <header className={styles.heading}>
-        <div><Kicker>Ваш опыт и доказательства</Kicker><h1>Профиль<i>.</i></h1><p>У каждого факта есть источник: достижение, проверка платформой или ваши слова. Компании видят, откуда что взялось.</p></div>
-        <div className={`${styles.actions} ${styles.noPrint}`}><Button href="/consultant">↑ Обновить резюме</Button><a className={ui.btn} href="/api/profile/pdf" download="fsp-career-profile.pdf">↓ PDF-профиль</a></div>
+        <div><h1>Профиль<i>.</i></h1><p>Чем полнее профиль, тем точнее подбор. У каждого факта есть источник и уровень доказанности.</p></div>
+        <div className={`${styles.actions} ${styles.noPrint}`}><Button href="/consultant">↑ Обновить резюме</Button><a className={ui.btn} href="/api/profile/pdf" download="fsp-career-profile.pdf" aria-label="PDF-профиль">↓ PDF-профиль</a></div>
       </header>
       <aside className={styles.side} aria-label="Так вас видит компания">
-        <ProfilePublicPreview details={details} />
+        <Panel className={styles.railCard}>
+          <div className={styles.railLabel}><span>Заполненность профиля</span><b>{total ? `${completion}%` : '-'}</b></div>
+          <div className={styles.completionTrack} role="progressbar" aria-label="Заполненность профиля" aria-valuemin={0} aria-valuemax={100} aria-valuenow={completion}><i style={{ width: `${completion}%` }} /></div>
+          <p>{total ? `Заполнено ${filled} из ${total} полей` : 'Данные заполненности пока недоступны'}</p>
+          <Button size="sm" href="/consultant?edit=profile">Дополнить профиль ↗</Button>
+        </Panel>
+        <Panel className={styles.railCard}>
+          <Kicker>Категория</Kicker>
+          <h2>{profile.category ? `${specLabel(profile.category.specialization)} · ${gradeLabel(profile.category.grade)}` : 'Ещё не подтверждена'}</h2>
+          <p>{profile.category ? `Подтверждена тестом ${formatDate(profile.category.confirmedAt)}` : 'Резюме и ваши слова описывают опыт. Категорию подтверждает тест.'}</p>
+          <Button variant="cta" href="/test">Пройти тест →</Button>
+        </Panel>
+        <Button href="/consultant" className={styles.consultantLink}>Кира · Разберём, чем усилить профиль ↗</Button>
+        <a className={`${ui.btn} ${styles.noPrint}`} href="/api/profile/pdf" download="fsp-career-profile.pdf" aria-label="PDF-профиль">↓ PDF-профиль</a>
+        <details className={styles.previewDisclosure}><summary>Как видит компания</summary><ProfilePublicPreview details={details} /></details>
         <div className={styles.sideActions}><Button href="/skills">Навыки и грейд →</Button><Button href="/projects">Проектные задания →</Button></div>
       </aside>
 
       <div className={styles.main}>
+      <div className={styles.sourceTiles} aria-label="Источники профиля">{sourceGroups.map((source) => {
+        const evidence = claims.filter((claim) => claim.sourceKind === source.kind);
+        const origins = [...new Set(evidence.map((claim) => claim.sourceRef.split('#')[0]).filter(Boolean))];
+        return <Button href="/consultant" key={source.kind} className={styles.sourceTile}><span className={styles.sourceMark} aria-hidden="true">{source.mark}</span><span><b>{source.label}</b><small>{source.kind === 'fsp' ? `${details?.fspState === 'not_linked' || !details ? 'Не подключён' : 'Симулятор ФСП ID'} · ${evidence.length} утверждений` : origins.length ? `${origins.length} источников · ${evidence.length} утверждений` : 'Добавить источник'}</small></span></Button>;
+      })}</div>
       <ProfileBasics details={details} name={profile.candidate.name} />
       <RankingHoldNotice attempts={attempts} />
       <ResumeFieldsCard details={details} />

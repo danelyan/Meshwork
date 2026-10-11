@@ -12,10 +12,10 @@ afterEach(cleanup);
 
 const account: HeaderAccount = { userName: 'Тестовый пользователь', userEmail: null, roles: { role: 'candidate', other: 'employer', otherExists: false, canCreateOther: true, companyName: null } };
 
-it('keeps the consultant full width and hides role navigation from guests', () => {
+it('keeps consultant navigation available and hides role navigation from guests', () => {
   nav.pathname = '/consultant';
   const view = render(<DashboardFrame account={account}><p>Разговор</p></DashboardFrame>);
-  expect(screen.queryByRole('navigation', { name: 'Разделы кабинета' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Консультант' }).getAttribute('aria-current')).toBe('page');
   nav.pathname = '/career';
   view.rerender(<DashboardFrame><p>Вход</p></DashboardFrame>);
   expect(screen.queryByRole('navigation')).toBeNull();
@@ -25,7 +25,7 @@ it('marks only current dashboard route and keeps employer routes out of candidat
   nav.pathname = '/skills';
   render(<DashboardFrame account={account}><p>Задание</p></DashboardFrame>);
   expect(screen.getByRole('link', { name: 'Навыки и грейд' }).getAttribute('aria-current')).toBe('page');
-  expect(screen.queryByRole('link', { name: 'Проекты' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Проекты' }).getAttribute('aria-current')).toBeNull();
   expect(screen.queryByRole('link', { name: 'Поиск по базе' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Вакансии' }).getAttribute('href')).toBe('/career');
 });
@@ -34,13 +34,14 @@ it('sidebar: candidate order follows the journey stages, employer labels match t
   nav.pathname = '/career';
   const view = render(<DashboardFrame account={account}><p>x</p></DashboardFrame>);
   const names = () => within(screen.getByRole('navigation', { name: 'Разделы кабинета' })).getAllByRole('link').map((a) => a.textContent?.replace(/^\S\s?/, ''));
-  // Пункты шапки (header: true) в сайдбаре не повторяются.
-  expect(names()).toEqual(['Навыки и грейд', 'Вакансии', 'Созвон с ИИ', 'Избранное', 'Настройки']);
+  // Все разделы доступны в единственном меню кабинета.
+  expect(names()).toEqual(['Консультант', 'Тест на грейд', 'Навыки и грейд', 'Проекты', 'Приглашения', 'Вакансии', 'Компании', 'Профиль', 'Созвон с ИИ', 'Избранное', 'Настройки']);
   expect(screen.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');
+  expect(screen.getByRole('link', { name: 'Компании' }).getAttribute('href')).toBe('/companies');
   view.unmount();
   nav.pathname = '/employer/needs/n1';
   render(<DashboardFrame account={{ ...account, roles: { ...account.roles!, role: 'employer' } }}><p>x</p></DashboardFrame>);
-  expect(names()).toEqual(['Избранное', 'Компания']);
+  expect(names()).toEqual(['ИИ-помощник', 'Подборка', 'Поиск по базе', 'Вакансии', 'Избранное', 'Приглашения', 'Собеседования', 'Компания']);
 });
 
 it('draft edits use actual step IDs; privacy view does not repeat personal answers', async () => {

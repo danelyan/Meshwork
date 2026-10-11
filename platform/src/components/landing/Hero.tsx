@@ -10,17 +10,17 @@ export function Hero({ signedIn, demoEnabled = false }: { signedIn: boolean; dem
       <div>
         <p className={styles.kicker}>ИТ-карьера через подтверждённые навыки</p>
         <h1 id="hero-title" className={styles.title}>
-          Твой код.
+          Не ищи работу.
           <br />
-          Твоя карьера<i>.</i>
+          Пусть найдут тебя<i>.</i>
         </h1>
-        <p className={styles.slogan}>Специалист собирает профиль с доказательствами и получает приглашения с открытой вилкой. Компания видит, чем подтверждены навыки, и пишет первой.</p>
+        <p className={styles.slogan}>Подтверди навыки тестом и проектами. Компании видят доказательства и могут написать первыми - с предложением и зарплатной вилкой.</p>
         <Start signedIn={signedIn} cabinet />
         <ul className={styles.note}>
           <li>Резюме и ссылки на проекты</li>
           <li>ИИ-консультант Кира</li>
           <li>Категория по результатам теста</li>
-          <li><a href="https://fsp-russia.ru/" target="_blank" rel="noopener noreferrer">ФСП ID и достижения</a></li>
+          <li><a href="https://fsp-russia.ru/" target="_blank" rel="noopener noreferrer">ФСП ID и достижения</a> · демореестр</li>
         </ul>
         {!signedIn && <Link className={styles.entry} href="/auth"><b>Уже есть аккаунт? Войти</b></Link>}
         {demoEnabled && <Link className={styles.jury} href="/demo">Для жюри: маршрут на 5 минут и проверка цифр →</Link>}

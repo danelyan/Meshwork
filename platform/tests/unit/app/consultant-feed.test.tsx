@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   getView: vi.fn(async (): Promise<Record<string, unknown>> => ({ current: { kind: 'one' }, onboarded: false })),
   loadLastChat: vi.fn(async () => ({ conversationId: 'conv-1', items: [] })),
   loadLastEmployerChat: vi.fn(async () => ({ conversationId: 'e-conv', items: [] })),
+  resolveCallKind: vi.fn(async () => 'qualifying' as const),
   loadCandidateAside: vi.fn(async () => undefined),
   loadEmployerAside: vi.fn(async () => undefined),
 }));
@@ -30,6 +31,8 @@ vi.mock('@/server/demo/context', () => ({
 }));
 vi.mock('@/server/demo/mode', () => ({ llmIsDemoStub: () => true }));
 vi.mock('@/server/onboarding/service', () => ({ onboardingInFeed: m.inFeed, getView: m.getView }));
+// Call readiness has its own database tests; composition only forwards the selected kind.
+vi.mock('@/server/interview/context', () => ({ resolveCallKind: m.resolveCallKind }));
 // Feed composition is independent of the database-backed sidebar loaders.
 vi.mock('@/server/consultant/aside', () => ({ loadCandidateAside: m.loadCandidateAside, loadEmployerAside: m.loadEmployerAside }));
 vi.mock('@/components/Chat', () => ({ Chat: () => null }));
@@ -74,6 +77,7 @@ describe('кандидат', () => {
     expect(el.props.consultant).toEqual({ demo: { noLlm: true, resume: null }, restored: { conversationId: 'conv-1', items: [] } });
     expect(m.getView).toHaveBeenCalledWith('u1');
     expect(m.loadCandidateAside).toHaveBeenCalledWith('c1', expect.objectContaining({ onboarded: false }));
+    expect(m.resolveCallKind).toHaveBeenCalledWith('c1');
     expect(m.loadEmployerAside).not.toHaveBeenCalled();
   });
 
@@ -135,6 +139,7 @@ describe('работодатель', () => {
     expect(el.props.employerAssistant).toEqual({ demoNoLlm: true, restored: { conversationId: 'e-conv', items: [] } });
     expect(m.loadLastChat).not.toHaveBeenCalled();
     expect(m.loadEmployerAside).toHaveBeenCalledWith('e1', expect.objectContaining({ onboarded: true }));
+    expect(m.resolveCallKind).not.toHaveBeenCalled();
     expect(m.loadCandidateAside).not.toHaveBeenCalled();
   });
 

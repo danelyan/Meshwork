@@ -19,12 +19,11 @@ import { Spinner, cx } from '../ui';
 import styles from './CallPanel.module.css';
 import { useCallMode } from './CallContext';
 import { DepthMap } from './DepthMap';
-import { DevicePreflight } from './DevicePreflight';
 import { useCallMic } from './useCallMic';
 import { useReplySpeech } from './useReplySpeech';
 import { ObjectionButton } from '../consent/ObjectionButton';
 
-type Phase = 'loading' | 'consent' | 'devices' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
+type Phase = 'loading' | 'consent' | 'starting' | 'live' | 'finishing' | 'done' | 'error';
 
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -59,13 +58,6 @@ export function CallPanel() {
   const [typing, setTyping] = useState(false);
   /** Согласие на запись отозвано (ADR 0005): созвон без записи голоса, ответы только текстом. */
   const [textOnly, setTextOnly] = useState(false);
-  /** Причина текстового режима: отозванное согласие или выбор/отказ на шаге проверки устройств. */
-  const [textWhy, setTextWhy] = useState<'consent' | 'devices'>('consent');
-  const textOnlyRef = useRef(false);
-  /** Шаг проверки устройств пройден в этой панели (повторно перед «Пройти ещё раз» не показываем). */
-  const devicesDone = useRef(false);
-  /** Микрофон вообще не нужен (голос выключен на сервере или нет поддержки) - проверку пропускаем. */
-  const micUnneeded = useRef(false);
   const [draft, setDraft] = useState('');
   const [closing, setClosing] = useState(false);
   /** Идут дополнительные вопросы по темам, где оценщик не определился. */
@@ -98,12 +90,6 @@ export function CallPanel() {
     }
   }, [kind, interview]);
 
-  // После согласия: проверка устройств → старт. Текстовый режим по согласию и «голос выключен» шаг пропускают.
-  const proceed = useCallback(async () => {
-    if (textOnlyRef.current || devicesDone.current || micUnneeded.current) return begin();
-    setPhase('devices');
-  }, [begin]);
-
   // Открытие: согласие → старт (или продолжение активного созвона).
   useEffect(() => {
     let alive = true;
@@ -121,11 +107,10 @@ export function CallPanel() {
           return setPhase('done');
         }
         if (list.consent.mode === 'text') {
-          textOnlyRef.current = true;
           setTextOnly(true);
           setTyping(true);
         } else if (!list.consent.given) return setPhase('consent');
-        await proceed();
+        await begin();
       } catch (e) {
         if (!alive) return;
         setError(e instanceof Error ? e.message : 'Созвон сейчас недоступен');
@@ -135,7 +120,7 @@ export function CallPanel() {
     return () => {
       alive = false;
     };
-  }, [begin, proceed, kind, interview]);
+  }, [begin, kind, interview]);
 
   // События созвона: реплики из других вкладок и (позже) работодателя в комнате.
   const id = call?.id;
@@ -247,21 +232,11 @@ export function CallPanel() {
     setError(null);
     try {
       await callApi.consent(consentVersion);
-      await proceed();
+      await begin();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Согласие не записалось');
     }
   };
-
-  micUnneeded.current = mic.ready && !mic.available;
-  // Голос выключен на сервере / нет поддержки (стало известно уже на шаге проверки) - проверять нечего.
-  const micIdle = mic.ready && !mic.available;
-  useEffect(() => {
-    if (phase === 'devices' && micIdle) {
-      devicesDone.current = true;
-      void begin();
-    }
-  }, [phase, micIdle, begin]);
 
   const last = transcript[transcript.length - 1];
   const awaiting = Boolean(last && last.role === 'ai' && last.meta) && !busy;
@@ -324,33 +299,25 @@ export function CallPanel() {
           </p>
         ) : null}
 
-        {phase === 'devices' && (
-          <DevicePreflight
-            primaryClass={styles.primary}
-            ghostClass={styles.ghost}
-            onReady={() => {
-              devicesDone.current = true;
-              void begin();
-            }}
-            onTextOnly={() => {
-              devicesDone.current = true;
-              textOnlyRef.current = true;
-              setTextWhy('devices');
-              setTextOnly(true);
-              setTyping(true);
-              void begin();
-            }}
-            onCancel={mode?.close}
-          />
-        )}
-
         {phase === 'consent' && (
           <div className={styles.consent} data-testid="call-consent">
             <b>{interview ? 'Перед созвоном с ИИ - согласие на запись' : 'Перед первым созвоном - согласие на запись'}</b>
             {mode?.reason && <p className={styles.reason}>{mode.reason}</p>}
-            {consentText.map((p) => (
-              <p key={p}>{p}</p>
-            ))}
+            {/* Коротко — суть; полный текст свёрнут (владелец 11.10: «компактно и просто ссылки на оферту») */}
+            <ul className={styles.consentList}>
+              <li>Голос и расшифровка записываются только для оценки ответов; по голосу личность не определяется.</li>
+              <li>Работодатель до принятого приглашения видит только оценки по темам; запись и транскрипт — после твоего «да».</li>
+              <li>Аудио хранится 90 дней; согласие можно отозвать в настройках («Мои согласия»).</li>
+            </ul>
+            <p className={styles.consentLinks}>
+              <details className={styles.consentFull}>
+                <summary>Полный текст согласия</summary>
+                {consentText.map((p) => (
+                  <p key={p}>{p}</p>
+                ))}
+              </details>
+              <a href="/consent" target="_blank" rel="noreferrer">Условия обработки данных</a>
+            </p>
             <div className={styles.row}>
               <button type="button" className={styles.primary} onClick={() => void acceptConsent()}>
                 Согласиться и начать созвон
@@ -406,7 +373,7 @@ export function CallPanel() {
             <ResultCard summary={summary} disclaimer={call.disclaimer} />
             <Criteria summary={summary} />
             <div className={styles.row}>
-              <button type="button" className={styles.sheetBtn} onClick={() => void proceed()}>
+              <button type="button" className={styles.sheetBtn} onClick={() => void begin()}>
                 Пройти ещё раз
               </button>
               <button type="button" className={styles.sheetBtn} onClick={mode?.close}>
@@ -419,7 +386,7 @@ export function CallPanel() {
           <>
             <p className={styles.hint}>Интервью закрыто без оценки: ответов не было или оценщик был недоступен.</p>
             <div className={styles.row}>
-              <button type="button" className={styles.primary} onClick={() => void proceed()}>
+              <button type="button" className={styles.primary} onClick={() => void begin()}>
                 Пройти ещё раз
               </button>
               <button type="button" className={styles.ghost} onClick={mode?.close}>
@@ -452,7 +419,7 @@ export function CallPanel() {
 
         {textOnly && (phase === 'live' || phase === 'starting') && (
           <p className={styles.hint} data-testid="call-text-mode">
-            {textWhy === 'consent' ? 'Запись голоса отключена в «Моих согласиях» - созвон идёт текстом, аудио не сохраняется.' : 'Созвон идёт текстом: микрофон не проверен или недоступен. Голос можно включить, начав созвон заново.'}
+            Запись голоса отключена в «Моих согласиях» - созвон идёт текстом, аудио не сохраняется.
           </p>
         )}
         {(error || mic.error) && (

@@ -21,6 +21,12 @@
 
 .consent, .result { display: grid; gap: 10px; padding: 16px; font-size: var(--fs); line-height: 1.5; color: var(--call-on-stage-soft); border: 1px solid var(--avatar-stage-line); background: var(--call-control); }
 .consent b, .result > b { color: var(--call-on-stage); font-size: var(--fs-md); }
+.consentList { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.consentLinks { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; margin: 0; font-size: var(--fs-sm); }
+.consentLinks a { color: var(--call-on-stage); text-decoration: underline; text-underline-offset: 3px; }
+.consentFull summary { cursor: pointer; color: var(--call-on-stage); text-decoration: underline; text-underline-offset: 3px; }
+.consentFull[open] { flex-basis: 100%; }
+.consentFull p { margin: 8px 0 0; font-size: var(--fs-sm); line-height: 1.5; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .primary, .ghost { display: inline-flex; align-items: center; padding: 10px 16px; font: 600 var(--fs) var(--font); cursor: pointer; text-decoration: none; }
 .primary { color: var(--avatar-stage); background: var(--call-on-stage); border: 1px solid var(--call-on-stage); }

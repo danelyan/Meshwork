@@ -25,7 +25,7 @@ export async function notifications(s: SessionPrincipal & { userId: string }): P
       prisma.invitation.findMany({ where, orderBy: { respondedAt: 'desc' }, take: 20, select: { id: true, respondedAt: true, status: true, vacancy: { select: { title: true } } } }),
       prisma.invitation.count({ where: { ...where, respondedAt: { gt: read, lte: through } } }),
     ]);
-    return { through: through.toISOString(), unread, items: rows.map((r) => ({ id: r.id, text: r.status === 'accepted' ? 'Кандидат принял приглашение' : 'Кандидат отклонил приглашение', detail: r.vacancy?.title ?? 'Приглашение без вакансии', href: '/employer/invitations', at: r.respondedAt!.toISOString(), unread: r.respondedAt! > read })) };
+    return { through: through.toISOString(), unread, items: rows.map((r) => ({ id: r.id, text: r.status === 'declined' ? 'Кандидат отклонил приглашение' : 'Кандидат принял приглашение', detail: r.vacancy?.title ?? 'Приглашение без вакансии', href: '/employer/invitations', at: r.respondedAt!.toISOString(), unread: r.respondedAt! > read })) };
   }
   return { items: [], unread: 0, through: through.toISOString() };
 }

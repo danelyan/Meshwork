@@ -9,6 +9,7 @@ export const INVITATION_STATUS_LABEL: Record<InvitationStatus, string> = {
   viewed: 'просмотрено',
   accepted: 'принято',
   declined: 'отклонено',
+  hired: 'нанят',
 };
 
 /** Работодателю: кандидат принял приглашение, но ни контакта, ни настоящей почты нет (Q-35). */

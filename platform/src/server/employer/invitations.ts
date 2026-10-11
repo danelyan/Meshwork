@@ -1,4 +1,4 @@
-// Приглашения (R-E-05, R-C-11, R-C-16, R-E-07). Статусы: sent → viewed → accepted | declined.
+// Приглашения (R-E-05, R-C-11, R-C-16, R-E-07). Статусы: sent → viewed → accepted | declined; accepted → hired (lane hired: работодатель отметил найм).
 // Контакты работодатель видит только после accepted — решает matching/privacy на сервере.
 import type { InvitationStatus } from '@prisma/client';
 import type { z } from 'zod';
@@ -18,6 +18,7 @@ import { loadCompanyTrusts } from './company';
 import { loadPool } from './matching';
 import { contactEmail, toCandidateCard, type CandidateCard } from './privacy';
 import type { InvitationInput } from './schemas';
+import { isDisclosableStatus } from './invitation-status';
 import { DAILY_INVITATION_LIMIT } from './weights';
 
 const OPEN: InvitationStatus[] = ['sent', 'viewed'];
@@ -33,6 +34,8 @@ export interface EmployerInvitationView {
   createdAt: string;
   viewedAt: string | null;
   respondedAt: string | null;
+  /** lane hired: когда отмечен найм (status = hired). */
+  hiredAt?: string | null;
   vacancy: { id: string; title: string } | null;
   candidate: CandidateCard;
 }
@@ -46,6 +49,8 @@ export interface CandidateInvitationView {
   message: string | null;
   createdAt: string;
   respondedAt: string | null;
+  /** lane hired: когда компания отметила найм (status = hired) — финальный этап пути. */
+  hiredAt?: string | null;
   /**
    * Компания и способ связи — до принятия (ТЗ 2.2: «кандидат видит условия до начала общения»).
    * contact: Company.contact, иначе почта отправителя; null — не указан (интерфейс пишет NO_COMPANY_CONTACT).
@@ -162,6 +167,7 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
       createdAt: true,
       viewedAt: true,
       respondedAt: true,
+      hiredAt: true,
       candidateId: true,
       vacancy: { select: { id: true, title: true } },
       candidate: {
@@ -182,7 +188,7 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
   const catalog = await loadCatalog();
   const pool = new Map((await loadPool(catalog)).map((p) => [p.evidence.id, p.claimsPublic]));
   // Имя и контакты — только по принятому приглашению с действующим раскрытием (Г5, ADR 0005): отзыв возвращает псевдоним.
-  const disclosed = await disclosedInvitationIds(rows.filter((r) => r.status === 'accepted').map((r) => r.id));
+  const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
   const accepted = new Set(rows.filter((r) => disclosed.has(r.id)).map((r) => r.candidateId));
   return rows.map((r) => ({
     id: r.id,
@@ -193,6 +199,7 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
     createdAt: r.createdAt.toISOString(),
     viewedAt: r.viewedAt?.toISOString() ?? null,
     respondedAt: r.respondedAt?.toISOString() ?? null,
+    hiredAt: r.hiredAt?.toISOString() ?? null,
     vacancy: r.vacancy,
     candidate: toCandidateCard(
       {
@@ -228,6 +235,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       message: true,
       createdAt: true,
       respondedAt: true,
+      hiredAt: true,
       company: { select: { id: true, name: true, description: true, contact: true } },
       employerProfile: { select: { user: { select: { email: true } } } },
       vacancy: {
@@ -246,7 +254,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
     orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
   });
   const trusts = await loadCompanyTrusts(rows.map((r) => (r.company ?? r.vacancy?.company)?.id).filter((id): id is string => !!id));
-  const disclosed = await disclosedInvitationIds(rows.filter((r) => r.status === 'accepted').map((r) => r.id));
+  const disclosed = await disclosedInvitationIds(rows.filter((r) => isDisclosableStatus(r.status)).map((r) => r.id));
   return rows.map((r) => {
     const co = r.company ?? r.vacancy?.company ?? { id: null, name: 'Компания', description: null, contact: null };
     const senderEmail = r.employerProfile?.user.email;
@@ -269,6 +277,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       message: r.message,
       createdAt: r.createdAt.toISOString(),
       respondedAt: r.respondedAt?.toISOString() ?? null,
+      hiredAt: r.hiredAt?.toISOString() ?? null,
       company,
       redFlags: detectRedFlags({
         texts: [r.message, r.vacancy?.title, r.vacancy?.teamDescription],
@@ -311,6 +320,27 @@ export async function respondInvitation(candidateId: string, invitationId: strin
   void notifyInBackground('invitation_answer', () => notifyEmployerAnswered(invitationId, status === 'accepted'));
   void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
   return { id: invitationId, status };
+}
+
+/**
+ * lane hired: работодатель отмечает найм по своему принятому приглашению (accepted → hired).
+ * Чужое или несуществующее — 404; уже hired — идемпотентно возвращает текущее состояние; иной статус — 409.
+ * Условный update — без гонки с отзывом/повторной отметкой.
+ */
+export async function markInvitationHired(companyId: string, invitationId: string): Promise<{ id: string; status: InvitationStatus; hiredAt: string }> {
+  const inv = await prisma.invitation.findFirst({ where: { id: invitationId, companyId }, select: { status: true, hiredAt: true } });
+  if (!inv) throw errors.notFound('Приглашение не найдено');
+  if (inv.status === 'hired') return { id: invitationId, status: 'hired', hiredAt: (inv.hiredAt ?? new Date()).toISOString() };
+  if (inv.status !== 'accepted') throw errors.conflict('Отметить найм можно только по принятому приглашению');
+  const now = new Date();
+  const r = await prisma.invitation.updateMany({ where: { id: invitationId, companyId, status: 'accepted' }, data: { status: 'hired', hiredAt: now } });
+  if (r.count === 0) {
+    const again = await prisma.invitation.findFirst({ where: { id: invitationId, companyId }, select: { status: true, hiredAt: true } });
+    if (again?.status === 'hired') return { id: invitationId, status: 'hired', hiredAt: (again.hiredAt ?? now).toISOString() };
+    throw errors.conflict('Отметить найм можно только по принятому приглашению');
+  }
+  void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
+  return { id: invitationId, status: 'hired', hiredAt: now.toISOString() };
 }
 
 export async function getPrivacy(candidateId: string): Promise<{ hiddenFromEmployers: boolean }> {

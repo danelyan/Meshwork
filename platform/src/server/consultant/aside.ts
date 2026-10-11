@@ -102,16 +102,40 @@ export interface SceneAsideData {
   hint: { title: string; text: string };
   /** Кандидату — как работает его консультант (скиллы и свои инструкции); у работодателя нет. */
   instructions?: ConsultantSettingsData;
+  /** Идёт знакомство: колонка — только «Заполнение профиля» и «Что я о тебе знаю», остального нет. */
+  onboarding?: { done: number; total: number; current: string | null };
 }
 
-type StepDraft = Omit<JourneyStep, 'state'> & { done: boolean };
+/**
+ * Знакомство не завершено (до итога) — и когда вопрос открыт, и когда необязательные вопросы ждут в чате
+ * (пауза `later`). Владелец 11.10: «надо минимализм держать весь онбординг… две карточки только сделать и
+ * все справа в нижней части и больше ничего».
+ */
+export const onboardingMode = (view: OnboardingView | undefined): boolean => !!view && !view.onboarded;
+
+/** Колонка на время знакомства: прогресс анкеты и ответы (мой вид / для компании), без рынка, файлов и метрик. */
+export function onboardingAside(role: SceneAsideData['role'], view: OnboardingView, known: Pick<SceneAsideData, 'known' | 'memoryPending' | 'memoryLimit'>): SceneAsideData {
+  const current = view.current.kind === 'summary' ? null : view.current.label;
+  // Пауза: следующий вопрос — пункт «+ дополнить» в «Что я о тебе знаю», как в полной колонке.
+  const fill = view.later && current ? { stepId: view.current.id, label: current } : undefined;
+  return { role, steps: [], ...known, docs: null, hint: { title: '', text: '' }, onboarding: { done: view.progress.done, total: view.progress.total, current: view.later ? null : current }, ...(fill ? { fill } : {}) };
+}
+
+/** Аккаунт без роли (первый вопрос знакомства): та же урезанная колонка, только из ответов знакомства. */
+export function guestAside(view: OnboardingView): SceneAsideData {
+  return onboardingAside(view.role === 'employer' ? 'employer' : 'candidate', view, { known: knownFacts(view) });
+}
+
+/** final — завершающий шаг пути (lane hired: «Нанят»): может быть «готов», тогда весь путь пройден. */
+type StepDraft = Omit<JourneyStep, 'state'> & { done: boolean; final?: boolean };
 
 /**
  * Первый незавершённый шаг — «сейчас», до него — «готово», после — «дальше».
  * Последний шаг («приглашения») не бывает «готов»: если все предыдущие пройдены, он «сейчас».
  */
 export function markStates(drafts: StepDraft[]): JourneyStep[] {
-  const nowIdx = drafts.findIndex((d, i) => !d.done || i === drafts.length - 1);
+  const found = drafts.findIndex((d, i) => !d.done || (i === drafts.length - 1 && !d.final));
+  const nowIdx = found === -1 ? drafts.length : found;
   return drafts.map((d, i) => ({ id: d.id, label: d.label, short: d.short, note: d.note, href: d.href, state: i < nowIdx ? 'done' : i === nowIdx ? 'now' : 'next' }));
 }
 
@@ -185,9 +209,12 @@ export interface CandidateFacts {
   confirmed: number;
   category: { specialization: string; grade: string } | null;
   invitations: number;
+  /** lane hired: компания отметила найм по принятому приглашению — финальный этап пути. */
+  hired?: { company: string } | null;
 }
 
 export function candidateSteps(f: CandidateFacts): JourneyStep[] {
+  const hired = f.hired ?? null;
   return markStates([
     { id: 'intro', label: 'Знакомство', short: 'Знакомство', note: f.introNote, href: '/consultant', done: f.intro },
     {
@@ -212,8 +239,9 @@ export function candidateSteps(f: CandidateFacts): JourneyStep[] {
       short: 'Приглашения',
       note: f.invitations > 0 ? invitesWord(f.invitations) : 'работодатели находят тебя сами',
       href: '/invitations',
-      done: false,
+      done: hired !== null,
     },
+    ...(hired ? [{ id: 'hired', label: `Нанят в ${hired.company}`, short: 'Нанят', note: 'компания отметила найм', href: '/invitations', done: true, final: true }] : []),
   ]);
 }
 
@@ -254,6 +282,8 @@ export function hintFor(role: 'candidate' | 'employer', steps: JourneyStep[], vi
   if (role === 'candidate') {
     if (now?.id === 'profile') return { title: 'Профиль', text: 'Каждое утверждение попадает в профиль только после твоего подтверждения. Прикрепи резюме или ссылку - консультант предложит, что подтвердить.' };
     if (now?.id === 'test') return { title: 'Тест на грейд', text: 'Специализацию и грейд определяет только тест, а не резюме и не ответы в чате.' };
+    const hired = steps.find((s) => s.id === 'hired');
+    if (!now && hired) return { title: hired.label, text: 'Путь пройден: компания отметила найм. Профиль больше не показывается в поиске других работодателей.' };
     return { title: 'Приглашения', text: 'Компании сами находят тебя по подтверждённым карточкам и пишут вилку и способ связи - всё это видно до того, как ты ответишь.' };
   }
   if (now?.id === 'needs') return { title: 'Потребность', text: 'Опиши, кто нужен, - и платформа подберёт кандидатов с обоснованием.' };
@@ -277,7 +307,8 @@ export async function loadCandidateDocs(candidateId: string): Promise<AsideDoc[]
 }
 
 export async function loadCandidateAside(candidateId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {
-  const [profileClaims, category, invitations, docs, vacancies, known, instructions] = await Promise.all([
+  if (view && onboardingMode(view)) return onboardingAside('candidate', view, await knownWithMemory({ candidateId }, view));
+  const [profileClaims, category, invitations, docs, vacancies, known, instructions, hiredInv] = await Promise.all([
     prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } }),
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' }, select: { specialization: true, grade: true } }),
     prisma.invitation.count({ where: { candidateId } }),
@@ -285,9 +316,11 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
     prisma.vacancy.findMany({ where: { archivedAt: null }, select: { specialization: true, grade: true } }),
     knownWithMemory({ candidateId }, view),
     loadConsultantSettings(candidateId),
+    prisma.invitation.findFirst({ where: { candidateId, status: 'hired' }, orderBy: { hiredAt: 'desc' }, select: { company: { select: { name: true } }, vacancy: { select: { company: { select: { name: true } } } } } }),
   ]);
   const intro = introDone(view);
-  const steps = candidateSteps({ intro, introNote: introNote(view, intro, false), confirmed: profileClaims, category, invitations });
+  const hired = hiredInv ? { company: hiredInv.company?.name ?? hiredInv.vacancy?.company.name ?? 'компанию' } : null;
+  const steps = candidateSteps({ intro, introNote: introNote(view, intro, false), confirmed: profileClaims, category, invitations, hired });
   const market = marketRows(vacancies, (spec, grade) => category?.specialization === spec && category.grade === grade);
   const mine = vacancies.filter((v) => category?.specialization === v.specialization && category.grade === v.grade).length;
   const stats = candidateStats({ confirmed: profileClaims, category, vacancies: vacancies.length, mine, invitations });
@@ -297,6 +330,7 @@ export async function loadCandidateAside(candidateId: string, view: OnboardingVi
 }
 
 export async function loadEmployerAside(employerProfileId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {
+  if (view && onboardingMode(view)) return onboardingAside('employer', view, await knownWithMemory({ employerProfileId }, view));
   const ctx = await loadEmployerContext(employerProfileId);
   const [vacancies, invitations, categories, known] = await Promise.all([
     listVacancies(ctx.companyId),

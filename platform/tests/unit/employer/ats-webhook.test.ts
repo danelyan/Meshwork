@@ -17,6 +17,10 @@ describe('buildAtsWebhook', () => {
     expect(verifySignature(h.body + ' ', h.headers['X-FSP-Signature']!, SECRET)).toBe(false);
     expect(buildAtsWebhook(change, SECRET, new Date('2027-01-01')).id).toBe(h.id);
     expect(buildAtsWebhook({ ...change, status: 'declined' }, SECRET, NOW).id).not.toBe(h.id);
+    // lane hired: найм — отдельное событие, контакты по-прежнему открыты
+    const hired = buildAtsWebhook({ ...change, status: 'hired' }, SECRET, NOW);
+    expect(hired.id).not.toBe(h.id);
+    expect(JSON.parse(hired.body).data).toMatchObject({ status: 'hired', contactsOpen: true });
   });
 
   it('в теле нет id кандидата, имени и контактов: псевдоним и флаг', () => {

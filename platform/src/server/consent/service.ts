@@ -154,7 +154,7 @@ export async function grantConsent(userId: string, input: GrantInput): Promise<C
     const candidateId = await candidateOfUser(userId);
     const inv = candidateId ? await prisma.invitation.findFirst({ where: { id: invitationId, candidateId }, select: { status: true } }) : null;
     if (!inv) throw errors.notFound('Приглашение не найдено');
-    if (inv.status !== 'accepted') throw errors.conflict('Раскрыть данные можно, только приняв приглашение');
+    if (inv.status !== 'accepted' && inv.status !== 'hired') throw errors.conflict('Раскрыть данные можно, только приняв приглашение');
     context = { invitationId };
   }
   const rows = await rowsOf(userId, [kind]);
@@ -219,7 +219,7 @@ export async function revokeConsent(userId: string, kind: ConsentKindName, opts:
 export async function disclosedCandidateIds(companyId: string, candidateIds: readonly string[]): Promise<Set<string>> {
   if (candidateIds.length === 0) return new Set();
   const invs = await prisma.invitation.findMany({
-    where: { companyId, candidateId: { in: [...candidateIds] }, status: 'accepted' },
+    where: { companyId, candidateId: { in: [...candidateIds] }, status: { in: ['accepted', 'hired'] } },
     select: { id: true, candidateId: true },
   });
   if (invs.length === 0) return new Set();

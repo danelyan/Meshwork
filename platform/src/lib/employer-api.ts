@@ -48,6 +48,9 @@ export const listQuestionsApi = async (candidateId: string) =>
 export const askQuestionApi = (candidateId: string, text: string) => postJson<EmployerQuestionDto>('/api/employer/questions', { candidateId, text });
 
 /** accept — с версией согласия на раскрытие имени и контактов этому работодателю (Г5, ADR 0005). */
+/** lane hired: работодатель отмечает найм по принятому приглашению (accepted → hired). */
+export const markHiredApi = (id: string) =>
+  postJson<{ id: string; status: 'hired'; hiredAt: string }>(`/api/employer/invitations/${encodeURIComponent(id)}/hire`, {});
 export const respondInvitationApi = (id: string, action: 'accept' | 'decline', disclosureVersion?: string) =>
   postJson<{ id: string; status: string }>(`/api/invitations/${encodeURIComponent(id)}`, { action, ...(disclosureVersion ? { disclosureVersion } : {}) });
 export const setContactApi = (contact: string) => postJson<{ contact: string | null }>('/api/profile/contact', { contact });

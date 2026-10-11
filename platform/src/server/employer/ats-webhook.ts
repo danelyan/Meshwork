@@ -8,6 +8,7 @@ import { disclosedInvitationIds } from '../consent/service';
 import { prisma } from '../db';
 import { getEnv } from '../env';
 
+import { isDisclosableStatus } from './invitation-status';
 import { pseudonym } from './privacy';
 
 export const ATS_EVENT = 'invitation.status_changed';
@@ -15,11 +16,11 @@ export const ATS_TIMEOUT_MS = 5_000;
 
 export interface AtsStatusChange {
   invitationId: string;
-  status: 'sent' | 'viewed' | 'accepted' | 'declined';
+  status: 'sent' | 'viewed' | 'accepted' | 'declined' | 'hired';
   companyId: string;
   vacancyId: string | null;
   candidateId: string;
-  /** Контакты открыты: accepted и действующее раскрытие (Г5). Не задано — по статусу (accepted). */
+  /** Контакты открыты: accepted/hired и действующее раскрытие (Г5). Не задано — по статусу (accepted/hired). */
   contactsOpen?: boolean;
 }
 
@@ -37,9 +38,9 @@ export function signBody(body: string, secret: string): string {
 
 /** Тело и заголовки вебхука (X-FSP-Event, X-FSP-Signature, X-FSP-Event-Id). Чистая функция. */
 export function buildAtsWebhook(change: AtsStatusChange, secret: string, now = new Date()): AtsWebhook {
-  const contactsOpen = change.contactsOpen ?? change.status === 'accepted';
+  const contactsOpen = change.contactsOpen ?? isDisclosableStatus(change.status);
   // Отзыв раскрытия при прежнем статусе accepted — отдельное событие со своим id (иначе ATS отбросит его как повтор).
-  const revoked = change.status === 'accepted' && !contactsOpen ? ':disclosure_revoked' : '';
+  const revoked = isDisclosableStatus(change.status) && !contactsOpen ? ':disclosure_revoked' : '';
   const id = `evt_${createHash('sha256').update(`${ATS_EVENT}:${change.invitationId}:${change.status}${revoked}`).digest('hex').slice(0, 32)}`;
   const body = JSON.stringify({
     id,
@@ -96,6 +97,6 @@ export async function notifyAtsStatusChanged(invitationId: string): Promise<void
   if (!url || !secret) return;
   const inv = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { id: true, status: true, companyId: true, vacancyId: true, candidateId: true } });
   if (!inv?.companyId) return;
-  const contactsOpen = inv.status === 'accepted' && (await disclosedInvitationIds([inv.id])).has(inv.id);
+  const contactsOpen = isDisclosableStatus(inv.status) && (await disclosedInvitationIds([inv.id])).has(inv.id);
   await sendAtsWebhook({ invitationId: inv.id, status: inv.status, companyId: inv.companyId, vacancyId: inv.vacancyId, candidateId: inv.candidateId, contactsOpen }, { url, secret });
 }

@@ -1,9 +1,11 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { SceneAside } from '@/components/consultant/SceneAside';
-import { candidateSteps, employerSteps, knownFacts, markStates, marketRows } from '@/server/consultant/aside';
+import { candidateSteps, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
 import type { OnboardingView } from '@/server/onboarding/types';
 
+// MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 // MemoryCard uses the App Router for soft updates after editing onboarding facts.
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -21,6 +23,13 @@ describe('journey steps', () => {
     expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'now']);
     expect(s[2]!.note).toBe('Backend · Middle');
     expect(s[3]!.note).toBe('2 приглашения');
+  });
+  it('lane hired: найм — финальный этап «Нанят в …», весь путь пройден, подсказка про найм', () => {
+    const s = candidateSteps({ ...base, intro: true, confirmed: 1, category: { specialization: 'backend', grade: 'middle' }, invitations: 1, hired: { company: 'Северный Поток' } });
+    expect(s.map((x) => x.id)).toEqual(['intro', 'profile', 'test', 'invites', 'hired']);
+    expect(s.map((x) => x.state)).toEqual(['done', 'done', 'done', 'done', 'done']);
+    expect(s[4]!.label).toBe('Нанят в Северный Поток');
+    expect(hintFor('candidate', s, undefined).title).toBe('Нанят в Северный Поток');
   });
   it('links candidate steps to existing sections', () => {
     expect(candidateSteps(base).map((x) => x.href)).toEqual(['/consultant', '/profile', '/test', '/invitations']);
@@ -105,5 +114,36 @@ describe('known facts and market', () => {
     expect(screen.getByRole('button', { name: /Что я знаю о компании · 1/ })).toBeTruthy();
     expect(screen.getByText('7707083893')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Кандидаты в базе · 4/ })).toBeTruthy();
+  });
+});
+
+// Минимализм на всё знакомство (владелец 11.10): справа только прогресс анкеты и «Что я о тебе знаю».
+describe('колонка на время знакомства', () => {
+  const view = (over: Partial<OnboardingView>) =>
+    ({ role: 'candidate', later: false, onboarded: false, progress: { done: 2, total: 11 }, current: { id: 'grade', kind: 'one', label: 'Грейд' }, summary: null,
+      history: [{ stepId: 'goal', label: 'Цель', answer: 'Подтвердить грейд' }, { stepId: 'specialization', label: 'Направление', answer: 'Engineering' }], ...over }) as unknown as OnboardingView;
+
+  it('режим знакомства — до итога, в том числе на паузе (необязательные вопросы ждут в чате)', () => {
+    expect(onboardingMode(view({}))).toBe(true);
+    expect(onboardingMode(view({ later: true }))).toBe(true);
+    expect(onboardingMode(view({ onboarded: true }))).toBe(false);
+    expect(onboardingMode(undefined)).toBe(false);
+  });
+
+  it('две карточки: заполнение профиля с цифрами и ответы; без пути, рынка, файлов и настроек', () => {
+    render(<SceneAside data={guestAside(view({}))} />);
+    expect(screen.getByTestId('aside-progress').textContent).toContain('Заполнение профиля · 2 из 11');
+    expect(screen.getByRole('progressbar', { name: 'Заполнено 2 из 11' })).toBeDefined();
+    expect(screen.getByTestId('aside-progress').textContent).toContain('сейчас: грейд'.replace('сейчас', 'Сейчас'));
+    expect(screen.getByTestId('aside-known').textContent).toContain('Подтвердить грейд');
+    expect(screen.queryByRole('button', { name: '+ добавить' })).toBeNull();
+    for (const id of ['market', 'docs', 'instructions']) expect(screen.queryByTestId(`aside-${id}`)).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Твой путь' })).toBeNull();
+  });
+
+  it('на паузе — «+ дополнить» следующим вопросом вместо строки «сейчас»', () => {
+    render(<SceneAside data={guestAside(view({ later: true }))} />);
+    expect(screen.getByRole('button', { name: '+ дополнить: грейд' })).toBeDefined();
+    expect(screen.getByTestId('aside-progress').textContent).not.toContain('Сейчас');
   });
 });

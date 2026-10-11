@@ -6,14 +6,14 @@ import type { AgentTool } from '../types';
 import { GRADES } from '@/lib/grades';
 
 const Input = z.object({
-  status: z.enum(['sent', 'viewed', 'accepted', 'declined', 'all']).default('sent').describe('sent — ждут ответа кандидата (по умолчанию); viewed — просмотрены; all — все'),
+  status: z.enum(['sent', 'viewed', 'accepted', 'declined', 'hired', 'all']).default('sent').describe('sent — ждут ответа кандидата (по умолчанию); viewed — просмотрены; hired — компания отметила найм (финальный этап); all — все'),
   limit: z.number().int().min(1).max(10).default(5),
 });
 const Output = z.object({
   invitations: z.array(
     z.object({
       invitationId: z.string(),
-      status: z.enum(['sent', 'viewed', 'accepted', 'declined']),
+      status: z.enum(['sent', 'viewed', 'accepted', 'declined', 'hired']),
       companyName: z.string().nullable(),
       /** Приглашение может быть без потребности (R-E-05) — тогда поля вакансии null. */
       vacancyTitle: z.string().nullable(),
@@ -80,7 +80,7 @@ export const getInvitations: AgentTool<z.infer<typeof Input>, z.infer<typeof Out
         createdAt: r.createdAt.toISOString(),
       })),
       pending,
-      note: 'Принять или отклонить - кнопка кандидата. Способ связи компании виден сразу; компания увидит контакт кандидата только после принятия. Вилка - предложение работодателя, не рынок.',
+      note: 'Принять или отклонить - кнопка кандидата. hired - компания отметила найм по принятому приглашению: это завершённый этап пути, кандидат нанят в эту компанию. Способ связи компании виден сразу; компания увидит контакт кандидата только после принятия. Вилка - предложение работодателя, не рынок.',
     };
   },
 };

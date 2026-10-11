@@ -75,7 +75,7 @@
 .mapNote { padding: 16px 18px; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
 .saveButton { justify-self: start; min-height: 38px; padding: 6px 10px; background: transparent; border: 1px solid var(--line); font-family: var(--mono); font-size: var(--fs-sm); }
 .saveButton[aria-pressed='true'] { color: var(--blue); border-color: var(--blue); }
-.timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 12px 0; }
+.timeline { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 16px; margin: 12px 0; }
 .timeline > div { border-top: 2px solid var(--line); padding-top: 10px; display: grid; gap: 4px; color: var(--muted); font-family: var(--mono); font-size: var(--fs-sm); }
 .timeline > div[data-complete='true'] { border-color: var(--blue); color: var(--ink); }
 .timeline small { color: var(--muted); font-size: var(--fs-xs); }
@@ -198,6 +198,7 @@
 .invitationStatus[data-status='sent'] { background: var(--blue); border-color: var(--blue); color: var(--on-ink); }
 .invitationStatus[data-status='accepted'] { background: var(--ink); color: var(--on-ink); }
 .invitationStatus[data-status='declined'] { border-color: var(--line); color: var(--muted); }
+.invitationStatus[data-status='hired'] { background: var(--blue); border-color: var(--ink); color: var(--on-ink); }
 .invitationDialog { width: min(520px, calc(100vw - 32px)); max-height: calc(100svh - 40px); overflow: auto; padding: 26px; border: 1px solid var(--glass-border); background: var(--employer-modal, var(--glass-strong)); color: var(--ink); box-shadow: var(--auth-shadow); backdrop-filter: blur(26px) saturate(1.6); }
 .invitationDialog::backdrop { background: var(--backdrop); backdrop-filter: blur(10px) saturate(1.2); }
 .dialogHeading { display: flex; justify-content: space-between; align-items: center; color: var(--blue); }

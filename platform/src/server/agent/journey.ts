@@ -11,7 +11,7 @@ import { prisma } from '@/server/db';
  * Входящее приглашение важнее всего остального: на него ждут ответа.
  */
 export const JOURNEY_STEPS = ['onboarding', 'documents', 'confirm_claims', 'test', 'vacancies', 'defense'] as const;
-export type JourneyStep = (typeof JOURNEY_STEPS)[number] | 'invitations' | 'done';
+export type JourneyStep = (typeof JOURNEY_STEPS)[number] | 'invitations' | 'hired' | 'done';
 
 /** Подсказка модели: что предложить на каждом шаге и каким инструментом. */
 export const STEP_HINT: Record<JourneyStep, string> = {
@@ -22,6 +22,7 @@ export const STEP_HINT: Record<JourneyStep, string> = {
   vacancies: 'Предложи посмотреть вакансии платформы с объяснением покрытия (recommend_targets).',
   defense: 'Предложи поднять уровень ключевого утверждения: защита в чате или задание (explain_evidence → start_verification).',
   invitations: 'Есть входящее приглашение без ответа: предложи разобрать его (get_invitations → explain_invitation). Принять или отклонить — кнопка кандидата.',
+  hired: 'Кандидат нанят: компания отметила найм по принятому приглашению (финальный этап пути, hiredCompany). Поздравь коротко и спроси, чем помочь дальше; профиль больше не показывается в поиске других работодателей.',
   done: 'Основные шаги пройдены: спроси, чем помочь дальше, одним вопросом.',
 };
 
@@ -31,11 +32,13 @@ export interface JourneyState {
   hasCategory: boolean;
   /** null — у кандидата нет аккаунта входа (старый демо-кандидат) или онбординг неизвестен. */
   onboardedAt: Date | null;
+  /** lane hired: компания, отметившая найм; null — найма нет. */
+  hired: { company: string; at: string | null } | null;
   nextStep: JourneyStep;
 }
 
 export async function journeyState(candidateId: string): Promise<JourneyState> {
-  const [user, sources, uploads, byStatus, category, targets, defended, pending] = await Promise.all([
+  const [user, sources, uploads, byStatus, category, targets, defended, pending, hiredInv] = await Promise.all([
     prisma.user.findUnique({ where: { candidateId }, select: { onboardedAt: true } }),
     prisma.source.count({ where: { candidateId } }),
     prisma.upload.count({ where: { candidateId } }),
@@ -44,7 +47,9 @@ export async function journeyState(candidateId: string): Promise<JourneyState> {
     prisma.recommendation.count({ where: { candidateId, kind: 'target' } }),
     prisma.defenseSession.count({ where: { candidateId, status: 'completed' } }),
     prisma.invitation.count({ where: { candidateId, status: 'sent' } }),
+    prisma.invitation.findFirst({ where: { candidateId, status: 'hired' }, orderBy: { hiredAt: 'desc' }, select: { hiredAt: true, company: { select: { name: true } }, vacancy: { select: { company: { select: { name: true } } } } } }),
   ]);
+  const hired = hiredInv ? { company: hiredInv.company?.name ?? hiredInv.vacancy?.company.name ?? 'Компания', at: hiredInv.hiredAt?.toISOString() ?? null } : null;
   const n = (s: string) => byStatus.find((r) => r.status === s)?._count._all ?? 0;
   const confirmed = n('confirmed') + n('edited');
   const proposed = n('proposed');
@@ -60,12 +65,13 @@ export async function journeyState(candidateId: string): Promise<JourneyState> {
   const firstOpen = JOURNEY_STEPS.find((s) => !steps[s]);
   // Подтверждённые есть, но висят новые черновики — это не блокер для теста и вакансий.
   const next: JourneyStep =
-    pending > 0 ? 'invitations' : firstOpen === 'confirm_claims' && confirmed > 0 ? (JOURNEY_STEPS.slice(3).find((s) => !steps[s]) ?? 'confirm_claims') : (firstOpen ?? 'done');
+    hired ? 'hired' : pending > 0 ? 'invitations' : firstOpen === 'confirm_claims' && confirmed > 0 ? (JOURNEY_STEPS.slice(3).find((s) => !steps[s]) ?? 'confirm_claims') : (firstOpen ?? 'done');
   return {
     steps,
     counts: { sources: sources + uploads, proposed, confirmed, pendingInvitations: pending, defended },
     hasCategory: Boolean(category),
     onboardedAt: user?.onboardedAt ?? null,
+    hired,
     nextStep: next,
   };
 }

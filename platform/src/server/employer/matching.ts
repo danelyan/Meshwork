@@ -147,6 +147,15 @@ export async function acceptedCandidateIds(companyId: string, candidateIds: stri
   return disclosedCandidateIds(companyId, candidateIds);
 }
 
+/** lane hired: кандидаты с приглашением в статусе hired от любой другой компании (или без компании). */
+export async function hiredByOtherCompanies(companyId: string): Promise<Set<string>> {
+  const rows = await prisma.invitation.findMany({
+    where: { status: 'hired', OR: [{ companyId: null }, { companyId: { not: companyId } }] },
+    select: { candidateId: true },
+  });
+  return new Set(rows.map((r) => r.candidateId));
+}
+
 async function lastInvitations(companyId: string, candidateIds: string[]) {
   const rows = await prisma.invitation.findMany({
     where: { companyId, candidateId: { in: candidateIds } },
@@ -166,7 +175,9 @@ async function run(
   limit: number,
   requireCoverage = false,
 ): Promise<{ total: number; items: MatchItem[]; hints?: RelaxHint[] }> {
-  const pool = await loadPool(catalog);
+  // lane hired: кандидат, нанятый другой компанией, уходит из выдачи до ранжирования (у нанявшей — остаётся).
+  const hiredElsewhere = await hiredByOtherCompanies(companyId);
+  const pool = (await loadPool(catalog)).filter((p) => !hiredElsewhere.has(p.evidence.id));
   const byId = new Map(pool.map((p) => [p.evidence.id, p]));
   // Вариант 2a (11.10): индекс честности всего пула до ранжирования; high без подтверждения тестом или созвоном —
   // категория не учитывается (ranking.ts integrityPenalty). Выключатель — TEST_INTEGRITY_RANKING.

@@ -350,6 +350,8 @@ enum InvitationStatus {
   viewed
   accepted
   declined
+  /// lane hired: работодатель отметил найм (только из accepted), финальный этап пути кандидата
+  hired
 }
 
 model Recommendation {
@@ -448,6 +450,8 @@ model Invitation {
   employerProfile   EmployerProfile? @relation(fields: [employerProfileId], references: [id], onDelete: SetNull)
   viewedAt          DateTime?
   respondedAt       DateTime?
+  /// lane hired: когда работодатель отметил найм (status = hired)
+  hiredAt           DateTime?
 
   @@index([candidateId, status])
   @@index([companyId, createdAt])

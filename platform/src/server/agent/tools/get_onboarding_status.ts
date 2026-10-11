@@ -44,7 +44,7 @@ const ProfileSchema = z.object({
   fspParticipation: z.enum(['prize', 'participant', 'none']).nullable().catch(null),
 });
 
-const StepEnum = z.enum([...JOURNEY_STEPS, 'invitations', 'done']);
+const StepEnum = z.enum([...JOURNEY_STEPS, 'invitations', 'hired', 'done']);
 /** Private, unverified user statements. Malformed legacy JSON degrades to empty values. */
 const IntakeSchema = z.object({
   experience: z.enum(['learning', 'underOne', 'oneToThree', 'threeToFive', 'fivePlus']).nullable().catch(null),
@@ -69,6 +69,8 @@ const Output = z.object({
   onboarding: z.object({ finished: z.boolean(), currentStep: z.string().nullable(), skipped: z.array(z.string()) }),
   steps: z.object(Object.fromEntries(JOURNEY_STEPS.map((s) => [s, z.boolean()])) as Record<(typeof JOURNEY_STEPS)[number], z.ZodBoolean>),
   counts: z.object({ sources: z.number().int(), proposed: z.number().int(), confirmed: z.number().int(), pendingInvitations: z.number().int(), defended: z.number().int() }),
+  /** lane hired: компания отметила найм — финальный этап пути; null — найма нет. */
+  hiredCompany: z.string().nullable().default(null),
   nextStep: StepEnum,
   hint: z.string(),
   note: z.string(),
@@ -108,6 +110,7 @@ export const getOnboardingStatus: AgentTool<Record<string, never>, z.infer<typeo
       },
       steps: journey.steps,
       counts: journey.counts,
+      hiredCompany: journey.hired?.company ?? null,
       nextStep: journey.nextStep,
       hint: STEP_HINT[journey.nextStep],
       note: 'Анкета - со слов кандидата. Категорию даёт только тест; предлагай один следующий шаг, не все сразу.',

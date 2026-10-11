@@ -3503,6 +3503,62 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "500":
           $ref: "#/components/responses/InternalError"
+  "/api/employer/invitations/{id}/hire":
+    post:
+      operationId: postEmployerInvitationsIdHire
+      tags:
+        - employer
+      summary: "Отметить найм"
+      description: "Финальный этап пути кандидата: работодатель отмечает найм по своему принятому приглашению (accepted → hired, `hiredAt`). Повторная отметка идемпотентна. Нанятый кандидат не показывается в поиске и подборках других компаний.\n\nНужна сессия работодателя (кука cid)."
+      security:
+        -
+          cookieAuth: []
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Приглашение со статусом hired"
+          content:
+            "application/json":
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      - hired
+                  hiredAt:
+                    type: string
+                    description: "Время отметки найма, ISO 8601"
+                required:
+                  - id
+                  - status
+                  - hiredAt
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Приглашение чужое или не существует"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: "Приглашение не в статусе accepted; не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)"
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "500":
+          $ref: "#/components/responses/InternalError"
   "/api/employer/needs/{id}/project":
     get:
       operationId: getEmployerNeedsIdProject

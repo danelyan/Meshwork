@@ -25,6 +25,8 @@ export interface ComposerProps {
   disabled?: boolean;
   /** Сообщение отправляется: кнопка показывает спиннер, не меняя размера. */
   sending?: boolean;
+  /** Остановить ход: пока `sending`, на месте «Отправить» — кнопка «Стоп» того же размера. */
+  onStop?: () => void;
   multiline?: boolean;
   maxLength?: number;
   inputMode?: 'numeric' | 'text';
@@ -64,6 +66,7 @@ export function Composer({
   placeholder,
   disabled,
   sending,
+  onStop,
   multiline,
   maxLength,
   inputMode,
@@ -183,9 +186,15 @@ export function Composer({
             <PhoneIcon />
           </button>
         )}
-        <Button type="submit" variant="primary" className={styles.send} disabled={!canSend} loading={sending}>
-          {sendLabel}
-        </Button>
+        {sending && onStop ? (
+          <Button type="button" variant="primary" className={styles.send} onClick={onStop} aria-label="Остановить ответ" data-testid="composer-stop">
+            Стоп
+          </Button>
+        ) : (
+          <Button type="submit" variant="primary" className={styles.send} disabled={!canSend} loading={sending}>
+            {sendLabel}
+          </Button>
+        )}
       </div>
       {attachments && (
         <VisuallyHidden>

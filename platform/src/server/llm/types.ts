@@ -77,6 +77,11 @@ export interface CompleteRequest {
    * игнорируют, вызывающий получает обычный результат целиком. Начавшийся поток клиент LLM не ретраит.
    */
   onJsonDelta?: (chunk: string) => void;
+  /**
+   * Попытка успела показать дельты и упала, клиент LLM идёт на повтор: показанный текст убрать
+   * (reply-stream `discard`). Есть колбэк — повтор снова стримит дельтами; нет — повтор без дельт.
+   */
+  onDiscard?: () => void;
 }
 
 export interface CompleteResult {

@@ -29,8 +29,10 @@ export interface ToolContext {
   conversationId: string;
   emit(e: AgentEvent): void;
   llm: LlmProvider;
-  /** Разрыв SSE: инструменты с сетью/LLM обязаны уважать. */
+  /** Стоп хода (кнопка «Стоп», таймаут хода): инструменты с сетью/LLM обязаны уважать. Разрыв SSE ход не останавливает. */
   signal?: AbortSignal;
+  /** Клиент ушёл или стоп: искусственную нарезку реплики не ждать (reply-stream `pace`). */
+  pace?: AbortSignal;
 }
 
 /** C — контекст роли: кандидат (ToolContext) или работодатель (employer/types.ts). */
@@ -71,4 +73,6 @@ export interface TurnOptions {
   /** Суточный бюджет токенов; по умолчанию env LLM_DAILY_TOKEN_BUDGET. 0 — без лимита. */
   dailyTokenBudget?: number;
   now?: () => Date;
+  /** Клиент ушёл или стоп: нарезку реплики не ждать, но `message` отдать и сохранить. */
+  pace?: AbortSignal;
 }

@@ -53,15 +53,40 @@ export interface ReplyStream {
   readonly id: string;
   /** Колбэк для CompleteRequest.onDelta. */
   onDelta(text: string): void;
-  /** Модель ответила вызовом инструментов: показанный текст не ответ. */
+  /** Модель ответила вызовом инструментов (или повтор попытки): показанный текст не ответ. */
   discard(): void;
-  /** Итог реплики: если дельт не было — нарезать текст, затем `message`. */
-  finish(text: string): Promise<void>;
+  /**
+   * Итог реплики: если дельт не было — нарезать текст, затем `message`. Возвращает текст, который
+   * надо сохранить как ответ: весь `text`; при стопе посреди нарезки — показанный кусок; null — ничего
+   * не показано (стоп до первого куска).
+   */
+  finish(text: string): Promise<string | null>;
+  /**
+   * Стоп посреди дельт модели: показанный кусок становится ответом — `message` с ним.
+   * Возвращает этот текст (сохранить в БД) или null, если дельт не было.
+   */
+  stop(): string | null;
 }
 
-export function createReplyStream(emit: ReplyEmit, signal?: AbortSignal, delay: () => number = chunkDelayMs): ReplyStream {
+/**
+ * `signal` — стоп хода (кнопка «Стоп», таймаут): дельты больше не шлём, нарезку обрываем.
+ * `pace` — когда нарезку не ждать (по умолчанию тот же `signal`; маршрут передаёт «клиент ушёл
+ * или стоп»): при разрыве соединения паузы не нужны, но `message` с полным текстом отдаём.
+ */
+export function createReplyStream(
+  emit: ReplyEmit,
+  signal?: AbortSignal,
+  delay: () => number = chunkDelayMs,
+  pace: AbortSignal | undefined = signal,
+): ReplyStream {
   let id = nextId();
   let streamed = false;
+  let acc = '';
+  const reset = () => {
+    streamed = false;
+    acc = '';
+    id = nextId();
+  };
   return {
     get id() {
       return id;
@@ -69,25 +94,46 @@ export function createReplyStream(emit: ReplyEmit, signal?: AbortSignal, delay: 
     onDelta(text) {
       if (!text || signal?.aborted) return;
       streamed = true;
+      acc += text;
       emit({ type: 'delta', id, text });
     },
     discard() {
       if (streamed) emit({ type: 'discard', id });
-      streamed = false;
-      id = nextId();
+      reset();
     },
     async finish(text) {
+      let shown = '';
+      let cut = false;
       if (!streamed) {
         for (const chunk of splitChunks(text)) {
-          if (signal?.aborted) return;
+          if (signal?.aborted) {
+            cut = true;
+            break;
+          }
+          if (pace?.aborted) break;
           emit({ type: 'delta', id, text: chunk });
-          await sleep(delay(), signal);
+          shown += chunk;
+          await sleep(delay(), pace);
         }
       }
-      if (signal?.aborted) return;
+      const out = cut ? shown.trim() : text;
+      if (!out) {
+        reset();
+        return null;
+      }
+      emit({ type: 'message', id, text: out });
+      reset();
+      return out;
+    },
+    stop() {
+      const text = acc.trim();
+      if (!streamed || !text) {
+        reset();
+        return null;
+      }
       emit({ type: 'message', id, text });
-      streamed = false;
-      id = nextId();
+      reset();
+      return text;
     },
   };
 }

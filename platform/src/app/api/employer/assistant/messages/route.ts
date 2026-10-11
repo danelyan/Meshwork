@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { runEmployerTurn } from '@/server/agent/employer/loop';
 import type { EmployerAgentEvent } from '@/server/agent/employer/types';
 import { encodeSse } from '@/server/agent/events';
-import { acquireConversationLock } from '@/server/agent/lock';
+import { acquireConversationLock, LOCK_MAX_HOLD_MS } from '@/server/agent/lock';
 import { enrichEvent } from '@/server/agent/employer/names';
 import { memoryExtractionEnabled, scheduleMemoryExtraction } from '@/server/consultant/memory';
 import { assertEmployerConsents } from '@/server/consent/service';
@@ -46,12 +46,15 @@ export const POST = withErrors(async (req: Request) => {
   if (!lock) throw new AppError('busy', 'Помощник ещё отвечает в этом разговоре - дождись окончания', 409);
 
   const encoder = new TextEncoder();
-  const signal = req.signal;
+  // Разрыв соединения ход не прерывает (как у консультанта): реплика дописывается и сохраняется.
+  // Останавливает только таймаут хода; кнопки «Стоп» у помощника пока нет.
+  const turn = new AbortController();
+  const signal = turn.signal;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let closed = false;
       const send = (e: EmployerAgentEvent) => {
-        if (closed) return;
+        if (closed || req.signal.aborted) return;
         try {
           controller.enqueue(encoder.encode(encodeSse(e)));
         } catch {
@@ -70,6 +73,16 @@ export const POST = withErrors(async (req: Request) => {
           }
         });
       };
+      const turnTimer = setTimeout(() => turn.abort(new Error('turn_timeout')), LOCK_MAX_HOLD_MS - 10_000);
+      // `: ping` раз в 15 с, пока ход идёт (парсер lib/sse.ts комментарии игнорирует).
+      const heartbeat = setInterval(() => {
+        if (closed || req.signal.aborted) return;
+        try {
+          controller.enqueue(encoder.encode(': ping\n\n'));
+        } catch {
+          closed = true;
+        }
+      }, 15_000);
       try {
         emit({ type: 'conversation', id: conversationId });
         await runEmployerTurn({ employerProfileId, conversationId, text: body.text }, emit, signal);
@@ -85,6 +98,8 @@ export const POST = withErrors(async (req: Request) => {
           emit({ type: 'error', code, message });
         }
       } finally {
+        clearTimeout(turnTimer);
+        clearInterval(heartbeat);
         emit({ type: 'done' });
         await chain;
         await lock.release();

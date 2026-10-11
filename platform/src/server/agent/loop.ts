@@ -53,7 +53,7 @@ export async function runTurn(
     opts.llm ?? getLlm({ candidateId, conversationId, onQueue: (position) => emit({ type: 'queue', position }) });
   const registry = withWebSearchGate(opts.tools ?? defaultTools);
   const specs = toolSpecs(registry);
-  const ctx: ToolContext = { candidateId, conversationId, emit, llm, ...(signal ? { signal } : {}) };
+  const ctx: ToolContext = { candidateId, conversationId, emit, llm, ...(signal ? { signal } : {}), ...(opts.pace ? { pace: opts.pace } : {}) };
 
   // Онбординг брошен («Настроить позже»): консультант напоминает: продолжим здесь же, кнопкой вверху ленты.
   // Ход из самой ленты онбординга (вопрос, шаг «Документы») — не брошен, напоминать не о чем.
@@ -78,16 +78,14 @@ export async function runTurn(
   // Свободный вопрос посреди онбординга без модели (заглушка, демо): честная заготовка и возврат к шагу.
   if (input.onboarding && !pipeline && (demo || (!opts.llm && getEnv().LLM_PROVIDER === 'stub'))) {
     const text = asideCannedReply(input.onboarding);
-    await saveMessage(conversationId, { role: 'assistant', content: text });
-    await createReplyStream(emit, signal).finish(text);
+    await finishAndSave(conversationId, createReplyStream(emit, signal, undefined, opts.pace), text);
     return;
   }
   if (demo) {
     // Демо без ключей: модели нет, ответ — шаблоны по данным платформы (не сбой, без «упрощённого режима»).
     let text = await demoReply({ candidateId, text: input.text, ...(pipeline ? { pipeline } : {}) });
     if (resume && !(await remindedResume(conversationId))) text = `${text}\n${resumeLine()}`;
-    await saveMessage(conversationId, { role: 'assistant', content: text });
-    await createReplyStream(emit, signal).finish(text);
+    await finishAndSave(conversationId, createReplyStream(emit, signal, undefined, opts.pace), text);
     return;
   }
 
@@ -103,7 +101,7 @@ export async function runTurn(
   // Бюджет истории; после ошибки «не влезло в контекст» — один повтор с втрое меньшим.
   let historyChars = HISTORY_TOTAL_MAX_CHARS;
   // Реплика стримится дельтами (если провайдер умеет), итог — message с тем же id.
-  const reply = createReplyStream(emit, signal);
+  const reply = createReplyStream(emit, signal, undefined, opts.pace);
 
   try {
     for (;;) {
@@ -119,6 +117,8 @@ export async function runTurn(
         maxTokens: TURN_MAX_TOKENS,
         temperature: 0.3,
         onDelta: reply.onDelta,
+        // Повтор попытки после показанных дельт: показанный кусок убрать, повтор стримится заново.
+        onDiscard: reply.discard,
       };
       let res;
       try {
@@ -154,11 +154,16 @@ export async function runTurn(
       }
 
       const text = (res.text ?? '').trim() || EMPTY_REPLY;
-      await saveMessage(conversationId, { role: 'assistant', content: text });
-      await reply.finish(text);
+      await finishAndSave(conversationId, reply, text);
       return;
     }
   } catch (err) {
+    // Стоп (кнопка или таймаут хода) посреди дельт: показанный кусок — ответ ассистента.
+    if (signal?.aborted) {
+      const partial = reply.stop();
+      if (partial) await saveMessage(conversationId, { role: 'assistant', content: partial });
+      return;
+    }
     reply.discard();
     if (signal?.aborted || (err instanceof LlmError && err.code === 'aborted')) return;
     if (err instanceof BudgetExceededError) return degrade(ctx, input, pipeline, 'budget_exceeded');
@@ -173,8 +178,13 @@ async function degrade(ctx: ToolContext, input: TurnInput, pipeline: PipelineRes
     input.onboarding && !pipeline
       ? asideCannedReply(input.onboarding)
       : await fallbackReply({ candidateId: ctx.candidateId, text: input.text, reason, ...(pipeline ? { pipeline } : {}) });
-  await saveMessage(ctx.conversationId, { role: 'assistant', content: text });
-  await createReplyStream(ctx.emit, ctx.signal).finish(text);
+  await finishAndSave(ctx.conversationId, createReplyStream(ctx.emit, ctx.signal, undefined, ctx.pace), text);
+}
+
+/** Отдать реплику и сохранить то, что стало ответом (при стопе посреди нарезки — показанный кусок). */
+async function finishAndSave(conversationId: string, reply: ReturnType<typeof createReplyStream>, text: string) {
+  const saved = await reply.finish(text);
+  if (saved) await saveMessage(conversationId, { role: 'assistant', content: saved });
 }
 
 /**

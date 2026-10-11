@@ -243,6 +243,23 @@ export async function openConsultantStream(input: SendMessageInput, signal: Abor
   return res.body;
 }
 
+/**
+ * Кнопка «Стоп»: остановить активный ход консультанта. Сервер сохраняет показанный кусок реплики
+ * и шлёт в поток `message` + `done`; ответ приходит после этого. Ошибки не бросает (стоп — best effort).
+ */
+export async function stopConsultantTurn(conversationId: string): Promise<void> {
+  try {
+    await fetch('/api/consultant/messages/stop', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ conversationId }),
+    });
+  } catch {
+    /* сеть: локальный fetch всё равно оборвём */
+  }
+}
+
 // --- защита утверждения (лейн defense) ---
 /** Шаг защиты для UI: текущий вопрос или вердикт. */
 export interface DefenseStep {

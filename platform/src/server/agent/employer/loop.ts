@@ -122,6 +122,7 @@ export async function runEmployerTurn(
             maxTokens: TURN_MAX_TOKENS,
             temperature: 0.3,
             onDelta: reply.onDelta,
+            onDiscard: reply.discard,
           },
           signal,
         );

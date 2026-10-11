@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 import { encodeSse } from '@/server/agent/events';
-import { acquireConversationLock } from '@/server/agent/lock';
+import { registerTurn } from '@/server/agent/active-turns';
+import { acquireConversationLock, LOCK_MAX_HOLD_MS } from '@/server/agent/lock';
 import { runTurn } from '@/server/agent/loop';
 import type { AgentEvent } from '@/server/agent/types';
 import { memoryExtractionEnabled, scheduleMemoryExtraction } from '@/server/consultant/memory';
@@ -12,6 +13,9 @@ import { asideContext, type OnboardingStepBrief } from '@/server/onboarding/serv
 import { getSession, requireCandidate } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
+
+/** Комментарий SSE `: ping` — пока ход идёт (парсер lib/sse.ts строки без `data:` игнорирует). */
+const HEARTBEAT_MS = 15_000;
 
 const Body = z
   .object({
@@ -30,8 +34,13 @@ const Body = z
 /**
  * Ход консультанта: POST → SSE-поток событий AgentEvent (`data: {...}\n\n`),
  * заканчивается `done`. Один ход на разговор одновременно — иначе 409 `busy`.
- * Паттерн ReadableStream в Route Handler — docs Next.js «Streaming»; разрыв
- * соединения — `request.signal`.
+ * Паттерн ReadableStream в Route Handler — docs Next.js «Streaming».
+ *
+ * Разрыв соединения (`request.signal`: F5, закрытие вкладки, потеря сети) ход НЕ прерывает:
+ * реплика дописывается и сохраняется, после перезагрузки её покажет история (AI SDK
+ * «chatbot-resume-streams»: disconnect ≠ stop). Lock держится до конца хода — повторная отправка
+ * получает 409 `busy`. Останавливает ход только `POST …/messages/stop` (реестр active-turns)
+ * или таймаут хода. Пока ход идёт — `: ping` раз в 15 с (прокси не рвут «немое» соединение).
  */
 export const POST = withErrors(async (req: Request) => {
   const candidateId = requireCandidate(req);
@@ -65,24 +74,34 @@ export const POST = withErrors(async (req: Request) => {
   if (!lock) throw new AppError('busy', 'Консультант ещё отвечает в этом разговоре - дождись окончания', 409);
 
   const encoder = new TextEncoder();
-  const signal = req.signal;
+  // Ход живёт дольше соединения: свой контроллер (стоп, таймаут), не req.signal.
+  const turn = new AbortController();
+  const unregister = registerTurn(conversationId, turn);
+  const signal = turn.signal;
+  // Клиент ушёл или стоп — нарезку реплики не ждать (сохранить и отдать message сразу).
+  const pace = AbortSignal.any([req.signal, signal]);
+  let closed = false;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      let closed = false;
-      const emit = (e: AgentEvent) => {
-        if (closed) return;
+      const write = (chunk: string) => {
+        if (closed || req.signal.aborted) return;
         try {
-          controller.enqueue(encoder.encode(encodeSse(e)));
+          controller.enqueue(encoder.encode(chunk));
         } catch {
           closed = true;
         }
       };
+      const emit = (e: AgentEvent) => write(encodeSse(e));
+      // Брошенный ход не висит на семафоре/ретраях дольше lock.
+      const turnTimer = setTimeout(() => turn.abort(new Error('turn_timeout')), LOCK_MAX_HOLD_MS - 10_000);
+      const heartbeat = setInterval(() => write(': ping\n\n'), HEARTBEAT_MS);
       try {
         emit({ type: 'conversation', id: conversationId });
         await runTurn(
           { candidateId, conversationId, text: body.text, ...(body.uploadIds ? { uploadIds: body.uploadIds } : {}), ...(body.urls ? { urls: body.urls } : {}), ...(onboarding ? { onboarding } : {}) },
           emit,
           signal,
+          { pace },
         );
         // Память: факты из реплики — фоном, после завершённого хода (ответ уже отдан); в демо и на заглушке — нет.
         if (!signal.aborted && body.text.trim() && memoryExtractionEnabled()) {
@@ -96,7 +115,10 @@ export const POST = withErrors(async (req: Request) => {
           emit({ type: 'error', code, message });
         }
       } finally {
+        clearTimeout(turnTimer);
+        clearInterval(heartbeat);
         emit({ type: 'done' });
+        unregister();
         await lock.release();
         if (!closed) {
           try {
@@ -106,6 +128,9 @@ export const POST = withErrors(async (req: Request) => {
           }
         }
       }
+    },
+    cancel() {
+      closed = true;
     },
   });
 

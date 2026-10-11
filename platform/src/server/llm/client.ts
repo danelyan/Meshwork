@@ -171,13 +171,14 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
     const timeoutMs = req.timeoutMs ?? opts.timeoutMs;
     const planB = Boolean(req.tools?.length) && !provider.supportsTools;
     // Дельты — только для свободного текста: в плане В и по JSON-схеме модель пишет служебный JSON.
-    // После неудачной попытки, успевшей что-то показать, повтор идёт без дельт: итог придёт событием message.
+    // После неудачной попытки, успевшей что-то показать: есть onDiscard — показанное убирается и повтор стримит заново;
+    // нет — повтор идёт без дельт, итог придёт событием message.
     let streamed = false;
     const userDelta = planB || req.schema ? undefined : req.onDelta;
     // Сырой JSON по схеме (интервьюер созвона): поток уже ушёл кандидату — повтор дал бы другой текст.
     const jsonDelta = planB || !req.schema ? undefined : req.onJsonDelta;
     let jsonStreamed = false;
-    const { onDelta: _drop, onJsonDelta: _dropJson, ...bare } = req;
+    const { onDelta: _drop, onJsonDelta: _dropJson, onDiscard, ...bare } = req;
     void _drop;
     void _dropJson;
     const reqFor = (): CompleteRequest => {
@@ -230,6 +231,11 @@ export function createLlmClient(opts: LlmClientOptions): LlmClient {
         } catch (err) {
           lastErr = err;
           if (attempts > opts.maxRetries || !isRetryable(err) || signal?.aborted || jsonStreamed) break;
+          // Показанный кусок неудачной попытки — не ответ: убрать (иначе он замрёт, а потом «прыгнет»).
+          if (streamed && onDiscard) {
+            onDiscard();
+            streamed = false;
+          }
           // Retry-After провайдера важнее своей экспоненты (но не дольше RETRY_AFTER_CAP_MS).
           const wait = opts.backoffMs ? backoff(attempts) : (retryAfterMs(err) ?? backoff(attempts));
           await sleep(wait, signal);

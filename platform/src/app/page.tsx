@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 
 import { Landing } from '@/components/landing/Landing';
 import { SHOWCASE } from '@/components/landing/showcase';
-import { SESSION_COOKIE, verifySession } from '@/server/session';
+import { getPageSession } from '@/server/auth/page';
 
 export const metadata: Metadata = {
   title: 'ФСП Карьера - твой код, твоя карьера',
@@ -11,8 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const jar = await cookies();
-  const signedIn = verifySession(jar.get(SESSION_COOKIE)?.value) !== null;
+  // Та же проверка, что у шапки: verifySession видит только кандидата, и работодатель или аккаунт без роли
+  // получали на главной гостевые «Приступим» и «Войти», открывавшие модалку входа поверх входа.
+  const signedIn = (await getPageSession()) !== null;
   // Публичные примеры ИТ-компаний; чужие вакансии не импортируются.
   return <Landing data={SHOWCASE} signedIn={signedIn} />;
 }

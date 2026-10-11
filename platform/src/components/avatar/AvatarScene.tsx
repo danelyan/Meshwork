@@ -45,6 +45,17 @@ export type AvatarSceneVariant = 'portrait' | 'inline' | 'call' | 'call-side';
  * `children` — готовая лента (слитая лента /consultant: онбординг + консультант, см.
  * components/consultant/ConsultantFeed); без них сцена рисует обычный `Chat`.
  */
+/** «Остановить» в шапке ленты — пока Кира читает ответ: голова со своей кнопкой «стоп» может быть свёрнута или далеко. */
+function ToolbarStop() {
+  const voice = useCompanionVoice();
+  if (!voice || (voice.status !== 'speaking' && voice.status !== 'loading')) return null;
+  return (
+    <Button size="sm" onClick={voice.stop}>
+      Остановить
+    </Button>
+  );
+}
+
 /** Открыли созвон, пока Кира читает ответ чата: озвучку обрываем, иначе она звучит поверх звонка. */
 function StopVoiceOnCall() {
   const open = useCallMode()?.open ?? false;
@@ -168,6 +179,7 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
             <strong>{COMPANION_NAME}</strong>
             <span>{label.replace(COMPANION_NAME + ' · ', '')}</span>
           </div>
+          <ToolbarStop />
           <MuteToggle />
           {call && <Button size="sm" disabled={call.readiness?.ready === false} title={call.readiness?.reason} onClick={() => call.start()}>Созвониться</Button>}
         </header>

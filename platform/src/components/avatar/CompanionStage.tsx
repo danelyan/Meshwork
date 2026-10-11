@@ -92,15 +92,33 @@ function Stage({ voice, className }: { voice: CompanionVoice; className?: string
   );
 }
 
-/** «Озвучить» у реплики компаньона: повтор по клику, работает и при выключенной автоозвучке. */
+/** «Озвучить» у реплики компаньона: повтор по клику, работает и при выключенной автоозвучке. Пока звучит эта реплика — «стоп». */
 export function ReplayButton({ text, speakKey }: { text: string; speakKey?: string }) {
   const voice = useCompanionVoice();
   if (!voice || voice.available === false || !text.trim()) return null;
+  const busy = voice.status === 'speaking' || voice.status === 'loading';
+  const mine = speakKey ? voice.speakingKey === speakKey : voice.speakingText === text;
+  if (busy && mine) {
+    return (
+      <button type="button" className={styles.replay} onClick={voice.stop} aria-label="Остановить озвучку">
+        <StopIcon />
+        стоп
+      </button>
+    );
+  }
   return (
     <button type="button" className={styles.replay} onClick={() => voice.replay(text, speakKey)} aria-label="Озвучить ответ">
       <SpeakerIcon />
       озвучить
     </button>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="6" width="12" height="12" />
+    </svg>
   );
 }
 

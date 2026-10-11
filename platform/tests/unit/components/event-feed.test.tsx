@@ -143,7 +143,7 @@ describe('EventFeed: все типы AgentEvent', () => {
     expect(screen.getByText('Backend - Контур')).toBeDefined();
     expect(screen.getByText('закрываешь 3 из 5')).toBeDefined();
     expect(screen.getByText('Docker')).toBeDefined();
-    expect(screen.getByText('Тест: Backend, middle')).toBeDefined();
+    expect(screen.getByText('Тест: Backend · Middle')).toBeDefined();
   });
 
   it('error: сообщение в role=alert', () => {

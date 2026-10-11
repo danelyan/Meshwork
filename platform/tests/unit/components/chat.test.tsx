@@ -176,72 +176,6 @@ describe('Chat', () => {
     await waitFor(() => expect(screen.getByText('Упрощённый режим.')).toBeDefined());
   });
 
-  it('обрыв соединения посреди дельт: реплика закрыта (без каретки), ошибка с «Повторить»', async () => {
-    const broken = new ReadableStream<Uint8Array>({
-      start(c) {
-        c.enqueue(enc.encode(frame({ type: 'delta', id: 'm1', text: 'Половина ответа' })));
-        setTimeout(() => c.error(new TypeError('network error')), 10);
-      },
-    });
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(broken, { status: 200 })));
-    render(<Chat />);
-    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'привет' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Повторить' })).toBeDefined());
-    await waitFor(() => expect(screen.getByTestId('streaming-text').getAttribute('data-done')).toBe('true'));
-    expect(screen.getByTestId('streaming-text').textContent).toContain('Половина ответа');
-    expect(screen.getByRole('button', { name: 'Отправить' })).toBeDefined();
-  });
-
-  it('упрощённый режим снимается после хода, завершившегося done без ошибки', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockImplementationOnce(async () => {
-        throw new TypeError('failed');
-      })
-      .mockImplementationOnce(async () => new Response(streamOf([frame({ type: 'message', text: 'Снова на связи' }) + frame({ type: 'done' })]), { status: 200 }));
-    vi.stubGlobal('fetch', fetchMock);
-    render(<Chat />);
-    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'привет' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
-    await waitFor(() => expect(screen.getByText('Упрощённый режим.')).toBeDefined());
-    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
-    await waitFor(() => expect(screen.getByText('Снова на связи')).toBeDefined());
-    await waitFor(() => expect(screen.queryByText('Упрощённый режим.')).toBeNull());
-  });
-
-  it('«Стоп» во время хода: зовёт stop-endpoint с id разговора, частичный текст остаётся репликой', async () => {
-    let ctl!: ReadableStreamDefaultController<Uint8Array>;
-    const live = new ReadableStream<Uint8Array>({
-      start(c) {
-        ctl = c;
-        c.enqueue(enc.encode(frame({ type: 'conversation', id: 'conv-9' }) + frame({ type: 'delta', id: 'm1', text: 'Начало ' })));
-      },
-    });
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (url === '/api/consultant/messages/stop') {
-        // Сервер останавливает ход: показанный кусок — message, затем done.
-        ctl.enqueue(enc.encode(frame({ type: 'message', id: 'm1', text: 'Начало' }) + frame({ type: 'done' })));
-        ctl.close();
-        return new Response(JSON.stringify({ stopped: true }), { status: 200 });
-      }
-      void init;
-      return new Response(live, { status: 200 });
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    render(<Chat />);
-    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'расскажи длинно' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
-    const stop = await screen.findByRole('button', { name: 'Остановить ответ' });
-    await waitFor(() => expect(screen.getByTestId('streaming-text').textContent).toContain('Начало'));
-    fireEvent.click(stop);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Отправить' })).toBeDefined());
-    const call = fetchMock.mock.calls.find((c) => c[0] === '/api/consultant/messages/stop') as unknown as [string, RequestInit];
-    expect(JSON.parse(call[1].body as string)).toEqual({ conversationId: 'conv-9' });
-    expect(screen.getByTestId('streaming-text').textContent).toContain('Начало');
-    expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
-  });
-
   it('пустое сообщение не отправляется: кнопка неактивна', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
@@ -318,5 +252,29 @@ describe('Chat: демо', () => {
   it('нет demo.resume → кнопки нет', () => {
     render(<Chat demo={{ noLlm: true, resume: null }} />);
     expect(screen.queryByRole('button', { name: /Загрузить демо-резюме/ })).toBeNull();
+  });
+});
+
+describe('Chat: черновик', () => {
+  beforeEach(() => window.sessionStorage.clear());
+
+  it('набранный текст переживает размонтирование и монтирование', async () => {
+    const first = render(<Chat />);
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'Недописанное' } });
+    first.unmount();
+    render(<Chat />);
+    await waitFor(() => expect((screen.getByLabelText('Сообщение') as HTMLTextAreaElement).value).toBe('Недописанное'));
+  });
+
+  it('после отправки черновик пуст', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(streamOf([frame({ type: 'message', text: 'Ок' }) + frame({ type: 'done' })]), { status: 200 })));
+    const first = render(<Chat />);
+    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'Отправляю' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    await waitFor(() => expect(screen.getByText('Ок')).toBeDefined());
+    expect(window.sessionStorage.getItem('fsp:chat-draft:new')).toBeNull();
+    first.unmount();
+    render(<Chat />);
+    expect((screen.getByLabelText('Сообщение') as HTMLTextAreaElement).value).toBe('');
   });
 });

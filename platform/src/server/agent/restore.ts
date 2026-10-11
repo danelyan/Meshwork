@@ -58,6 +58,25 @@ export function humanizeUserText(content: string, names: Map<string, string>): s
     .join('\n');
 }
 
+/**
+ * Вопрос `ask_user` без ответа: последняя запись разговора — результат этого инструмента
+ * (ответ кандидата был бы позже user-сообщением). Вопрос лежит в аргументах вызова у assistant.
+ */
+export function pendingAskOf(rows: { role: string; toolCalls: unknown }[]): Extract<AgentEvent, { type: 'ask' }> | null {
+  if (rows.at(-1)?.role !== 'tool') return null;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const row = rows[i]!;
+    if (row.role === 'tool') continue;
+    if (row.role !== 'assistant' || !Array.isArray(row.toolCalls)) return null;
+    const call = (row.toolCalls as { name?: unknown; arguments?: unknown }[]).find((c) => c?.name === 'ask_user');
+    const args = call?.arguments as { question?: unknown; options?: unknown } | undefined;
+    if (!args || typeof args.question !== 'string' || !args.question) return null;
+    const options = Array.isArray(args.options) ? args.options.filter((o): o is string => typeof o === 'string') : [];
+    return options.length ? { type: 'ask', question: args.question, options } : { type: 'ask', question: args.question };
+  }
+  return null;
+}
+
 export interface RestoredChat {
   conversationId: string | null;
   items: RestoredItem[];
@@ -73,10 +92,11 @@ export async function loadLastChat(candidateId: string): Promise<RestoredChat> {
   const items: RestoredItem[] = [];
   if (conv) {
     const rows = await prisma.message.findMany({
-      where: { conversationId: conv.id, role: { in: ['user', 'assistant'] } },
+      where: { conversationId: conv.id },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, role: true, content: true },
+      select: { id: true, role: true, content: true, toolCalls: true },
     });
+    const pendingAsk = pendingAskOf(rows);
     const ids = new Set<string>();
     for (const m of rows) {
       if (m.role !== 'user') continue;
@@ -89,6 +109,7 @@ export async function loadLastChat(candidateId: string): Promise<RestoredChat> {
     const names = new Map(uploads.map((u) => [u.id, u.filename]));
     let tag: { stepId?: string; paused?: true } = {};
     for (const m of rows) {
+      if (m.role === 'tool' || m.role === 'system') continue;
       if (m.role === 'user') {
         const aside = asideStepOf(m.content);
         const pause = aside ? null : pauseStepOf(m.content);
@@ -98,6 +119,7 @@ export async function loadLastChat(candidateId: string): Promise<RestoredChat> {
         items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'message', text: m.content }, ...tag });
       }
     }
+    if (pendingAsk) items.push({ id: 'r-pending-ask', role: 'agent', event: pendingAsk });
   }
   const pending = await prisma.claim.findMany({ where: { candidateId, status: 'proposed' }, orderBy: { createdAt: 'asc' } });
   if (pending.length) {

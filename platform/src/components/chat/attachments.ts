@@ -56,12 +56,18 @@ export function useAttachments() {
 
   const remove = useCallback((key: string) => setFiles((p) => p.filter((f) => f.key !== key)), []);
   const clear = useCallback(() => setFiles([]), []);
+  /** Подстановка уже загруженных файлов (черновик после возврата на страницу): сразу «готово». */
+  const restore = useCallback((list: { id: string; name: string; size: number }[]) => {
+    const restored: Attachment[] = list.map((f) => ({ key: `a${++seq}`, name: f.name, size: f.size, status: 'done', id: f.id }));
+    setFiles((p) => (p.length ? p : restored));
+  }, []);
 
   return {
     files,
     add,
     remove,
     clear,
+    restore,
     uploading: files.some((f) => f.status === 'uploading'),
     ready: files.filter((f): f is Attachment & { id: string } => f.status === 'done' && Boolean(f.id)),
   };

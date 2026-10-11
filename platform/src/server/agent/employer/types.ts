@@ -74,6 +74,39 @@ export interface NeedDraft {
   formHref: string;
 }
 
+/**
+ * Черновик профиля компании (решение владельца 11.10: через помощника можно «дополнить что-то по своей
+ * компании»). Только поля, которые работодатель и так правит на /employer/company; применяет человек
+ * кнопкой «Применить» → PATCH /api/employer/company. Поле null — не менять.
+ */
+export interface CompanyDraft {
+  name: string | null;
+  industry: string | null;
+  description: string | null;
+  contact: string | null;
+  /** Что сейчас в профиле — лента показывает «было → станет». */
+  current: { name: string; industry: string | null; description: string | null; contact: string | null };
+  rationale: string;
+}
+
+/**
+ * Черновик проектного задания к вакансии (решение владельца 11.10: «создать задания» из чата).
+ * Шаблон и критерии — из каталога (контракт шаблона не меняется, R-C-10); создаёт человек кнопкой
+ * «Сформировать» → POST /api/employer/needs/:id/project тем же телом, что и форма EmployerProjectBlock.
+ */
+export interface ProjectTaskDraft {
+  vacancyId: string;
+  vacancyTitle: string;
+  templateId: string;
+  templateTitle: string;
+  criteria: { catalogId: string; statement: string }[];
+  wishes: string;
+  visibility: 'feed' | 'invited';
+  /** Уже есть задание к этой вакансии — лента предупреждает, что оно будет заменено. */
+  replacesExisting: boolean;
+  rationale: string;
+}
+
 export type EmployerAgentEvent =
   | { type: 'conversation'; id: string }
   | { type: 'step'; text: string }
@@ -82,6 +115,8 @@ export type EmployerAgentEvent =
   | { type: 'candidates'; block: CandidatesBlockView }
   | { type: 'invitation_draft'; draft: InvitationDraft }
   | { type: 'need_draft'; draft: NeedDraft }
+  | { type: 'company_draft'; draft: CompanyDraft }
+  | { type: 'project_task_draft'; draft: ProjectTaskDraft }
   | { type: 'message'; text: string; id?: string }
   | { type: 'delta'; id: string; text: string }
   | { type: 'discard'; id: string }
@@ -101,4 +136,6 @@ export interface EmployerTurnInput {
   employerProfileId: string;
   conversationId: string;
   text: string;
+  /** Откуда пишет работодатель (плавающий чат): страница и вакансия на ней — модель начинает с этого контекста. */
+  page?: { path: string; vacancyId?: string | null } | null;
 }

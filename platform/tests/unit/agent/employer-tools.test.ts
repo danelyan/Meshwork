@@ -24,9 +24,9 @@ const ctx = (): EmployerToolContext => ({
 });
 
 describe('реестр помощника работодателя', () => {
-  it('7 инструментов: 6 по решению владельца + ask_user', () => {
+  it('11 инструментов: 6 по решению владельца 09.10 + черновики компании и задания (11.10) + ask_user, база знаний, веб-поиск', () => {
     expect([...EMPLOYER_TOOL_NAMES].sort()).toEqual(
-      ['ask_user', 'create_need_draft', 'draft_invitation', 'explain_candidate', 'get_employer_context', 'match_for_need', 'search_candidates', 'search_knowledge', 'web_search'].sort(),
+      ['ask_user', 'create_need_draft', 'create_project_task_draft', 'draft_company_profile', 'draft_invitation', 'explain_candidate', 'get_employer_context', 'match_for_need', 'search_candidates', 'search_knowledge', 'web_search'].sort(),
     );
   });
 

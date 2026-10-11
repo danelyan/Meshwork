@@ -1,8 +1,16 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import styles from './Employer.module.css';
+import { loadLastEmployerChat } from '@/server/agent/employer/restore';
+import { llmIsDemoStub } from '@/server/demo/mode';
+import { AssistantDrawer } from './AssistantDrawer';
 
-/** Opens the actual employer consultant, keeping every draft behind human confirmation. */
-export function EmployerConsultantDock() {
-  return <Link href="/employer/assistant" className={styles.consultantDock} aria-label="Спросить консультанта про подборку"><div className={styles.dockPortrait}><Image src="/models/head-reference.png" alt="" fill sizes="210px" /></div><span>Спросить про подборку <b aria-hidden="true">↗</b></span></Link>;
+/**
+ * Плавающая помощница работодателя: кнопка-портрет и боковая панель с чатом (все черновики — только после
+ * подтверждения человеком). Серверный компонент: подтягивает последний разговор, чтобы панель продолжала ту же
+ * ленту, что и /consultant, и флаг демо без модели. Монтируется из layout через prop `employerDock`.
+ */
+export async function EmployerConsultantDock({ employerProfileId }: { employerProfileId: string }) {
+  const initial = (await loadLastEmployerChat(employerProfileId).catch((e: unknown) => {
+    console.warn('[employer dock] restore failed', e);
+    return null;
+  })) ?? undefined;
+  return <AssistantDrawer initial={initial} demoNoLlm={llmIsDemoStub()} />;
 }

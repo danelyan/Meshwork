@@ -24,9 +24,9 @@ async function conversation(profileId = PROFILE) {
   return (await prisma.employerConversation.create({ data: { employerProfileId: profileId } })).id;
 }
 
-async function turn(text: string, conversationId: string, opts = {}) {
+async function turn(text: string, conversationId: string, opts = {}, page?: { path: string; vacancyId?: string | null }) {
   const events: EmployerAgentEvent[] = [];
-  await runEmployerTurn({ employerProfileId: PROFILE, conversationId, text }, (e) => events.push(e), undefined, opts);
+  await runEmployerTurn({ employerProfileId: PROFILE, conversationId, text, ...(page ? { page } : {}) }, (e) => events.push(e), undefined, opts);
   const msg = events.filter((e) => e.type === 'message').at(-1) as { text: string } | undefined;
   return { events, text: msg?.text ?? '' };
 }
@@ -274,6 +274,49 @@ describe('помощник работодателя (БД)', () => {
       expect(history, secret).not.toContain(secret);
       expect(modelSaw.join('\n'), secret).not.toContain(secret);
     }
+  });
+
+  it('демо: профиль компании и проектное задание выбирают свои инструменты; страница вакансии снимает переспрос', async () => {
+    process.env.LLM_STUB_DEMO = 'true';
+    resetEnvCache();
+    const plan = async (text: string, page?: { path: string; vacancyId?: string | null }) =>
+      (await import('@/server/agent/employer/demo')).planDemoCall({ ...ctx(), conversationId: await conversation() }, text, page);
+    const desc = 'Описание: Мы делаем платёжные сервисы для малого бизнеса';
+    const company = await plan(`Поправь описание компании. ${desc}`);
+    expect(company.name).toBe('draft_company_profile');
+    expect((company.arguments as { description: string }).description).toContain('платёжные сервисы');
+    expect((await plan('Поправь контакт компании')).name).toBe('ask_user');
+    expect((await plan('Контакт компании: hr@example.com')).arguments).toMatchObject({ contact: 'hr@example.com' });
+    // Несколько активных вакансий: без страницы - вопрос, со страницей - сразу задание по ней.
+    expect((await plan('Сделай тестовое задание')).name).toBe('ask_user');
+    const withPage = await plan('Сделай задание', { path: '/employer/vacancies/x', vacancyId: PAY_VAC });
+    expect(withPage).toMatchObject({ name: 'create_project_task_draft', arguments: { vacancyId: PAY_VAC } });
+    // Чужой id молча игнорируется.
+    expect((await plan('Сделай задание', { path: '/employer', vacancyId: 'no-such' })).name).toBe('ask_user');
+    // Подбор без уточнений на странице вакансии идёт по ней.
+    expect(await plan('Покажи кандидатов', { path: '/employer', vacancyId: PAY_VAC })).toMatchObject({ name: 'match_for_need', arguments: { vacancyId: PAY_VAC } });
+  });
+
+  it('page в ходе: чужая вакансия не попадает в системный блок, своя - попадает по названию', async () => {
+    const { employerPageNote } = await import('@/server/agent/employer/loop');
+    const own = await employerPageNote(COMPANY, { path: '/employer', vacancyId: PAY_VAC });
+    expect(own).toContain(PAY_VAC);
+    expect(own).toContain('Страница работодателя');
+    expect(await employerPageNote(COMPANY, { path: '/employer', vacancyId: 'other-company-vac' })).not.toContain('other-company-vac');
+    expect(await employerPageNote(COMPANY, null)).toBeNull();
+  });
+
+  it('API: page валидируется (путь /employer, длина), без page ход работает как раньше', async () => {
+    process.env.LLM_STUB_DEMO = 'true';
+    resetEnvCache();
+    const emp = `cid=${signUserSession({ userId: DEMO_EMPLOYER.userId, role: 'employer', employerProfileId: PROFILE })}`;
+    const post = (page: unknown) => assistantPost(jsonRequest('/x', 'POST', { text: 'что у меня есть?', page }, emp));
+    expect((await post({ path: '/employer/vacancies/v1', vacancyId: PAY_VAC })).status).toBe(200);
+    expect((await post({ path: '/employer' })).status).toBe(200);
+    expect((await post(null)).status).toBe(200);
+    expect((await post({ path: '/admin' })).status).toBe(400);
+    expect((await post({ path: `/employer/${'a'.repeat(200)}` })).status).toBe(400);
+    expect((await post({ path: '/employer', vacancyId: 'v'.repeat(65) })).status).toBe(400);
   });
 
   it('API: только работодатель (401/403), SSE c conversation и done', async () => {

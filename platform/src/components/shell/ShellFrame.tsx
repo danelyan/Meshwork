@@ -31,7 +31,7 @@ export function useBareShell(active: boolean): void {
  * элементами; здесь только решается, показывать ли их. Лэйаут не знает путь на сервере (не перерисовывается
  * при навигации), поэтому решение — на клиенте по `usePathname()`.
  */
-export function ShellFrame({ header, footer, children, account, employerSummary }: { header: ReactNode; footer: ReactNode; children: ReactNode; account?: HeaderAccount | null; employerSummary?: ReactNode }) {
+export function ShellFrame({ header, footer, children, account, employerSummary, employerDock }: { header: ReactNode; footer: ReactNode; children: ReactNode; account?: HeaderAccount | null; employerSummary?: ReactNode; employerDock?: ReactNode }) {
   const pathname = usePathname();
   // тёмная тема только на /consultant: атрибут на <html> снимается при уходе со страницы
   useThemeRoot(pathname);
@@ -46,7 +46,7 @@ export function ShellFrame({ header, footer, children, account, employerSummary 
         К содержимому
       </a>
       {!bare && header}
-      <div className={styles.page}><DashboardFrame account={account} employerSummary={employerSummary} bare={bare}>{children}</DashboardFrame></div>
+      <div className={styles.page}><DashboardFrame account={account} employerSummary={employerSummary} employerDock={employerDock} bare={bare}>{children}</DashboardFrame></div>
       {!bare && footer}
       </div>
     </BareContext.Provider>

@@ -6,7 +6,7 @@ import { PAUSE_MARK_RE } from '@/server/onboarding/match';
 
 import { pauseStepOf } from '../restore';
 import { withAcceptedNames } from './names';
-import type { CandidatesBlock, EmployerAgentEvent, InvitationDraft, NeedDraft } from './types';
+import type { CandidatesBlock, CompanyDraft, EmployerAgentEvent, InvitationDraft, NeedDraft, ProjectTaskDraft } from './types';
 
 /** `stepId` + `paused` — реплика (и ответ на неё) из паузы знакомства: лента ставит их под шаг (как у кандидата, restore.ts). */
 export type EmployerRestoredItem =
@@ -24,6 +24,14 @@ function parse(content: string): unknown {
   } catch {
     return null;
   }
+}
+
+/** Результат инструмента-черновика = черновик + служебные флаги (`drafted`, `saved`); флаги в ленту не идут. */
+function draftOf<T>(out: Record<string, unknown>): T {
+  const draft = { ...out };
+  delete draft.drafted;
+  delete draft.saved;
+  return draft as T;
 }
 
 /**
@@ -62,6 +70,8 @@ export async function loadLastEmployerChat(employerProfileId: string): Promise<E
       if (!name || !out || 'error' in out) continue;
       if (name === 'match_for_need' || name === 'search_candidates') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'candidates', block: out as unknown as CandidatesBlock }, ...tag });
       else if (name === 'draft_invitation') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'invitation_draft', draft: out as unknown as InvitationDraft }, ...tag });
+      else if (name === 'draft_company_profile') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'company_draft', draft: draftOf<CompanyDraft>(out) }, ...tag });
+      else if (name === 'create_project_task_draft') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'project_task_draft', draft: draftOf<ProjectTaskDraft>(out) }, ...tag });
       else if (name === 'create_need_draft') items.push({ id: `r-${m.id}`, role: 'agent', event: { type: 'need_draft', draft: out as unknown as NeedDraft }, ...tag });
     }
   }

@@ -68,7 +68,7 @@ export const setPrivacyApi = (hiddenFromEmployers: boolean) =>
   postJson<{ hiddenFromEmployers: boolean }>('/api/profile/privacy', { hiddenFromEmployers });
 
 /** Ход помощника работодателя: SSE-поток EmployerAgentEvent (app/api/employer/assistant/messages). */
-export async function openEmployerAssistantStream(input: { text: string; conversationId?: string }, signal: AbortSignal): Promise<ReadableStream<Uint8Array>> {
+export async function openEmployerAssistantStream(input: { text: string; conversationId?: string; page?: { path: string; vacancyId?: string | null } }, signal: AbortSignal): Promise<ReadableStream<Uint8Array>> {
   let res: Response;
   try {
     res = await fetch('/api/employer/assistant/messages', {

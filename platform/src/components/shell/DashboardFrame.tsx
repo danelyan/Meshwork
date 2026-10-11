@@ -5,9 +5,8 @@ import { usePathname } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { HeaderAccount } from '@/server/auth/role-plan';
 import { NavIcon } from './NavIcon';
-import { CANDIDATE_NAV, EMPLOYER_NAV, activeLinkHref, dashboardPath, navScrollToShow } from './nav';
+import { CANDIDATE_NAV, EMPLOYER_NAV, activeLinkHref, dashboardPath } from './nav';
 import { CandidateSidebarSummary } from '@/components/candidate/CandidateSidebarSummary';
-import { EmployerConsultantDock } from '@/components/employer/EmployerConsultantDock';
 import styles from './DashboardFrame.module.css';
 
 /**
@@ -40,18 +39,9 @@ function useCollapsed(): [boolean, () => void] {
   return [collapsed, toggle];
 }
 
-export function DashboardFrame({ account, children, employerSummary, bare = false }: { account?: HeaderAccount | null; children: ReactNode; employerSummary?: ReactNode; bare?: boolean }) {
+export function DashboardFrame({ account, children, employerSummary, employerDock, bare = false }: { account?: HeaderAccount | null; children: ReactNode; employerSummary?: ReactNode; employerDock?: ReactNode; bare?: boolean }) {
   const pathname = usePathname();
   const [collapsed, toggle] = useCollapsed();
-  // Узкий экран: разделы кабинета - прокручиваемая полоса; активный раздел ставим в её видимую часть, иначе на
-  // «Профиле» или «Настройках» не видно, где ты. На широком экране меню вертикальное - прокручивать нечего.
-  useEffect(() => {
-    const link = document.querySelector<HTMLElement>('[data-dashboard] > aside nav a[aria-current="page"]');
-    const nav = link?.parentElement;
-    if (!link || !nav) return;
-    const left = link.getBoundingClientRect().left - nav.getBoundingClientRect().left + nav.scrollLeft;
-    nav.scrollLeft = navScrollToShow(nav, left, link.offsetWidth);
-  }, [pathname]);
   if (!account?.roles || !dashboardPath(pathname)) return children;
   const isEmployer = account.roles.role === 'employer';
   const links = isEmployer ? EMPLOYER_NAV : CANDIDATE_NAV;
@@ -75,9 +65,8 @@ export function DashboardFrame({ account, children, employerSummary, bare = fals
         {isEmployer && employerSummary}
         <p>{isEmployer ? 'Имя и контакт кандидата откроются после принятия приглашения.' : 'Контакты доступны компании только после вашего согласия на приглашение.'}</p>
       </div>
-      {/* Помощник по подбору - в потоке боковой колонки, а не поверх страницы: плавающая карточка закрывала «Пригласить» и поля формы. */}
-      {isEmployer && !consultant && <div className={styles.assistant}><EmployerConsultantDock /></div>}
     </aside>}
     <div className={styles.content}>{children}</div>
+    {isEmployer && !bare && !consultant && employerDock}
   </div>;
 }

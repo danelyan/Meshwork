@@ -19,6 +19,14 @@ export const dynamic = 'force-dynamic';
 const Body = z.object({
   conversationId: z.string().min(1).max(64).optional(),
   text: z.string().trim().min(1, 'Напиши сообщение').max(4_000),
+  // Откуда пишет работодатель (плавающий чат): экран и вакансия на нём. Чужой vacancyId цикл игнорирует молча.
+  page: z
+    .object({
+      path: z.string().max(200).startsWith('/employer'),
+      vacancyId: z.string().min(1).max(64).nullable().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 
@@ -87,7 +95,7 @@ export const POST = withErrors(async (req: Request) => {
       }, 15_000);
       try {
         emit({ type: 'conversation', id: conversationId });
-        await runEmployerTurn({ employerProfileId, conversationId, text: body.text }, emit, signal);
+        await runEmployerTurn({ employerProfileId, conversationId, text: body.text, ...(body.page ? { page: body.page } : {}) }, emit, signal);
         // Память помощника: факты из реплики — фоном, после завершённого хода; в демо и на заглушке — нет.
         if (!signal.aborted && memoryExtractionEnabled()) {
           void scheduleMemoryExtraction({ owner: { employerProfileId }, text: body.text, llm: getLlm({ conversationId }) });

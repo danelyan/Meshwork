@@ -1,0 +1,8 @@
+{
+  "name": "chat-feed",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "vitest run tests/visible" },
+  "dependencies": { "react": "19.2.0", "react-dom": "19.2.0" },
+  "devDependencies": { "@testing-library/dom": "10.4.2", "@testing-library/react": "16.3.3", "jsdom": "26.1.0", "typescript": "5.9.3", "vitest": "4.1.11" }
+}

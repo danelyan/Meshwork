@@ -1,0 +1,20 @@
+{
+  "id": "fe-realtime-middle-reconnect",
+  "subcategoryId": "frontend.realtime",
+  "specialization": "frontend",
+  "grade": "middle",
+  "title": "Realtime-клиент с переподключением и оптимистичной отправкой",
+  "summary": "Экспоненциальный backoff с потолком, догрузка по lastEventId, статус соединения в UI, оптимистичная отправка с откатом",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.realtime-client", "fe.server-state", "fe.event-loop", "fe.component-tests"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

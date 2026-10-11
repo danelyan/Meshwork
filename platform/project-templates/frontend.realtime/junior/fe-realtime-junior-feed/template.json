@@ -1,0 +1,20 @@
+{
+  "id": "fe-realtime-junior-feed",
+  "subcategoryId": "frontend.realtime",
+  "specialization": "frontend",
+  "grade": "junior",
+  "title": "Лента сообщений в реальном времени",
+  "summary": "Применение входящих событий (новое, правка, удаление), порядок по серверному времени, дедупликация по id, счётчик непрочитанных",
+  "stack": ["typescript", "vitest"],
+  "catalogIds": ["fe.realtime-client", "fe.state-mgmt", "fe.js-core", "common.unit-tests"],
+  "image": "node20",
+  "testEnvironment": "node",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 150,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

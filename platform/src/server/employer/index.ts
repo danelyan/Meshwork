@@ -10,6 +10,7 @@ export {
   listCandidateInvitations,
   respondInvitation,
   markInvitationHired,
+  withdrawInvitation,
   getPrivacy,
   setPrivacy,
   getCandidateContact,

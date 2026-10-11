@@ -199,6 +199,7 @@
 .invitationStatus[data-status='accepted'] { background: var(--ink); color: var(--on-ink); }
 .invitationStatus[data-status='declined'] { border-color: var(--line); color: var(--muted); }
 .invitationStatus[data-status='hired'] { background: var(--blue); border-color: var(--ink); color: var(--on-ink); }
+.invitationStatus[data-status='withdrawn'] { border-color: var(--line); color: var(--muted); }
 .invitationDialog { width: min(520px, calc(100vw - 32px)); max-height: calc(100svh - 40px); overflow: auto; padding: 26px; border: 1px solid var(--glass-border); background: var(--employer-modal, var(--glass-strong)); color: var(--ink); box-shadow: var(--auth-shadow); backdrop-filter: blur(26px) saturate(1.6); }
 .invitationDialog::backdrop { background: var(--backdrop); backdrop-filter: blur(10px) saturate(1.2); }
 .dialogHeading { display: flex; justify-content: space-between; align-items: center; color: var(--blue); }
@@ -269,3 +270,6 @@
 :global(:root[data-theme='dark']) :is(.mapCenter, .mapNode[aria-pressed='true'] .silhouette) { box-shadow: 0 0 0 8px var(--surface-quote), var(--landing-shadow-sm); }
 :global(:root[data-theme='dark']) .contacts { background: var(--surface-notice); color: var(--ink); border: 1px solid var(--border-soft); }
 :global(:root[data-theme='dark']) .skillChips:not([data-missing='true']) > span { background: var(--surface-ghost); color: var(--ink); border: 1px solid var(--border-soft); }
+
+/* lane invite-cancel: причина отзыва приглашения */
+.textarea { padding: 8px 10px; border: 1px solid var(--border-input, var(--line)); background: var(--surface-input, transparent); color: var(--ink); font: var(--fs-sm) var(--font); width: 100%; min-height: 64px; resize: vertical; }

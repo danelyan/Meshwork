@@ -442,10 +442,13 @@ describe('живая защита проекта: только вопросы к
   const listOf = async (cookie: string) =>
     (await (await listQuestions(jsonRequest(`/api/employer/questions?candidateId=${CAND}`, 'GET', undefined, cookie))).json()).questions as { id: string; status: string; answer: string | null; answeredInCallSessionId: string | null }[];
 
-  it('вопрос B (общий и по сабмиту) не попадает в план защиты A; вопрос A попадает; B не получает ответ', async () => {
+  it('вопрос B (общий; к сабмиту A — отклонён) не попадает в план защиты A; вопрос A попадает; B не получает ответ', async () => {
     const qa = await ask(EMP_A, 'Почему очередь в памяти, а не брокер?');
     const qb = await ask(EMP_B, 'Что поменять в retry для Беты?');
-    const qbSub = await ask(EMP_B, 'Какой SLA у Беты по этому проекту?', SUB);
+    // lane invite-cancel: привязать вопрос к сабмиту под вакансию другой компании нельзя — 404 submission_not_owned.
+    const qbSubRes = await askRoute(post('/x', { candidateId: CAND, text: 'Какой SLA у Беты по этому проекту?', projectSubmissionId: SUB }, EMP_B));
+    expect(qbSubRes.status).toBe(404);
+    expect((await qbSubRes.json()).error.code).toBe('submission_not_owned');
     const { sessionId } = await (await startRoute(post('/x', { mode: 'project', projectSubmissionId: SUB }, CAND_COOKIE))).json();
     expect(await employerIds(sessionId)).toEqual([qa]);
 
@@ -461,8 +464,8 @@ describe('живая защита проекта: только вопросы к
     const listA = await listOf(EMP_A);
     expect(listA.find((q) => q.id === qa)).toMatchObject({ status: 'answered', answeredInCallSessionId: sessionId });
     expect(listA.find((q) => q.id === qa)!.answer).toMatch(/брокер избыточен/);
-    const statuses = await prisma.employerQuestion.findMany({ where: { id: { in: [qb, qbSub, qb2] } }, select: { status: true, answeredInCallSessionId: true } });
-    expect(statuses).toEqual([...Array(3)].map(() => ({ status: 'queued', answeredInCallSessionId: null })));
+    const statuses = await prisma.employerQuestion.findMany({ where: { id: { in: [qb, qb2] } }, select: { status: true, answeredInCallSessionId: true } });
+    expect(statuses).toEqual([...Array(2)].map(() => ({ status: 'queued', answeredInCallSessionId: null })));
     const listB = await listOf(EMP_B);
     expect(JSON.stringify(listB)).not.toMatch(/брокер избыточен|Альф/);
     expect(listB.every((q) => q.answer === null && q.answeredInCallSessionId === null)).toBe(true);

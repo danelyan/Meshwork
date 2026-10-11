@@ -74,7 +74,6 @@ export const TAG_DESCRIPTIONS: Record<string, string> = {
   employer: 'Кабинет работодателя: потребности, подборка, поиск, приглашения, помощник (SSE)',
   evaluate: 'Проверка подбора на своём наборе: P@k, nDCG@k, MRR против базовой линии, без записи в БД',
   health: 'Проверка живости',
-  simulator: 'Симулятор адаптивного теста для жюри: виртуальный кандидат, шаги движка, без БД и LLM',
   invitations: 'Приглашения глазами кандидата',
   objections: 'Возражения против автоматической оценки (ст. 16 152-ФЗ): тест, созвон, защита',
   onboarding: 'Онбординг: шаги, ответы, итог',
@@ -279,31 +278,6 @@ export const OVERRIDES: Record<string, OpOverride> = {
       free('k, candidates, vacancies, scored, mean {ours, baseline, precisionCeiling} | null, rows [{id, ours, baseline, top, baselineTop, …}], warnings'),
     ),
     errors: { 400: 'Не JSON, не прошла схема, неизвестный id каталога или разметка на несуществующих объектах', 403: 'Чужой Origin', 413: 'Тело больше 1 МБ', 429: 'Слишком много прогонов' },
-  },
-
-  'POST /api/simulator': {
-    role: 'public',
-    summary: 'Прогнать виртуального кандидата через адаптивный тест',
-    description:
-      'Боевой движок теста на грейд (выбор задания по информации Фишера, EAP-оценка θ, остановка и дозадавание по политике текущей версии) на виртуальном кандидате с заданной истинной θ. Режимы ответов: ideal (2PL по экспертным a, b), noise (шум b на показ), leak (трюк по 30 % семейств). Детерминированно по seed, без БД и LLM. Лимит частоты - 120 прогонов за 10 минут с адреса.',
-    body: {
-      description: 'Виртуальный кандидат',
-      schema: obj(
-        {
-          subcategoryId: str('Подкатегория с полным банком, например backend.web-api'),
-          claimed: en('junior', 'middle', 'senior'),
-          theta: { type: 'number', minimum: -3, maximum: 3, description: 'Истинный уровень виртуального кандидата' },
-          mode: en('ideal', 'noise', 'leak'),
-          seed: int('0..2147483647, по умолчанию 1'),
-        },
-        ['subcategoryId', 'claimed', 'theta'],
-      ),
-    },
-    success: JSON_OK(
-      'Шаги теста и итог',
-      free('input, policyVersion, steps [{n, templateId, title, itemGrade, a, b, phase, pModel, correct, theta, se}], start, confirmed, offeredGrade, grade, pPass, theta, se, stopReason, length, correctCount, cuts'),
-    ),
-    errors: { 400: 'Не JSON, не прошла схема или у подкатегории нет теста', 403: 'Чужой Origin', 413: 'Тело больше 2 КБ', 429: 'Слишком много прогонов' },
   },
 
   'GET /api/health': {
@@ -640,6 +614,12 @@ export const OVERRIDES: Record<string, OpOverride> = {
     description: 'Финальный этап пути кандидата: работодатель отмечает найм по своему принятому приглашению (accepted → hired, `hiredAt`). Повторная отметка идемпотентна. Нанятый кандидат не показывается в поиске и подборках других компаний.',
     success: JSON_OK('Приглашение со статусом hired', obj({ id: str(), status: en('hired'), hiredAt: str('Время отметки найма, ISO 8601') })),
     errors: { 404: 'Приглашение чужое или не существует', 409: 'Приглашение не в статусе accepted; не приняты оферта или обязательство по данным (`consent_required`, ADR 0005)' },
+  },
+  'POST /api/employer/invitations/{id}/withdraw': {
+    summary: 'Отозвать приглашение',
+    description: 'Работодатель отзывает приглашение своей компании с причиной (3–300 знаков): sent | viewed | accepted → withdrawn. Активное предложение слотов и назначенная живая защита закрываются (`cancelled`), ожидающая сессия защиты отменяется, раскрытие имени и контактов по приглашению прекращается. Кандидат видит статус и причину, получает уведомление и письмо. Лимит приглашений за сутки отзыв не возвращает.',
+    success: JSON_OK('Приглашение со статусом withdrawn', obj({ id: str(), status: en('withdrawn'), withdrawn: obj({ at: str('Время отзыва, ISO 8601'), reason: str('Причина') }) })),
+    errors: { 400: 'Причина пустая или длиннее 300 знаков (`reason_invalid`)', 404: 'Приглашение чужое или не существует', 409: 'Приглашение уже в статусе hired, declined или withdrawn (`invitation_not_withdrawable`); не приняты оферта или обязательство по данным (`consent_required`)' },
   },
   // lane live-slots (ADR 0008): назначение живой защиты через слоты.
   'POST /api/employer/invitations/{id}/live-defense': {

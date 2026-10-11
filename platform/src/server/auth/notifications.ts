@@ -17,7 +17,14 @@ export async function notifications(s: SessionPrincipal & { userId: string }): P
       prisma.invitation.count({ where: { ...where, createdAt: { gt: read, lte: through } } }),
     ]);
     const items = rows.map((r) => ({ id: r.id, text: `Приглашение от ${r.company?.name ?? 'компании'}`, detail: `${r.vacancy?.title ?? 'Предложение'} · ${r.salaryFrom.toLocaleString('ru-RU')}-${r.salaryTo.toLocaleString('ru-RU')} ₽`, href: '/invitations', at: r.createdAt.toISOString(), unread: r.createdAt > read }));
-    return merge(items, unread, await liveEvents({ candidateId: s.candidateId, audience: 'candidate' }, read, through, '/invitations'), through);
+    // lane invite-cancel: компания отозвала приглашение — отдельное уведомление со временем отзыва и причиной.
+    const ww = { candidateId: s.candidateId, withdrawnAt: { not: null, lte: through } };
+    const [wRows, wUnread] = await Promise.all([
+      prisma.invitation.findMany({ where: ww, orderBy: { withdrawnAt: 'desc' }, take: 20, select: { id: true, withdrawnAt: true, withdrawReason: true, company: { select: { name: true } } } }),
+      prisma.invitation.count({ where: { candidateId: s.candidateId, withdrawnAt: { gt: read, lte: through } } }),
+    ]);
+    const withdrawn = wRows.map((r) => ({ id: `withdrawn-${r.id}`, text: `«${r.company?.name ?? 'Компания'}» отозвала приглашение`, detail: (r.withdrawReason ?? '').slice(0, 120), href: '/invitations', at: r.withdrawnAt!.toISOString(), unread: r.withdrawnAt! > read }));
+    return merge([...items, ...withdrawn], unread + wUnread, await liveEvents({ candidateId: s.candidateId, audience: 'candidate' }, read, through, '/invitations'), through);
   }
   if (s.role === 'employer' && s.employerProfileId) {
     const read = user.employerNotificationsReadAt ?? new Date(0);

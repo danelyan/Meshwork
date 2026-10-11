@@ -64,6 +64,9 @@ export const InvitationInput = z
   })
   .refine((v) => v.salaryTo >= v.salaryFrom, { error: 'Зарплата «до» меньше «от»', path: ['salaryTo'] });
 
+/** lane invite-cancel: отзыв приглашения работодателем — причина обязательна, до 300 знаков (видна кандидату). */
+export const WithdrawInvitationInput = z.object({ reason: z.string().trim().min(3, 'Напиши причину отзыва').max(300, 'Причина - до 300 знаков') });
+
 /**
  * Ответ на приглашение. accept — только с `disclosureVersion`: кандидат отдельно подтверждает раскрытие имени и
  * контактов этому работодателю (Г5, ADR 0005; версия — CONSENT_TEXTS.identity_disclosure.version).

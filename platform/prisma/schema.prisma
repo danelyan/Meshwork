@@ -393,6 +393,8 @@ enum InvitationStatus {
   declined
   /// lane hired: работодатель отметил найм (только из accepted), финальный этап пути кандидата
   hired
+  /// lane invite-cancel: работодатель отозвал приглашение (из sent/viewed/accepted) с причиной; финальный статус
+  withdrawn
 }
 
 model Recommendation {
@@ -497,6 +499,9 @@ model Invitation {
   respondedAt       DateTime?
   /// lane hired: когда работодатель отметил найм (status = hired)
   hiredAt           DateTime?
+  /// lane invite-cancel: когда и почему работодатель отозвал приглашение (status = withdrawn); причина видна кандидату
+  withdrawnAt       DateTime?
+  withdrawReason    String?
   /// lane complaints: жалоба кандидата на это приглашение (не больше одной)
   complaint         Complaint?
   /// lane live-slots: предложения слотов живой защиты (ADR 0008); активное — activeKey = id приглашения

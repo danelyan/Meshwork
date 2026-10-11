@@ -130,8 +130,13 @@ export async function createEmployerQuestion(
     throw errors.rateLimited(`В очереди уже ${queued} вопросов этому кандидату - дождись ответов`);
   }
   if (input.projectSubmissionId) {
-    const sub = await prisma.projectSubmission.findUnique({ where: { id: input.projectSubmissionId }, select: { candidateId: true } });
+    const sub = await prisma.projectSubmission.findUnique({ where: { id: input.projectSubmissionId }, select: { candidateId: true, projectTask: { select: { vacancy: { select: { companyId: true } } } } } });
     if (!sub || sub.candidateId !== input.candidateId) throw errors.notFound('Сабмит не найден');
+    // ADR 0008 (visibility.ts): живая защита проекта принадлежит компании вакансии сабмита — вопрос к проекту,
+    // сданному под вакансию другой компании, не принимается (иначе он попал бы в чужую защиту или не был бы задан).
+    if (sub.projectTask.vacancy.companyId !== ctx.companyId) {
+      throw new AppError('submission_not_owned', 'Вопрос можно привязать только к проекту, сданному под вакансию вашей компании', 404);
+    }
   }
   const q = await prisma.employerQuestion.create({
     data: { companyId: ctx.companyId, candidateId: input.candidateId, projectSubmissionId: input.projectSubmissionId ?? null, text },

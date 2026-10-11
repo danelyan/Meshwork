@@ -16,7 +16,7 @@ export const ATS_TIMEOUT_MS = 5_000;
 
 export interface AtsStatusChange {
   invitationId: string;
-  status: 'sent' | 'viewed' | 'accepted' | 'declined' | 'hired';
+  status: 'sent' | 'viewed' | 'accepted' | 'declined' | 'hired' | 'withdrawn';
   companyId: string;
   vacancyId: string | null;
   candidateId: string;

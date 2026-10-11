@@ -22,13 +22,25 @@ describe('notification role scopes and read watermarks', () => {
   it('queries only the signed candidate and its own role watermark', async () => {
     const read = new Date('2026-10-10T12:00:00Z');
     db.user.findUnique.mockResolvedValue({ role: 'candidate', candidateNotificationsReadAt: read, employerNotificationsReadAt: now });
-    db.invitation.findMany.mockResolvedValue([{ id: 'i1', createdAt: new Date('2026-10-10T14:00:00Z'), company: { name: 'Компания' }, vacancy: null, salaryFrom: 100000, salaryTo: 200000 }]);
-    db.invitation.count.mockResolvedValue(1);
+    db.invitation.findMany.mockResolvedValueOnce([{ id: 'i1', createdAt: new Date('2026-10-10T14:00:00Z'), company: { name: 'Компания' }, vacancy: null, salaryFrom: 100000, salaryTo: 200000 }]);
+    db.invitation.count.mockResolvedValueOnce(1);
     const feed = await notifications(candidate);
+    // lane invite-cancel: отозванные приглашения — тоже только свои, по времени отзыва.
+    expect(db.invitation.findMany.mock.calls[1]![0].where).toEqual({ candidateId: 'candidate-c', withdrawnAt: { not: null, lte: now } });
+    expect(db.invitation.count.mock.calls[1]![0].where).toEqual({ candidateId: 'candidate-c', withdrawnAt: { gt: read, lte: now } });
     expect(db.user.findUnique.mock.calls[0]![0].where).toEqual({ id: 'user-c' });
     expect(db.invitation.findMany.mock.calls[0]![0].where).toEqual({ candidateId: 'candidate-c', createdAt: { lte: now } });
     expect(db.invitation.count.mock.calls[0]![0].where).toEqual({ candidateId: 'candidate-c', createdAt: { gt: read, lte: now } });
     expect(feed).toMatchObject({ unread: 1, through: now.toISOString(), items: [{ href: '/invitations', unread: true }] });
+  });
+
+  it('lane invite-cancel: отзыв приглашения — уведомление кандидату с причиной', async () => {
+    const read = new Date('2026-10-10T12:00:00Z');
+    db.user.findUnique.mockResolvedValue({ role: 'candidate', candidateNotificationsReadAt: read, employerNotificationsReadAt: null });
+    db.invitation.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 'i9', withdrawnAt: new Date('2026-10-10T14:30:00Z'), withdrawReason: 'Позиция закрыта', company: { name: 'Альфа' } }]);
+    db.invitation.count.mockResolvedValueOnce(0).mockResolvedValueOnce(1);
+    const feed = await notifications(candidate);
+    expect(feed).toMatchObject({ unread: 1, items: [{ id: 'withdrawn-i9', text: '«Альфа» отозвала приглашение', detail: 'Позиция закрыта', href: '/invitations', unread: true }] });
   });
 
   it('employer sees answers to its profile invitations, not another employer in the company', async () => {

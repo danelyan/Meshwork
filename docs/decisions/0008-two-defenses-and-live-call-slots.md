@@ -64,7 +64,8 @@
 | Слоты, подстатус живой защиты, письма о назначении | есть (lane live-slots): `server/live-defense/`, модели `LiveDefense*` (миграция `20261011200000_live_defense_slots`); API `POST /api/employer/invitations/:id/live-defense[/cancel]`, `POST /api/invitations/:id/live-defense/{choose,none-fit,cancel}`; блок в `/employer/invitations` и `/invitations`; уведомления на платформе обеим сторонам и письмо обеим при выборе |
 | Комната открывается за 10 минут, `no_show` при опоздании >15 минут | есть: проверка в `startDefenseRoom` и `joinCall` (409 `room_not_open`); `done`/`no_show` вычисляются при чтении, без крона |
 | Кнопка «Назначить защиту» в карточке кандидата | **нет** — только в `/employer/invitations` |
-| Закрытие предложения при найме другой компанией | есть: `markInvitationHired` → `closeLiveDefensesOnHire`. Отмены приглашения работодателем в коде нет — правила нет и здесь |
+| Закрытие предложения при найме другой компанией | есть: `markInvitationHired` → `closeLiveDefensesOnHire` |
+| Отмена приглашения работодателем (п. 6) | есть (lane invite-cancel): `POST /api/employer/invitations/:id/withdraw` с причиной (3–300 знаков), `sent`/`viewed`/`accepted` → `withdrawn` (миграция `20261011210000_invitation_withdrawn`). Закрывает предложение слотов (`cancelled`, «Приглашение отозвано»), отменяет ожидающую сессию, отзывает раскрытие по приглашению; кандидат видит статус и причину, уведомление и письмо. Лимит 20 в сутки не возвращается |
 | Живая защита без сданного проекта | время назначается, но сессии защиты нет (`callSessionId = null`): вопросы по коду строятся только по сабмиту |
 | Найм `accepted → hired` | есть |
 

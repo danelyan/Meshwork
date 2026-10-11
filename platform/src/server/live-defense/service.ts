@@ -362,6 +362,25 @@ export async function closeLiveDefensesOnHire(companyId: string, invitationId: s
   }
 }
 
+/**
+ * lane invite-cancel: работодатель отозвал приглашение — активное предложение слотов или назначенная защита
+ * закрываются (`cancelled`, причина «Приглашение отозвано»), слоты освобождаются. Ожидающая сессия живой защиты
+ * (CallSession pending) отменяется, если на неё не ссылается активная защита другой компании (pending.ts: одна
+ * ожидающая сессия на сабмит). Вызывается в транзакции отзыва — статус приглашения и защита меняются вместе.
+ */
+export async function closeLiveDefenseOnWithdraw(tx: Prisma.TransactionClient, invitationId: string, now = new Date()): Promise<void> {
+  const live = await tx.liveDefense.findUnique({ where: { activeKey: invitationId }, select: { id: true, status: true, callSessionId: true } });
+  if (!live) return;
+  if (live.status === 'slots_proposed' || live.status === 'scheduled') {
+    await tx.liveDefense.update({ where: { id: live.id }, data: { status: 'cancelled', cancelledAt: now, cancelledBy: 'employer', cancelReason: 'Приглашение отозвано' } });
+    await tx.liveDefenseSlot.updateMany({ where: { liveDefenseId: live.id }, data: { bookedKey: null } });
+  }
+  if (live.callSessionId) {
+    const shared = await tx.liveDefense.count({ where: { callSessionId: live.callSessionId, id: { not: live.id }, activeKey: { not: null }, status: { in: ['slots_proposed', 'scheduled'] } } });
+    if (shared === 0) await tx.callSession.updateMany({ where: { id: live.callSessionId, status: 'pending' }, data: { status: 'cancelled', finishedAt: now } });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Комната: открывается за 10 минут до начала (п. 5)
 // ---------------------------------------------------------------------------

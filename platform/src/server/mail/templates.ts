@@ -104,6 +104,30 @@ export function invitationMail(to: string, p: { companyName: string; vacancyTitl
   };
 }
 
+/** lane invite-cancel: компания отозвала приглашение — кандидату, с причиной. */
+export function invitationWithdrawnMail(to: string, p: { companyName: string; vacancyTitle: string | null; reason: string }): MailMessage {
+  const what = p.vacancyTitle ? ` на позицию «${p.vacancyTitle}»` : '';
+  const subject = `«${p.companyName}» отозвала приглашение`;
+  const url = `${getEnv().APP_URL}/invitations`;
+  return {
+    kind: 'invitation_withdrawn',
+    to,
+    subject,
+    text: `Компания «${p.companyName}» отозвала приглашение${what}.\nПричина: ${p.reason}\n\nКомпания больше не получает ваши контакты и данные по этому приглашению. Подробности: ${url}${sign()}`,
+    html: html({
+      subject,
+      preheader: `Причина: ${p.reason.slice(0, 80)}`,
+      kicker: 'Приглашение',
+      title: subject,
+      lead: [`Компания «${p.companyName}» отозвала приглашение${what}.`],
+      facts: [{ label: 'Причина', value: p.reason }],
+      action: { label: 'Открыть приглашения', href: url },
+      notes: ['Компания больше не получает ваши контакты и данные по этому приглашению. То, что она уже получила, отозвать невозможно.'],
+      accent: 'candidate',
+    }),
+  };
+}
+
 export function invitationAnswerMail(to: string, p: { accepted: boolean; vacancyTitle: string | null }): MailMessage {
   const what = p.vacancyTitle ? ` на «${p.vacancyTitle}»` : '';
   const subject = p.accepted ? 'Кандидат принял приглашение' : 'Кандидат отклонил приглашение';

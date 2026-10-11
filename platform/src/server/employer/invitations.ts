@@ -1,20 +1,22 @@
-// Приглашения (R-E-05, R-C-11, R-C-16, R-E-07). Статусы: sent → viewed → accepted | declined; accepted → hired (lane hired: работодатель отметил найм).
+// Приглашения (R-E-05, R-C-11, R-C-16, R-E-07). Статусы: sent → viewed → accepted | declined; accepted → hired (lane hired: работодатель отметил найм);
+// sent | viewed | accepted → withdrawn (lane invite-cancel: работодатель отозвал с причиной).
 // Контакты работодатель видит только после accepted — решает matching/privacy на сервере.
 import type { InvitationStatus } from '@prisma/client';
 import type { z } from 'zod';
 
-import { assertEmployerConsents, consentRequired, disclosedInvitationIds, grantConsent, hasActiveConsent, revokeConsent, userIdForCandidate } from '../consent/service';
+import { assertEmployerConsents, consentRequired, disclosedInvitationIds, revokeDisclosureForInvitation, grantConsent, hasActiveConsent, revokeConsent, userIdForCandidate } from '../consent/service';
 import { consentVersion } from '../consent/texts';
 import { prisma } from '../db';
 import { AppError, errors } from '../errors';
 import { deliverable, notifyInBackground, sendMail } from '../mail';
-import { invitationAnswerMail, invitationMail } from '../mail/templates';
-import { closeLiveDefensesOnHire, liveDefenseViews, type LiveDefenseView } from '../live-defense/service';
+import { invitationAnswerMail, invitationMail, invitationWithdrawnMail } from '../mail/templates';
+import { closeLiveDefenseOnWithdraw, closeLiveDefensesOnHire, liveDefenseViews, type LiveDefenseView } from '../live-defense/service';
 import { loadCatalog } from '../recommend/evidence';
 import type { Grade, Specialization } from '../types';
 
 import { notifyAtsStatusChanged } from './ats-webhook';
-import { detectRedFlags, type RedFlag } from './antifraud';
+import { detectRedFlags, invitationSanction, type RedFlag } from './antifraud';
+import { countRecentComplaints } from './complaints';
 import { loadCompanyTrusts } from './company';
 import { loadPool } from './matching';
 import { contactEmail, toCandidateCard, type CandidateCard } from './privacy';
@@ -37,6 +39,8 @@ export interface EmployerInvitationView {
   respondedAt: string | null;
   /** lane hired: когда отмечен найм (status = hired). */
   hiredAt?: string | null;
+  /** lane invite-cancel: отзыв работодателем (status = withdrawn) — когда и почему. */
+  withdrawn?: { at: string; reason: string } | null;
   vacancy: { id: string; title: string } | null;
   candidate: CandidateCard;
   /** lane live-slots (ADR 0008): активное предложение слотов живой защиты и его подстатус; null — не назначалась. */
@@ -54,6 +58,8 @@ export interface CandidateInvitationView {
   respondedAt: string | null;
   /** lane hired: когда компания отметила найм (status = hired) — финальный этап пути. */
   hiredAt?: string | null;
+  /** lane invite-cancel: компания отозвала приглашение (status = withdrawn) — когда и причина. */
+  withdrawn?: { at: string; reason: string } | null;
   /**
    * Компания и способ связи — до принятия (ТЗ 2.2: «кандидат видит условия до начала общения»).
    * contact: Company.contact, иначе почта отправителя; null — не указан (интерфейс пишет NO_COMPANY_CONTACT).
@@ -61,6 +67,8 @@ export interface CandidateInvitationView {
   company: { name: string; description: string | null; contact: string | null; trust?: { index: number; band: 'low' | 'medium' | 'high'; concept: true } | null };
   /** Антифрод (R-X-01): красные флаги текста и вилки; пустой — ничего не найдено. Интерфейс пишет «Проверьте: …». */
   redFlags?: Pick<RedFlag, 'code' | 'severity' | 'candidateNote'>[];
+  /** lane complaints: жалоба кандидата на это приглашение; null — не подавалась. */
+  complaint?: { reason: string; createdAt: string } | null;
   /** Принято и раскрытие имени и контактов действует (Г5, ADR 0005); false после отзыва — компания видит псевдоним. */
   disclosed?: boolean;
   /** lane live-slots (ADR 0008): слоты живой защиты и подстатус; null — компания ещё не предлагала. */
@@ -83,8 +91,9 @@ export async function invitationsSentToday(companyId: string, now = new Date()):
 /**
  * Отправить приглашение. 404 — кандидата нет или он скрыт настройкой приватности;
  * 404 — чужая или архивная потребность; 409 — уже есть открытое приглашение этой
- * компании; 429 — лимит за сутки. Лимит и дубль проверяются под advisory-lock
- * компании, чтобы параллельные запросы не обошли счётчик.
+ * компании; 429 — лимит за сутки; 403 company_blocked — отправка закрыта из-за жалоб.
+ * Лимит, жалобы и дубль проверяются под advisory-lock компании, чтобы параллельные
+ * запросы не обошли счётчик. Жалобы кандидатов за 30 дней снижают лимит (antifraud.invitationSanction).
  */
 export async function createInvitation(
   ctx: { companyId: string; employerProfileId: string },
@@ -108,9 +117,21 @@ export async function createInvitation(
       select: { id: true },
     });
     if (open) throw errors.conflict('Кандидат ещё не ответил на прошлое приглашение компании');
+    // lane complaints: санкция читается тем же tx под тем же lock — решение и вставка в одной транзакции.
+    const sanction = invitationSanction(await countRecentComplaints(tx, ctx.companyId), limit);
+    if (sanction.level === 'blocked') {
+      throw new AppError(
+        'company_blocked',
+        `Отправка приглашений приостановлена: ${sanction.complaints} жалоб кандидатов за 30 дней. Проверьте тексты и вилки приглашений.`,
+        403,
+        { complaints: sanction.complaints },
+      );
+    }
+    const effective = sanction.limit;
     const sent = await tx.invitation.count({ where: { companyId: ctx.companyId, createdAt: { gt: new Date(Date.now() - DAY_MS) } } });
-    if (sent >= limit) {
-      throw new AppError('rate_limited', `Лимит: не больше ${limit} приглашений от компании за сутки`, 429, { limit });
+    if (sent >= effective) {
+      const why = sanction.level === 'reduced' ? ` (лимит снижен из-за ${sanction.complaints} жалоб кандидатов за 30 дней)` : '';
+      throw new AppError('rate_limited', `Лимит: не больше ${effective} приглашений от компании за сутки${why}`, 429, { limit: effective, sanction: sanction.level });
     }
     return tx.invitation.create({
       data: {
@@ -173,6 +194,8 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
       viewedAt: true,
       respondedAt: true,
       hiredAt: true,
+      withdrawnAt: true,
+      withdrawReason: true,
       candidateId: true,
       vacancy: { select: { id: true, title: true } },
       candidate: {
@@ -207,6 +230,7 @@ export async function listCompanyInvitations(companyId: string): Promise<Employe
     viewedAt: r.viewedAt?.toISOString() ?? null,
     respondedAt: r.respondedAt?.toISOString() ?? null,
     hiredAt: r.hiredAt?.toISOString() ?? null,
+    withdrawn: withdrawnView(r),
     vacancy: r.vacancy,
     candidate: toCandidateCard(
       {
@@ -243,6 +267,9 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       createdAt: true,
       respondedAt: true,
       hiredAt: true,
+      withdrawnAt: true,
+      withdrawReason: true,
+      complaint: { select: { reason: true, createdAt: true } },
       company: { select: { id: true, name: true, description: true, contact: true } },
       employerProfile: { select: { user: { select: { email: true } } } },
       vacancy: {
@@ -286,6 +313,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
       createdAt: r.createdAt.toISOString(),
       respondedAt: r.respondedAt?.toISOString() ?? null,
       hiredAt: r.hiredAt?.toISOString() ?? null,
+      withdrawn: withdrawnView(r),
       company,
       redFlags: detectRedFlags({
         texts: [r.message, r.vacancy?.title, r.vacancy?.teamDescription],
@@ -293,6 +321,7 @@ export async function listCandidateInvitations(candidateId: string, markViewed =
         salaryTo: r.salaryTo,
       }).map(({ code, severity, candidateNote }) => ({ code, severity, candidateNote })),
       disclosed: disclosed.has(r.id),
+      complaint: r.complaint ? { reason: r.complaint.reason, createdAt: r.complaint.createdAt.toISOString() } : null,
       liveDefense: live.get(r.id) ?? null,
       vacancy,
     };
@@ -351,6 +380,59 @@ export async function markInvitationHired(companyId: string, invitationId: strin
   await closeLiveDefensesOnHire(companyId, invitationId, now);
   void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
   return { id: invitationId, status: 'hired', hiredAt: now.toISOString() };
+}
+
+const withdrawnView = (r: { withdrawnAt: Date | null; withdrawReason: string | null }) =>
+  r.withdrawnAt ? { at: r.withdrawnAt.toISOString(), reason: r.withdrawReason ?? '' } : null;
+
+/** Отозвать можно до найма и до отказа кандидата (lane invite-cancel). */
+export const WITHDRAWABLE: InvitationStatus[] = ['sent', 'viewed', 'accepted'];
+export const WITHDRAW_REASON = { minChars: 3, maxChars: 300 } as const;
+
+/**
+ * lane invite-cancel: работодатель отзывает приглашение своей компании с причиной (sent | viewed | accepted → withdrawn).
+ * Чужое — 404; hired, declined, уже отозванное — 409 `invitation_not_withdrawable`. Одной транзакцией: статус, закрытие
+ * слотов живой защиты и ожидающей сессии (live-defense), отзыв раскрытия по этому приглашению (как отзыв кандидатом).
+ * Лимит приглашений в сутки считается по createdAt — отзыв его не возвращает. Кандидату — уведомление в ленте
+ * (notifications.ts по withdrawnAt) и письмо.
+ */
+export async function withdrawInvitation(
+  ctx: { companyId: string; userId: string },
+  invitationId: string,
+  rawReason: string,
+  now = new Date(),
+): Promise<{ id: string; status: InvitationStatus; withdrawn: { at: string; reason: string } }> {
+  const reason = rawReason.trim();
+  if (reason.length < WITHDRAW_REASON.minChars || reason.length > WITHDRAW_REASON.maxChars) {
+    throw new AppError('reason_invalid', `Причина отзыва - от ${WITHDRAW_REASON.minChars} до ${WITHDRAW_REASON.maxChars} знаков`, 400);
+  }
+  await assertEmployerConsents(ctx.userId);
+  const inv = await prisma.invitation.findFirst({ where: { id: invitationId, companyId: ctx.companyId }, select: { status: true, candidateId: true } });
+  if (!inv) throw errors.notFound('Приглашение не найдено');
+  const notWithdrawable = () => new AppError('invitation_not_withdrawable', 'Отозвать можно только приглашение без ответа или принятое - не после найма и не после отказа', 409);
+  if (!WITHDRAWABLE.includes(inv.status)) throw notWithdrawable();
+  await prisma.$transaction(async (tx) => {
+    const r = await tx.invitation.updateMany({
+      where: { id: invitationId, companyId: ctx.companyId, status: { in: WITHDRAWABLE } },
+      data: { status: 'withdrawn', withdrawnAt: now, withdrawReason: reason },
+    });
+    if (r.count === 0) throw notWithdrawable();
+    await closeLiveDefenseOnWithdraw(tx, invitationId, now);
+    await revokeDisclosureForInvitation(tx, inv.candidateId, invitationId, now);
+  });
+  void notifyInBackground('invitation_withdrawn', () => notifyCandidateWithdrawn(invitationId));
+  void notifyInBackground('ats', () => notifyAtsStatusChanged(invitationId));
+  return { id: invitationId, status: 'withdrawn', withdrawn: { at: now.toISOString(), reason } };
+}
+
+/** Письмо кандидату об отзыве приглашения. Служебный адрес — пропуск. */
+export async function notifyCandidateWithdrawn(invitationId: string): Promise<void> {
+  const inv = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    select: { withdrawReason: true, candidate: { select: { email: true } }, company: { select: { name: true } }, vacancy: { select: { title: true } } },
+  });
+  if (!inv || !deliverable(inv.candidate.email)) return;
+  await sendMail(invitationWithdrawnMail(inv.candidate.email, { companyName: inv.company?.name ?? 'Компания', vacancyTitle: inv.vacancy?.title ?? null, reason: inv.withdrawReason ?? '' }));
 }
 
 export async function getPrivacy(candidateId: string): Promise<{ hiddenFromEmployers: boolean }> {

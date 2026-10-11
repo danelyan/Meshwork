@@ -249,6 +249,17 @@ export async function disclosedInvitationIds(invitationIds: readonly string[]): 
   return new Set(consents.map((c) => invitationOf(c.context)).filter((v): v is string => !!v && want.has(v)));
 }
 
+/**
+ * lane invite-cancel: работодатель отозвал приглашение — раскрытие по нему прекращается так же, как при отзыве
+ * кандидатом (revokedAt): новые данные компания не получает. Уже полученное отозвать невозможно.
+ */
+export async function revokeDisclosureForInvitation(db: Prisma.TransactionClient | typeof prisma, candidateId: string, invitationId: string, now = new Date()): Promise<number> {
+  const rows = await db.consent.findMany({ where: { kind: 'identity_disclosure', revokedAt: null, user: { candidateId } }, select: { id: true, context: true } });
+  const ids = rows.filter((r) => invitationOf(r.context) === invitationId).map((r) => r.id);
+  if (!ids.length) return 0;
+  return (await db.consent.updateMany({ where: { id: { in: ids } }, data: { revokedAt: now } })).count;
+}
+
 /** Раскрыта ли личность по самоотклику (R-C-12, R-E-07): действующее раскрытие с context.applicationId. Статус accepted проверяет вызывающий. */
 export async function disclosedApplicationIds(applicationIds: readonly string[]): Promise<Set<string>> {
   if (applicationIds.length === 0) return new Set();

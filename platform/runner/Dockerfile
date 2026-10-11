@@ -1,7 +1,7 @@
 # Сервис runner: автопроверка проектов кандидатов скрытыми тестами (ADR 0003, runner/README.md).
 # Сборка из каталога platform/: docker build -f runner/Dockerfile .  (в compose — сервис runner)
 # Один образ на оба «образа» контракта: node20 (Node 20 + vitest/supertest/testing-library/express)
-# и python312 (Python 3.12 + pytest/fastapi/httpx). Docker внутри не нужен и недоступен.
+# и python312 (Python 3.12 + pytest/fastapi/httpx/numpy/pandas; numpy/pandas — колёса musllinux, без сборки). Docker внутри не нужен и недоступен.
 
 FROM node:20-alpine3.21 AS build
 WORKDIR /build

@@ -158,6 +158,11 @@ export function buildCommand(cfg: RunnerConfig, spec: SandboxSpec, opts: { conta
       PYTHONDONTWRITEBYTECODE: '1',
       PYTHONNOUSERSITE: '1',
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1',
+      // numpy/pandas: OpenBLAS заводит пул потоков по числу CPU хоста и резервирует под каждый
+      // буферы — под RLIMIT_AS это лишнее адресное пространство. Один поток на задание.
+      OPENBLAS_NUM_THREADS: '1',
+      OMP_NUM_THREADS: '1',
+      MKL_NUM_THREADS: '1',
     };
   }
 

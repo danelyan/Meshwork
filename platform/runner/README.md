@@ -52,7 +52,7 @@
    (vitest, supertest, Testing Library, jsdom, react, express) через `node_modules` рядом с `repo/`.
    python312: `pytest -c <наш pytest.job.ini> --confcutdir .platform-tests -p no:cacheprovider`,
    автозагрузка плагинов выключена, `conftest.py` кандидата выше каталога тестов не грузится;
-   пакеты — [`sandbox/python/requirements.txt`](sandbox/python/requirements.txt) (pytest, fastapi, httpx).
+   пакеты — [`sandbox/python/requirements.txt`](sandbox/python/requirements.txt) (pytest, fastapi, httpx, numpy, pandas; BLAS в один поток — `OPENBLAS_NUM_THREADS=1`).
 4. Отчёт (vitest JSON / JUnit XML) разбирается в `tests`, каталог задания удаляется.
 
 ## Изоляция и её границы

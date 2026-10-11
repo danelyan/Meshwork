@@ -99,6 +99,9 @@ describe('runner sandbox: команда задания', () => {
     expect(cmd.args).toContain('/work/jobs/j/repo/.platform-tests');
     expect(cmd.reportFile).toBe('/work/jobs/j/out/report.xml');
     expect(cmd.env.PYTEST_DISABLE_PLUGIN_AUTOLOAD).toBe('1');
+    // numpy/pandas под RLIMIT_AS: OpenBLAS в один поток
+    expect(cmd.env.OPENBLAS_NUM_THREADS).toBe('1');
+    expect(cmd.env.OMP_NUM_THREADS).toBe('1');
   });
 
   it('локально на macOS: sandbox-exec, без смены uid и без RLIMIT_NPROC', () => {

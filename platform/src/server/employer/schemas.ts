@@ -100,7 +100,7 @@ export function parseFilters(raw: Raw): { filters: MatchFilters; limit: number }
   if (grade.success) filters.grade = grade.data;
   if (stack.length) filters.stack = stack;
   if (first(raw.fsp) === '1') filters.fsp = true;
-  if (first(raw.category) === '1') filters.categoryOnly = true;
+  if (first(raw.untested) === '1') filters.includeUntested = true; // по умолчанию только с категорией по тесту
   // Подкатегория — только из справочника и только вместе со своим направлением (иначе отбрасывается).
   const sub = getSubcategory(first(raw.sub));
   if (sub && !fullstack && (!filters.specialization || filters.specialization === sub.specialization)) {
@@ -125,6 +125,6 @@ export function filtersToQuery(f: MatchFilters): string {
   if (f.grade) p.set('grade', f.grade);
   if (f.stack?.length) p.set('stack', f.stack.join(','));
   if (f.fsp) p.set('fsp', '1');
-  if (f.categoryOnly) p.set('category', '1');
+  if (f.includeUntested) p.set('untested', '1');
   return p.toString();
 }

@@ -7,7 +7,7 @@ import { requireEmployer } from '@/server/session';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/employer/vacancies/:id/matches?spec=&grade=&stack=a,b&fsp=1&category=1&limit=
+ * GET /api/employer/vacancies/:id/matches?spec=&grade=&stack=a,b&fsp=1&untested=1&limit=
  * Подборка с обоснованием (R-E-03, R-M-03); фильтры — query (R-M-04). Контакты скрыты до принятия (R-E-07).
  */
 export const GET = withErrors(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {

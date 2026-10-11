@@ -6,7 +6,7 @@ import { requireEmployer } from '@/server/session';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/employer/search?spec=&grade=&stack=&fsp=1&category=1 — поиск по всему банку (R-E-04). */
+/** GET /api/employer/search?spec=&grade=&stack=&fsp=1&untested=1 — поиск по всему банку (R-E-04). */
 export const GET = withErrors(async (req: Request) => {
   const { employerProfileId, userId } = requireEmployer(req);
   await assertEmployerConsents(userId); // ADR 0005: поиск — после оферты и обязательства по данным

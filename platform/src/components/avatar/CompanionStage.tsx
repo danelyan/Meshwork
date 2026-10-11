@@ -2,6 +2,7 @@
 
 import { type MouseEvent, useEffect, useState } from 'react';
 
+import { isSpeakKeyOf } from '../chat/stream-speech';
 import { cx } from '../ui';
 
 import styles from './avatar.module.css';
@@ -97,7 +98,7 @@ export function ReplayButton({ text, speakKey }: { text: string; speakKey?: stri
   const voice = useCompanionVoice();
   if (!voice || voice.available === false || !text.trim()) return null;
   const busy = voice.status === 'speaking' || voice.status === 'loading';
-  const mine = speakKey ? voice.speakingKey === speakKey : voice.speakingText === text;
+  const mine = speakKey ? voice.speakingKey != null && isSpeakKeyOf(voice.speakingKey, speakKey) : voice.speakingText === text;
   if (busy && mine) {
     return (
       <button type="button" className={styles.replay} onClick={voice.stop} aria-label="Остановить озвучку">

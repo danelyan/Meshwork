@@ -1,5 +1,6 @@
 'use client';
 
+import { createStreamSpeech } from '@/components/chat/stream-speech';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -97,6 +98,7 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
   const callMode = useCallMode();
   const voiceRef = useRef(voice);
   voiceRef.current = voice;
+  const speechRef = useRef(createStreamSpeech(() => voiceRef.current));
   const rootRef = useRef<HTMLDivElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const paneRef = useRef<HTMLDivElement>(null);
@@ -132,8 +134,8 @@ function ChatBody({ demo, initial, embedded, className }: ChatProps) {
     if (event.type === 'done') return;
     reasonRef.current = event.type;
     if (event.type === 'discard') track({ k: 'flake', what: 'discard', id: event.id });
-    // Завершённая реплика — авторитетный текст после дельт: её и озвучиваем (если включено).
-    if (event.type === 'message') voiceRef.current?.speak(event.text, event.id);
+    // Озвучка по мере стриминга: готовые предложения из дельт сразу, остаток — по реплике целиком.
+    speechRef.current(event);
     setItems((p) => applyAgentEvent(p, event, nextId));
     if (event.type === 'error' && SIMPLIFIED_CODES.has(event.code)) setSimplified(true);
   }, []);

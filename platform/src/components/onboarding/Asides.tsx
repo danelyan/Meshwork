@@ -1,5 +1,6 @@
 'use client';
 
+import { createStreamSpeech } from '@/components/chat/stream-speech';
 import { type MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 import { openConsultantStream } from '@/lib/api';
@@ -47,6 +48,7 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
   const voice = useCompanionVoice();
   const voiceRef = useRef(voice);
   voiceRef.current = voice;
+  const speechRef = useRef(createStreamSpeech(() => voiceRef.current));
 
   const push = useCallback((stepId: string, item: FeedItem) => setByStep((p) => ({ ...p, [stepId]: [...(p[stepId] ?? []), item] })), []);
 
@@ -58,7 +60,7 @@ export function useAsides(initial: AsidesByStep, conversation: MutableRefObject<
         return;
       }
       if (!SHOWN.has(event.type)) return;
-      if (event.type === 'message') voiceRef.current?.speak(event.text, event.id);
+      speechRef.current(event);
       setByStep((p) => ({ ...p, [stepId]: applyAgentEvent(p[stepId] ?? [], event, nextId) as FeedItem[] }));
     },
     [conversation, onConversation],

@@ -1,5 +1,6 @@
 'use client';
 
+import { createStreamSpeech } from '@/components/chat/stream-speech';
 import { type MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 import { type ClaimAction, claimAction, confirmClaimsBatchApi, openConsultantStream } from '@/lib/api';
@@ -58,6 +59,7 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
   const voice = useCompanionVoice();
   const voiceRef = useRef(voice);
   voiceRef.current = voice;
+  const speechRef = useRef(createStreamSpeech(() => voiceRef.current));
 
   const push = useCallback((event: AgentEvent) => {
     if (event.type === 'conversation') {
@@ -66,7 +68,7 @@ export function useDocumentsRun(shared?: { conversation: MutableRefObject<string
       return;
     }
     if (!SHOWN.has(event.type)) return;
-    if (event.type === 'message') voiceRef.current?.speak(event.text, event.id);
+    speechRef.current(event);
     if (event.type === 'claims') setTotals((t) => ({ ...t, claims: t.claims + event.proposed.length }));
     setItems((p) => applyAgentEvent(p, event, nextId));
     // convRef/onConversation стабильны на время жизни онбординга

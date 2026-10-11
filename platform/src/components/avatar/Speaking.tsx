@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { isSpeakKeyOf } from '../chat/stream-speech';
 import { Bubble } from '../chat/Thread';
 import { cx } from '../ui';
 
@@ -52,9 +53,11 @@ function SpeakerIcon() {
  */
 export function SpeakingBubble({ text, speakKey, latest = true, children }: { text: string; speakKey?: string; latest?: boolean; children: React.ReactNode }) {
   const voice = useCompanionVoice();
-  const sameReply = voice?.speakingKey != null ? voice.speakingKey === speakKey : voice?.speakingText === text && latest;
+  const sameReply = voice?.speakingKey != null ? speakKey != null && isSpeakKeyOf(voice.speakingKey, speakKey) : voice?.speakingText === text && latest;
   const mine = voice?.status === 'speaking' && sameReply;
-  const phrases = useMemo(() => (mine ? splitPhrases(text) : []), [mine, text]);
+  // Реплика звучит частями (стриминг, components/chat/stream-speech.ts): полоска — по фразам звучащей части.
+  const shown = voice?.speakingKey?.includes('#') && voice.speakingText ? voice.speakingText : text;
+  const phrases = useMemo(() => (mine ? splitPhrases(shown) : []), [mine, shown]);
   const active = useActivePhrase(voice, phrases, mine);
   return (
     <Bubble speaking={mine}>

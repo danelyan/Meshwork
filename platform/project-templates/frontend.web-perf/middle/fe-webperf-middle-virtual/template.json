@@ -1,0 +1,20 @@
+{
+  "id": "fe-webperf-middle-virtual",
+  "subcategoryId": "frontend.web-perf",
+  "specialization": "frontend",
+  "grade": "middle",
+  "title": "Виртуализация списка: только видимое окно в DOM",
+  "summary": "Расчёт окна с overscan и компонент списка на 10 000 строк: в DOM только видимые строки, сохранение состояния строк при прокрутке, scrollToIndex и onRangeChange",
+  "stack": ["react19", "typescript", "testing-library", "vitest"],
+  "catalogIds": ["fe.render-perf", "fe.web-perf", "fe.components"],
+  "image": "node20",
+  "testEnvironment": "jsdom",
+  "contractRef": "contract.md",
+  "starterRef": "starter",
+  "visibleTestsRef": "visible",
+  "hiddenTestsRef": "hidden",
+  "referenceRef": "reference",
+  "timeLimitSec": 120,
+  "timeBudgetMin": 300,
+  "platformOwned": ["contract.md", "tests/visible/**", ".platform-tests/**"]
+}

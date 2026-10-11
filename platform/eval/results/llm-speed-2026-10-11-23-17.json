@@ -1,0 +1,367 @@
+{
+ "at": "2026-10-11-23-17 МСК",
+ "repeats": 3,
+ "note": "call = персона Кира, 4 реплики истории, max 120 ток; chat = системный промпт ~1.5к ток + вопрос, max 350 ток. Повтор 0 — холодный.",
+ "results": [
+  {
+   "id": "y:deepseek-v4.1-flash",
+   "provider": "Yandex",
+   "model": "deepseek-v4.1-flash/latest",
+   "call": [
+    {
+     "ttftAny": 939.6180420000001,
+     "ttftContent": null,
+     "firstSentence": null,
+     "total": 16077.525,
+     "outTok": 858,
+     "chars": 0,
+     "reasoningChunks": 453,
+     "usage": true,
+     "tokPerS": null,
+     "sample": "",
+     "cold": true
+    },
+    {
+     "ttftAny": 700.3134580000005,
+     "ttftContent": 14934.3675,
+     "firstSentence": 15301.325625000001,
+     "total": 15744.767708,
+     "outTok": 825,
+     "chars": 188,
+     "reasoningChunks": 437,
+     "usage": true,
+     "tokPerS": 1018.0155333819964,
+     "sample": "Согласен, 404 вместо 403 — хорошая практика, чтобы не раскрывать существование ресурса. А как в этой функции проверки пр",
+     "cold": false
+    },
+    {
+     "ttftAny": 3869.3235000000022,
+     "ttftContent": null,
+     "firstSentence": null,
+     "total": 29669.213083,
+     "outTok": 1387,
+     "chars": 0,
+     "reasoningChunks": 761,
+     "usage": true,
+     "tokPerS": null,
+     "sample": "",
+     "cold": false
+    }
+   ],
+   "chat": [
+    {
+     "ttftAny": 3794.524790999996,
+     "ttftContent": 10952.287082999996,
+     "firstSentence": 11456.601499999997,
+     "total": 16861.875624999993,
+     "outTok": 784,
+     "chars": 975,
+     "reasoningChunks": 231,
+     "usage": true,
+     "tokPerS": 132.66575065726468,
+     "sample": "**Сильные стороны:** стек точно совпадает с типичным middle-профилем (Python/FastAPI/PostgreSQL/Redis/Docker/CI-CD). Инт",
+     "cold": true
+    },
+    {
+     "ttftAny": 7094.201209000006,
+     "ttftContent": 9726.08733400001,
+     "firstSentence": 10230.75116700001,
+     "total": 15504.391459000006,
+     "outTok": 488,
+     "chars": 905,
+     "reasoningChunks": 83,
+     "usage": true,
+     "tokPerS": 84.45384483808222,
+     "sample": "**Сильные стороны:** стек совпадает с типовыми вакансиями (FastAPI + PostgreSQL + Redis + Docker/CI-CD). Outbox-паттерн ",
+     "cold": false
+    },
+    {
+     "ttftAny": 1708.1195410000073,
+     "ttftContent": 4667.51266600001,
+     "firstSentence": 5092.15400000001,
+     "total": 9788.390750000006,
+     "outTok": 512,
+     "chars": 859,
+     "reasoningChunks": 94,
+     "usage": true,
+     "tokPerS": 99.98285286262252,
+     "sample": "**Сильные стороны:** стек ровно под middle backend — FastAPI + PostgreSQL + Redis + Docker/CI. Outbox-паттерн и очереди ",
+     "cold": false
+    }
+   ],
+   "errors": [],
+   "tools": "да",
+   "json_schema": "да"
+  },
+  {
+   "id": "y:qwen3.6-35b-a3b",
+   "provider": "Yandex",
+   "model": "qwen3.6-35b-a3b/latest",
+   "call": [
+    {
+     "ttftAny": 3422.5450839999976,
+     "ttftContent": null,
+     "firstSentence": null,
+     "total": 6581.095916999999,
+     "outTok": 1500,
+     "chars": 0,
+     "reasoningChunks": 462,
+     "usage": true,
+     "tokPerS": null,
+     "sample": "",
+     "cold": true
+    },
+    {
+     "ttftAny": 3210.865458,
+     "ttftContent": null,
+     "firstSentence": null,
+     "total": 6638.424333000003,
+     "outTok": 1500,
+     "chars": 0,
+     "reasoningChunks": 484,
+     "usage": true,
+     "tokPerS": null,
+     "sample": "",
+     "cold": false
+    },
+    {
+     "ttftAny": 3014.474583000003,
+     "ttftContent": 8095.5016659999965,
+     "firstSentence": 8220.41616600001,
+     "total": 8276.981541000016,
+     "outTok": 1392,
+     "chars": 230,
+     "reasoningChunks": 392,
+     "usage": true,
+     "tokPerS": 7670.271979192478,
+     "sample": "\n\nВы возвращаете 404 вместо 403, чтобы скрыть факт существования ресурса, но как вы отличаете это от ситуации, когда зак",
+     "cold": false
+    }
+   ],
+   "chat": [
+    {
+     "ttftAny": 3662.026916999981,
+     "ttftContent": 11270.878916999995,
+     "firstSentence": 11406.721916999988,
+     "total": 12448.635917000007,
+     "outTok": 2094,
+     "chars": 992,
+     "reasoningChunks": 545,
+     "usage": true,
+     "tokPerS": 1777.9558941275475,
+     "sample": "\n\nВаши сильные стороны: современный стек (FastAPI, PostgreSQL, Redis), понимание очередей и outbox-паттерна, опыт CI/CD ",
+     "cold": true
+    },
+    {
+     "ttftAny": 1869.4175000000105,
+     "ttftContent": 9325.762041999988,
+     "firstSentence": 9501.197542000009,
+     "total": 10662.742874999996,
+     "outTok": 1961,
+     "chars": 1012,
+     "reasoningChunks": 494,
+     "usage": true,
+     "tokPerS": 1466.737556438842,
+     "sample": "\n\n**Сильные стороны:** актуальный production-стек (FastAPI, PostgreSQL, Redis), понимание архитектурных паттернов (outbo",
+     "cold": false
+    },
+    {
+     "ttftAny": 626.5065410000097,
+     "ttftContent": 3456.667041000008,
+     "firstSentence": 3543.702500000014,
+     "total": 3905.3128750000033,
+     "outTok": 1551,
+     "chars": 763,
+     "reasoningChunks": 416,
+     "usage": true,
+     "tokPerS": 3457.0698810947074,
+     "sample": "\n\n**Сильные стороны:** современный стек (FastAPI, PostgreSQL, Redis), production-паттерны (outbox, очереди, Docker, CI/C",
+     "cold": false
+    }
+   ],
+   "errors": [],
+   "tools": "да",
+   "json_schema": "да"
+  },
+  {
+   "id": "y:gpt-oss-120b",
+   "provider": "Yandex",
+   "model": "gpt-oss-120b/latest",
+   "call": [
+    {
+     "ttftAny": 193.66708300000755,
+     "ttftContent": 562.9357080000045,
+     "firstSentence": 652.9648750000051,
+     "total": 861.1250419999997,
+     "outTok": 128,
+     "chars": 229,
+     "reasoningChunks": 62,
+     "usage": true,
+     "tokPerS": 429.25747303893195,
+     "sample": "Интересно, что вы используете 404 для скрытия существования ресурса. Как реализована сама функция проверки прав: какие д",
+     "cold": true
+    },
+    {
+     "ttftAny": 759.9438749999972,
+     "ttftContent": 1336.759791999997,
+     "firstSentence": 1360.9928749999963,
+     "total": 1454.5641250000044,
+     "outTok": 138,
+     "chars": 169,
+     "reasoningChunks": 92,
+     "usage": true,
+     "tokPerS": 1171.433991311605,
+     "sample": "Интересно, какую именно информацию передаёте в токене для определения роли пользователя? И как вы тестируете сценарий, к",
+     "cold": false
+    },
+    {
+     "ttftAny": 1217.2807500000054,
+     "ttftContent": 1653.2905409999948,
+     "firstSentence": 1770.1187079999945,
+     "total": 1896.0358750000014,
+     "outTok": 155,
+     "chars": 217,
+     "reasoningChunks": 91,
+     "usage": true,
+     "tokPerS": 638.5292662309045,
+     "sample": "Интересно, где именно в кодовой базе вы вызываете эту проверку — в контроллере или через middleware? Как вы обеспечивает",
+     "cold": false
+    }
+   ],
+   "chat": [
+    {
+     "ttftAny": 1019.1830830000108,
+     "ttftContent": 1255.8006670000032,
+     "firstSentence": 1386.2102500000037,
+     "total": 3427.8199170000153,
+     "outTok": 518,
+     "chars": 1443,
+     "reasoningChunks": 45,
+     "usage": true,
+     "tokPerS": 238.48775741743407,
+     "sample": "**Сильные стороны**  \n- Уверенное владение Python и FastAPI → быстрый прототип и production‑ready сервисы.  \n- Работа с ",
+     "cold": true
+    },
+    {
+     "ttftAny": 348.2729169999948,
+     "ttftContent": 827.7234999999928,
+     "firstSentence": 970.2962920000136,
+     "total": 3581.0460420000018,
+     "outTok": 635,
+     "chars": 1711,
+     "reasoningChunks": 87,
+     "usage": true,
+     "tokPerS": 230.63044387772203,
+     "sample": "**Сильные стороны**  \n- Глубокие знания Python и FastAPI → быстро пишете чистый, типизированный код.  \n- Работа с Postgr",
+     "cold": false
+    },
+    {
+     "ttftAny": 254.70491600001696,
+     "ttftContent": 449.8744580000057,
+     "firstSentence": 631.9063329999917,
+     "total": 3008.967000000004,
+     "outTok": 604,
+     "chars": 1715,
+     "reasoningChunks": 38,
+     "usage": true,
+     "tokPerS": 236.02116378642486,
+     "sample": "**Сильные стороны**\n\n- **Python + FastAPI** – уверенно пишете асинхронный код, знаете роутинг, зависимости, валидацию.\n-",
+     "cold": false
+    }
+   ],
+   "errors": [],
+   "tools": "да",
+   "json_schema": "да"
+  },
+  {
+   "id": "y:gpt-oss-20b",
+   "provider": "Yandex",
+   "model": "gpt-oss-20b/latest",
+   "call": [
+    {
+     "ttftAny": 183.716207999998,
+     "ttftContent": 538.6429170000192,
+     "firstSentence": 674.9712500000023,
+     "total": 765.0627920000115,
+     "outTok": 118,
+     "chars": 172,
+     "reasoningChunks": 66,
+     "usage": true,
+     "tokPerS": 521.155662682015,
+     "sample": "Отлично, а как именно реализуется проверка владельца в сервисном слое – через отдельный сервис или через middleware? И к",
+     "cold": true
+    },
+    {
+     "ttftAny": 210.36616599999252,
+     "ttftContent": 1797.4462910000002,
+     "firstSentence": 1824.7227080000157,
+     "total": 1963.4775829999999,
+     "outTok": 360,
+     "chars": 156,
+     "reasoningChunks": 316,
+     "usage": true,
+     "tokPerS": 2168.2659675984496,
+     "sample": "Как выглядит код функции проверки прав? Какие поля заказа вы проверяете, чтобы определить владельца или бариста? Как реа",
+     "cold": false
+    },
+    {
+     "ttftAny": 200.765625,
+     "ttftContent": 726.9584589999868,
+     "firstSentence": 809.792958999984,
+     "total": 1025.492916999996,
+     "outTok": 173,
+     "chars": 246,
+     "reasoningChunks": 102,
+     "usage": true,
+     "tokPerS": 579.4975935407585,
+     "sample": "Отлично, что вы скрываете факт существования заказа. Как именно реализована эта проверка в сервисном слое – через отдель",
+     "cold": false
+    }
+   ],
+   "chat": [
+    {
+     "ttftAny": 204.46991700000945,
+     "ttftContent": 1082.8838749999995,
+     "firstSentence": 1212.0501670000085,
+     "total": 3813.5818340000114,
+     "outTok": 734,
+     "chars": 1727,
+     "reasoningChunks": 172,
+     "usage": true,
+     "tokPerS": 268.79574783466444,
+     "sample": "**Сильные стороны**  \n- **Асинхронный Python + FastAPI** – готов к микросервисам.  \n- **PostgreSQL + Redis** – опыт рабо",
+     "cold": true
+    },
+    {
+     "ttftAny": 205.08558299997821,
+     "ttftContent": 1593.844624999998,
+     "firstSentence": 1722.095290999976,
+     "total": 4214.431290999986,
+     "outTok": 782,
+     "chars": 1646,
+     "reasoningChunks": 249,
+     "usage": true,
+     "tokPerS": 298.406463768523,
+     "sample": "**Сильные стороны**  \n- Полный стек: Python + FastAPI, PostgreSQL, Redis, Docker.  \n- Опыт CI/CD и интеграционных тестов",
+     "cold": false
+    },
+    {
+     "ttftAny": 495.302915999986,
+     "ttftContent": 1669.0953750000044,
+     "firstSentence": 1818.6895829999994,
+     "total": 5041.6873749999795,
+     "outTok": 713,
+     "chars": 1507,
+     "reasoningChunks": 227,
+     "usage": true,
+     "tokPerS": 211.41009644807474,
+     "sample": "**Сильные стороны**  \n- **Python + FastAPI** – асинхронные эндпоинты, DI, Pydantic.  \n- **База + кэш** – PostgreSQL (SQL",
+     "cold": false
+    }
+   ],
+   "errors": [],
+   "tools": "да",
+   "json_schema": "да"
+  }
+ ]
+}

@@ -88,7 +88,7 @@ describe('карточка: ступени 1–3', () => {
     const block = screen.getByRole('region', { name: 'Созвон: карта глубины' });
     expect(within(block).getByText(/Подтверждено 1 из 3 тем/)).toBeDefined();
     const items = within(block).getAllByRole('listitem').map((li) => li.textContent ?? '');
-    expect(items[0]).toMatch(/Идемпотентность - подтверждено.*оценка 7 из 8.*требование потребности/);
+    expect(items[0]).toMatch(/Идемпотентность - подтверждено.*оценка 7 из 8.*требование вакансии/);
     expect(items[1]).toMatch(/Очереди - не подтверждено/);
     expect(items[2]).toMatch(/Деплой - не спрашивали/);
   });

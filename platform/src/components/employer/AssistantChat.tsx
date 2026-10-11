@@ -24,13 +24,13 @@ import { GRADE_LABEL, SPEC_LABEL } from './labels';
 type Item = { id: string; role: 'user'; text: string } | AgentItem<EmployerAgentEvent>;
 
 const GREETING =
-  `Я ${COMPANION_NAME}, помощница работодателя. От тебя нужно немного: описать потребность - направление, грейд, стек и вилку зарплаты. По ней я подберу кандидатов и объясню, почему каждый на своём месте; подходящему ты отправишь приглашение с зарплатой, а кандидат сам решит, открыть ли контакты. Отправляешь и сохраняешь ты - кнопками.`;
-const CONTINUE_GREETING = 'Дальше я - твоя помощница по подбору. Опиши потребность (направление, грейд, стек, вилка зарплаты) - подберу кандидатов и подготовлю приглашение. Или выбери шаг ниже.';
+  `Я ${COMPANION_NAME}, помощница работодателя. От тебя нужно немного: описать вакансию - направление, грейд, стек и вилку зарплаты. По ней я подберу кандидатов и объясню, почему каждый на своём месте; подходящему ты отправишь приглашение с зарплатой, а кандидат сам решит, открыть ли контакты. Отправляешь и сохраняешь ты - кнопками.`;
+const CONTINUE_GREETING = 'Дальше я - твоя помощница по подбору. Опиши вакансию (направление, грейд, стек, вилка зарплаты) - подберу кандидатов и подготовлю приглашение. Или выбери шаг ниже.';
 
 export const EMPLOYER_SUGGESTIONS: QuickReply[] = [
-  { value: 'Подбери под мою потребность', label: 'Подбери под потребность' },
+  { value: 'Подбери под мою потребность', label: 'Подбери под вакансию' },
   { value: 'Найди по базе Frontend с ФСП', label: 'Найти по базе' },
-  { value: 'Создай потребность: нужен Backend Middle на Go и Kafka, 200–260 тыс', label: 'Описать потребность словами' },
+  { value: 'Создай потребность: нужен Backend Middle на Go и Kafka, 200–260 тыс', label: 'Описать вакансию словами' },
 ];
 
 export interface AssistantEmbedded {
@@ -182,7 +182,7 @@ export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: Empl
           setText('');
           void send(v);
         }}
-        placeholder="Подбери под мою потребность Backend Middle"
+        placeholder="Подбери под мою вакансию Backend Middle"
         sending={busy}
         voice
         multiline
@@ -299,7 +299,7 @@ function InvitationDraftRow({ draft }: { draft: InvitationDraft }) {
 function NeedDraftRow({ draft }: { draft: NeedDraft }) {
   return (
     <AssistantRow mark={false} testId="assistant-need-draft">
-      <MessageCard label={`Черновик потребности: ${draft.title}`}>
+      <MessageCard label={`Черновик вакансии: ${draft.title}`}>
         <h3 className={styles.sectionTitle}>{draft.title}</h3>
         <p className={styles.meta}>
           {SPEC_LABEL[draft.specialization]} · {GRADE_LABEL[draft.grade]}

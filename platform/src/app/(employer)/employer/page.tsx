@@ -14,5 +14,5 @@ export default async function EmployerPage({ searchParams = Promise.resolve({}) 
   const vacancies = await listVacancies(context.companyId);
   const first = vacancies.find((vacancy) => !vacancy.archived);
   if (first) return NeedMatchesPage({ params: Promise.resolve({ id: first.id }), searchParams });
-  return <div className={styles.page}><div className={styles.head}><div><h1>Подборка<br />под вакансию<span className={styles.accent}>.</span></h1><p className={styles.lead}>Создай первую вакансию, чтобы увидеть кандидатов вокруг потребностей твоей команды.</p></div></div><div className={styles.actions}><Button variant="cta" href="/employer/needs/new">+ Новая вакансия</Button><Button href="/employer/search">Поиск по базе →</Button></div></div>;
+  return <div className={styles.page}><div className={styles.head}><div><h1>Подборка<br />под вакансию<span className={styles.accent}>.</span></h1><p className={styles.lead}>Создай первую вакансию, чтобы увидеть кандидатов вокруг вакансий твоей команды.</p></div></div><div className={styles.actions}><Button variant="cta" href="/employer/needs/new">+ Новая вакансия</Button><Button href="/employer/search">Поиск по базе →</Button></div></div>;
 }

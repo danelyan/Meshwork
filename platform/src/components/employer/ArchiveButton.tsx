@@ -26,12 +26,12 @@ export function ArchiveButton({ vacancyId, archived }: { vacancyId: string; arch
             router.push('/employer');
             router.refresh();
           } catch (e) {
-            setError(e instanceof ApiError ? e.message : 'Не удалось изменить потребность');
+            setError(e instanceof ApiError ? e.message : 'Не удалось изменить вакансию');
             setBusy(false);
           }
         }}
       >
-        {archived ? 'Вернуть в работу' : 'Закрыть потребность'}
+        {archived ? 'Вернуть в работу' : 'Закрыть вакансию'}
       </Button>
       {error && <Notice tone="error">{error}</Notice>}
     </div>

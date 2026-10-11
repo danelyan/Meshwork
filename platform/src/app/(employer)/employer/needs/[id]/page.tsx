@@ -29,7 +29,7 @@ export default async function NeedMatchesPage({ params, searchParams }: Props) {
   const vacancies = allVacancies.filter((vacancy) => !vacancy.archived || vacancy.id === v.id);
   const basePath = `/employer/needs/${encodeURIComponent(v.id)}`;
   return <div className={styles.page}>
-    <div className={styles.head}><div><h1>Подборка<br />под вакансию<span className={styles.accent}>.</span></h1><p className={styles.lead}>Кандидаты вокруг потребностей твоей команды. Выбери человека на карте, чтобы увидеть, какие требования он закрывает и чем это подтверждено.</p></div><Button href={`${basePath}/edit`} size="sm">Изменить вакансию</Button></div>
+    <div className={styles.head}><div><h1>Подборка<br />под вакансию<span className={styles.accent}>.</span></h1><p className={styles.lead}>Кандидаты вокруг вакансий твоей команды. Выбери человека на карте, чтобы увидеть, какие требования он закрывает и чем это подтверждено.</p></div><Button href={`${basePath}/edit`} size="sm">Изменить вакансию</Button></div>
     {v.archived && <Notice>Вакансия закрыта. Эта подборка доступна для просмотра.</Notice>}
     <VacancySwitcher vacancies={vacancies} currentId={v.id} />
     <MatchResults result={result} basePath={basePath} favoriteScope={s.employerProfileId} companyName={ctx.companyName} />

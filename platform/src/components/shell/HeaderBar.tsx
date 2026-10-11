@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 import type { HeaderAccount } from '@/server/auth/role-plan';
 
-import { HOME_ANCHORS, type NavLink } from './nav';
+import { HOME_ANCHORS, activeLinkHref, type NavLink } from './nav';
 import { LogoutButton } from './LogoutButton';
 import { Brand } from './Brand';
 import { OnboardingBanner } from './OnboardingBanner';
@@ -22,6 +22,7 @@ import styles from './shell.module.css';
 export function HeaderBar({ signedIn, links, account = null }: { signedIn: boolean; links: NavLink[]; account?: HeaderAccount | null }) {
   const pathname = usePathname();
   const home = pathname === '/';
+  const active = activeLinkHref(pathname, links);
   const cabinet = dashboardPath(pathname) && !!account?.roles;
   return (
     <>
@@ -31,7 +32,7 @@ export function HeaderBar({ signedIn, links, account = null }: { signedIn: boole
         {links.length > 0 ? (
           <nav className={styles.nav} aria-label="Основная навигация">
             {links.map((l) => (
-              <Link key={l.href} href={l.href} aria-current={(l.exact ? pathname === l.href : pathname.startsWith(l.href)) ? 'page' : undefined}>
+              <Link key={l.href} href={l.href} aria-current={l.href === active ? 'page' : undefined}>
                 {l.label}
               </Link>
             ))}

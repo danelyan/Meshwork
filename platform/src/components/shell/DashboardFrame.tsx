@@ -4,27 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import type { HeaderAccount } from '@/server/auth/role-plan';
+import { CANDIDATE_NAV, EMPLOYER_NAV, activeLinkHref } from './nav';
 import { LogoutButton } from './LogoutButton';
 import { CandidateSidebarSummary } from '@/components/candidate/CandidateSidebarSummary';
 import { EmployerConsultantDock } from '@/components/employer/EmployerConsultantDock';
 import styles from './DashboardFrame.module.css';
 
-const candidate = [
-  ['/career', '◇', 'Моя карта'], ['/profile', '○', 'Профиль'],
-  ['/skills', '△', 'Навыки и грейд'], ['/interview', '▷', 'ИИнтервью'], ['/projects', '▤', 'Проекты'],
-  ['/invitations', '✉', 'Приглашения'], ['/saved', '☆', 'Избранное'],
-  ['/test', '▷', 'Тест на грейд'],
-  ['/consultant', '◆', 'Консультант'], ['/settings', '⚙', 'Настройки'],
-] as const;
-const employer = [
-  ['/employer', '◇', 'Подборка'], ['/employer/search', '⌕', 'Поиск по базе'],
-  ['/employer/saved', '☆', 'Избранное'], ['/employer/vacancies', '▤', 'Вакансии'], ['/employer/invitations', '✉', 'Приглашения'],
-  ['/employer/calls', '▷', 'Собеседования'], ['/consultant', '◆', 'ИИ-помощник'],
-  ['/employer/company', '○', 'Компания'],
-] as const;
-
 export function dashboardPath(pathname: string): boolean {
-  return pathname === '/test' || pathname.startsWith('/test/') || candidate.some(([href]) => href !== '/consultant' && (pathname === href || pathname.startsWith(`${href}/`))) || pathname === '/employer' || pathname.startsWith('/employer/');
+  return pathname === '/employer' || pathname.startsWith('/employer/')
+    || CANDIDATE_NAV.some(({ href }) => href !== '/consultant' && (pathname === href || pathname.startsWith(`${href}/`)));
 }
 
 /**
@@ -36,7 +24,8 @@ export function DashboardFrame({ account, children, employerSummary, bare = fals
   const pathname = usePathname();
   if (!account?.roles || !dashboardPath(pathname)) return children;
   const isEmployer = account.roles.role === 'employer';
-  const links = isEmployer ? employer : candidate;
+  const links = isEmployer ? EMPLOYER_NAV : CANDIDATE_NAV;
+  const active = activeLinkHref(pathname, links);
   return <div className={styles.frame} data-dashboard data-bare={bare || undefined}>
     {!bare && <aside className={styles.sidebar} aria-label="Ваш кабинет">
       <div className={styles.identity}>
@@ -46,7 +35,7 @@ export function DashboardFrame({ account, children, employerSummary, bare = fals
       {!isEmployer && <div className={styles.summary}><CandidateSidebarSummary /></div>}
       {isEmployer && <Link className={styles.create} href="/employer/needs/new">+ Новая вакансия</Link>}
       <nav className={styles.nav} aria-label="Разделы кабинета">
-        {links.map(([href, icon, label]) => <Link key={href} href={href} aria-current={(pathname === href || (href !== '/employer' && pathname.startsWith(`${href}/`))) ? 'page' : undefined}>
+        {links.map(({ href, icon, label }) => <Link key={href} href={href} aria-current={href === active ? 'page' : undefined}>
           <span aria-hidden="true">{icon}</span>{label}
         </Link>)}
       </nav>

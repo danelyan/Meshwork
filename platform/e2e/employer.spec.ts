@@ -62,7 +62,11 @@ test('E-02: работодатель → подборка → приглашен
   // до принятия: вилка и способ связи компании (ТЗ 2.2)
   await expect(page.getByText(/Связь с компанией: /).first()).toBeVisible();
   const accept = page.getByRole('button', { name: 'Принять' }).first();
-  if (await accept.isVisible()) await accept.click();
+  // Г5 (ADR 0005): принять можно только с отдельной галочкой раскрытия имени и контактов этой компании.
+  if (await accept.isVisible()) {
+    await page.getByLabel(/Раскрыть этому работодателю/).first().check();
+    await accept.click();
+  }
   await expect(page.getByText(/Контакты открыты/).first()).toBeVisible();
 
   // 4. работодатель видит имя и контакты
@@ -83,7 +87,7 @@ test('Помощник работодателя (демо без модели): 
     data: { title, specialization: 'frontend', grade: 'junior', subcategoryId: 'frontend.ui-app', salaryFrom: 100000, salaryTo: 150000, stack: ['React'], needs: sample.needs },
   });
   expect(created.status()).toBe(201);
-  await page.getByRole('link', { name: 'Помощник' }).click();
+  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'ИИ-помощник' }).click();
   await page.waitForURL('**/consultant');
   await page.getByLabel('Сообщение помощнику').fill(`Подбери под мою потребность ${title}`);
   await page.getByRole('button', { name: 'Отправить', exact: true }).click();

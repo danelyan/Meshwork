@@ -7,7 +7,7 @@ import { parseNeedPrefill } from '@/server/agent/employer/prefill';
 import { requirePageEmployer } from '@/server/auth/page';
 import { getCatalog } from '@/server/claims/catalog';
 
-export const metadata: Metadata = { title: 'Новая потребность - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Новая вакансия - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
 
 /** `?spec=…&grade=…&needs=…` — черновик помощника (create_need_draft): форма предзаполнена, сохраняет человек. */
@@ -21,7 +21,7 @@ export default async function NewNeedPage({ searchParams }: { searchParams: Prom
         <h1>Новая вакансия<span className={styles.accent}>.</span></h1>
         <p className={styles.lead}>Начни с направления. Укажи задачи команды, уровень, стек и зарплатную вилку, чтобы получить подборку по подтверждённым навыкам.</p>
       </div>
-      {prefill && <Notice>Черновик помощника: проверь поля и требования и сохрани - без сохранения потребность не создаётся.</Notice>}
+      {prefill && <Notice>Черновик помощника: проверь поля и требования и сохрани - без сохранения вакансия не создаётся.</Notice>}
       <VacancyEntry catalog={catalog} initial={prefill ?? undefined} />
     </div>
   );

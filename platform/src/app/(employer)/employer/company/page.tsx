@@ -29,7 +29,7 @@ export default async function EmployerCompanyPage() {
           <p className={styles.lead}>Эти данные видят кандидаты в приглашении. Чем полнее профиль, тем охотнее откликаются.</p>
         </div>
         <div className={styles.actions}>
-          <Button href="/employer">К потребностям</Button>
+          <Button href="/employer">К вакансиям</Button>
         </div>
       </div>
       <div className={styles.companyColumns}>

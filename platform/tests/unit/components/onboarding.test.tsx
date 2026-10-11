@@ -254,7 +254,7 @@ it('работодатель: та же лента продолжается по
   render(<OnboardingChat initial={summaryView({ scenario: 'employer', role: 'employer' })} consentText={[]} consultant={{}} employerAssistant={{}} />);
   expect(screen.getByText(/твоя помощница по подбору/)).toBeDefined();
   expect(screen.getByRole('button', { name: 'Открыть подборку' })).toBeDefined();
-  fireEvent.click(screen.getByRole('button', { name: 'Подбери под потребность' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Подбери под вакансию' }));
   await waitFor(() => expect(screen.getByText('Под «Backend» нашлось 6')).toBeDefined());
   expect(calls[0]).toBe('/api/auth/onboarding/complete');
   expect(calls[1]).toBe('/api/employer/assistant/messages');

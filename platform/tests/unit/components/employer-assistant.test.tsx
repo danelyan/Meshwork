@@ -156,7 +156,7 @@ describe('лента помощника работодателя', () => {
   it('приветствие объясняет, что нужно от работодателя: потребность, подборка, приглашение', () => {
     render(<AssistantChat />);
     const t = screen.getByText(/Я Кира, помощница работодателя/).textContent ?? '';
-    expect(t).toMatch(/описать потребность/);
+    expect(t).toMatch(/описать вакансию/);
     expect(t).toMatch(/подберу кандидатов/);
     expect(t).toMatch(/приглашение с зарплатой/);
   });
@@ -170,7 +170,7 @@ describe('лента помощника работодателя', () => {
       .mockImplementationOnce(async () => new Response(streamOf(second), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     render(<AssistantChat />);
-    fireEvent.click(screen.getByRole('button', { name: 'Подбери под потребность' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Подбери под вакансию' }));
     await waitFor(() => expect(screen.getByText('Готово')).toBeDefined());
     expect(screen.getAllByTestId('assistant-candidate')).toHaveLength(2);
     fireEvent.change(screen.getByLabelText('Сообщение помощнику'), { target: { value: 'ещё' } });

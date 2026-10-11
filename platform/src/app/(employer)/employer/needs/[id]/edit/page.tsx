@@ -10,7 +10,7 @@ import { getCatalog } from '@/server/claims/catalog';
 import { getVacancy, loadEmployerContext } from '@/server/employer';
 import { AppError } from '@/server/errors';
 
-export const metadata: Metadata = { title: 'Изменить потребность - ФСП Карьера' };
+export const metadata: Metadata = { title: 'Изменить вакансию - ФСП Карьера' };
 export const dynamic = 'force-dynamic';
 
 export default async function EditNeedPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +26,7 @@ export default async function EditNeedPage({ params }: { params: Promise<{ id: s
     <div className={styles.page}>
       <div className={styles.head}>
         <div>
-          <Kicker>Потребность</Kicker>
+          <Kicker>Вакансия</Kicker>
           <h1>{v.title}</h1>
         </div>
         <ArchiveButton vacancyId={v.id} archived={v.archived} />

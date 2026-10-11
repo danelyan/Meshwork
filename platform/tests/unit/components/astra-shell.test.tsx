@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { DashboardFrame } from '@/components/shell/DashboardFrame';
 import { OnboardingDraft } from '@/components/onboarding/OnboardingDraft';
 import type { HeaderAccount } from '@/server/auth/role-plan';
@@ -27,6 +27,19 @@ it('marks only current dashboard route and keeps employer routes out of candidat
   expect(screen.getByRole('link', { name: 'Проекты' }).getAttribute('aria-current')).toBe('page');
   expect(screen.queryByRole('link', { name: 'Вакансии' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Моя карта' }).getAttribute('href')).toBe('/career');
+});
+
+it('sidebar: candidate order follows the journey stages, employer labels match the header', () => {
+  nav.pathname = '/career';
+  const view = render(<DashboardFrame account={account}><p>x</p></DashboardFrame>);
+  const names = () => within(screen.getByRole('navigation', { name: 'Разделы кабинета' })).getAllByRole('link').map((a) => a.textContent?.replace(/^\S\s?/, ''));
+  expect(names().slice(0, 5)).toEqual(['Консультант', 'Тест на грейд', 'Навыки и грейд', 'Проекты', 'Приглашения']);
+  expect(screen.getByRole('link', { name: 'Моя карта' }).getAttribute('aria-current')).toBe('page');
+  view.unmount();
+  nav.pathname = '/employer/needs/n1';
+  render(<DashboardFrame account={{ ...account, roles: { ...account.roles!, role: 'employer' } }}><p>x</p></DashboardFrame>);
+  expect(screen.getByRole('link', { name: 'Вакансии' }).getAttribute('aria-current')).toBe('page');
+  expect(names()).toEqual(['Подборка', 'Поиск по базе', 'Вакансии', 'Избранное', 'Приглашения', 'Собеседования', 'ИИ-помощник', 'Компания']);
 });
 
 it('draft edits use actual step IDs; privacy view does not repeat personal answers', async () => {

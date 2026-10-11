@@ -16,7 +16,7 @@ export function DepthMapBlock({ depth }: { depth: NonNullable<Explanation['depth
       <h4 className={styles.stageTitle}>Созвон: карта глубины</h4>
       <p className={styles.meta}>
         Подтверждено {depth.confirmed} из {depth.topics.length} тем
-        {depth.matchedNeed > 0 && `, из них требований потребности - ${depth.matchedNeed}`}.
+        {depth.matchedNeed > 0 && `, из них требований вакансии - ${depth.matchedNeed}`}.
       </p>
       {depth.testOwnership && (
         <p className={styles.meta} data-testid="test-ownership">
@@ -31,7 +31,7 @@ export function DepthMapBlock({ depth }: { depth: NonNullable<Explanation['depth
             {t.forNeed && (
               <>
                 {' '}
-                <Tag tone="outline">требование потребности</Tag>
+                <Tag tone="outline">требование вакансии</Tag>
               </>
             )}
           </li>
@@ -53,7 +53,7 @@ export function ProjectBlock({ project }: { project: NonNullable<Explanation['pr
       {own && (
         <>
           <p className={styles.text}>
-            Под эту потребность: скрытые тесты {own.tests.passed} из {own.tests.total} ({pct(own.score)})
+            Под эту вакансию: скрытые тесты {own.tests.passed} из {own.tests.total} ({pct(own.score)})
             {own.late && ', сдано после срока'}.
           </p>
           {own.flags.length > 0 && (
@@ -91,7 +91,7 @@ export function ProjectBlock({ project }: { project: NonNullable<Explanation['pr
         </>
       )}
       {project.others.length > 0 && (
-        <ul className={styles.why} aria-label="Проекты по другим потребностям">
+        <ul className={styles.why} aria-label="Проекты по другим вакансиям">
           {project.others.map((o, i) => (
             <li key={`${o.subcategoryId ?? 'none'}-${i}`}>
               Есть проверенный проект в подкатегории {o.subcategory}, балл {pct(o.score)}

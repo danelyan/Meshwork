@@ -114,7 +114,7 @@ export function EmployerProjectBlock(props: EmployerProjectBlockProps) {
           <Field label="Кому видно">
             <select className={ui.input} value={visibility} onChange={(e) => setVisibility(e.target.value as 'open' | 'invited')}>
               <option value="open">Лента: все кандидаты направления</option>
-              <option value="invited">Только приглашённые по этой потребности</option>
+              <option value="invited">Только приглашённые по этой вакансии</option>
             </select>
           </Field>
           {error && <Notice tone="error">{error}</Notice>}

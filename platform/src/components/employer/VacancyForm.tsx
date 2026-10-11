@@ -90,7 +90,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
     const from = Number(salaryFrom.replace(/\s/g, ''));
     const to = Number(salaryTo.replace(/\s/g, ''));
     const next: Record<string, string> = {};
-    if (title.trim().length < 3) next.title = 'Назови потребность (не короче 3 символов)';
+    if (title.trim().length < 3) next.title = 'Назови вакансию (не короче 3 символов)';
     if (!Number.isInteger(from) || from <= 0) next.salaryFrom = 'Укажи нижнюю границу в рублях';
     if (!Number.isInteger(to) || to <= 0) next.salaryTo = 'Укажи верхнюю границу в рублях';
     else if (to < from) next.salaryTo = 'Верхняя граница меньше нижней';
@@ -118,7 +118,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
       router.push(`/employer/needs/${encodeURIComponent(r.id)}`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось сохранить потребность');
+      setError(err instanceof ApiError ? err.message : 'Не удалось сохранить вакансию');
       setBusy(false);
     }
   }
@@ -197,7 +197,7 @@ export function VacancyForm({ catalog, vacancyId, initial }: VacancyFormProps) {
             </Chip>
           ))}
         </div>
-        {options.length === 0 && <Notice>Для этого направления в каталоге навыков пока нет требований - потребность сохранить не получится.</Notice>}
+        {options.length === 0 && <Notice>Для этого направления в каталоге навыков пока нет требований - вакансию сохранить не получится.</Notice>}
         {errs.needs && <Notice tone="error">{errs.needs}</Notice>}
       </Panel>
       <RedFlagNotice flags={flags} />

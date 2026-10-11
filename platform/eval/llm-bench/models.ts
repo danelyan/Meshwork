@@ -91,5 +91,30 @@ export function makeModels(TIMEOUT_MS: number): Record<string, ModelDef> {
         });
       },
     },
+    // Selectel Dedicated Inference (vLLM, OpenAI-совместимый, Bearer; ключ на сервис). Оплата за GPU-час,
+    // не за токены — стоимость в таблице 0, считать по времени работы сервиса (research/31).
+    ...selectelModel('qwen', 'SELECTEL_QWEN', 'Qwen3.6-35B-A3B (Selectel Dedicated Inference)', TIMEOUT_MS),
+    ...selectelModel('qwen2', 'SELECTEL_QWEN2', 'Вторая модель Selectel (по SELECTEL_QWEN2_MODEL)', TIMEOUT_MS),
+  };
+}
+
+/** Модель Selectel: env <PREFIX>_BASE_URL, <PREFIX>_API_KEY, <PREFIX>_MODEL. */
+function selectelModel(id: string, prefix: string, title: string, timeoutMs: number): Record<string, ModelDef> {
+  return {
+    [id]: {
+      id,
+      title,
+      requiredEnv: [`${prefix}_BASE_URL`, `${prefix}_API_KEY`, `${prefix}_MODEL`],
+      price: envPrice(prefix, { in: 0, out: 0 }),
+      make: (planB) =>
+        createOpenAiChatProvider({
+          name: `selectel-${id}`,
+          baseUrl: env(`${prefix}_BASE_URL`),
+          apiKey: env(`${prefix}_API_KEY`),
+          model: env(`${prefix}_MODEL`),
+          supportsTools: !planB,
+          timeoutMs,
+        }),
+    },
   };
 }

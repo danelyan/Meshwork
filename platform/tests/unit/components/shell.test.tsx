@@ -128,12 +128,15 @@ describe('SiteHeader', () => {
     expect(h.queryByRole('button', { name: 'Выйти' })).toBeNull();
   });
 
-  it('иконка темы — только на /consultant', async () => {
+  it('иконка темы — в разделах кабинета, не на главной', async () => {
     const account = { userName: 'Иван Петров', userEmail: 'i@p.ru', roles: null };
     let h = await renderHeader(principal('pending'), '/consultant', account);
     expect(h.getByRole('button', { name: 'Тёмная тема' })).toBeDefined();
     cleanup();
     h = await renderHeader(principal('pending'), '/profile', account);
+    expect(h.getByRole('button', { name: 'Тёмная тема' })).toBeDefined();
+    cleanup();
+    h = await renderHeader(principal('pending'), '/', account);
     expect(h.queryByRole('button', { name: 'Тёмная тема' })).toBeNull();
   });
 

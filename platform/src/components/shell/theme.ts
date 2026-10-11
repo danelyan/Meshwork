@@ -5,7 +5,7 @@ import { useLayoutEffect, useSyncExternalStore } from 'react';
 import { THEME_KEY, isThemedPath } from './theme-script';
 
 // Тема страницы (лейн theme, решение владельца 11.10): по умолчанию светлая, тёмная — переключателем в шапке
-// (ThemeToggle) или в dev-панели. Действует только на THEMED_PATHS (/consultant): там на <html> ставится
+// (ThemeToggle) или в dev-панели. Действует только на THEMED_PATHS (разделы кабинета): там на <html> ставится
 // data-theme='dark' (токены — styles/tokens.css), на остальных страницах атрибут снимается. Выбор хранится в
 // localStorage; до гидрации его ставит инлайн-скрипт THEME_SCRIPT в app/layout.tsx, поэтому мигания нет.
 

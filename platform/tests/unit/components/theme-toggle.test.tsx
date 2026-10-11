@@ -31,17 +31,19 @@ describe('ThemeToggle', () => {
 });
 
 describe('тема страницы', () => {
-  it('тёмная действует только на /consultant: на других страницах атрибут снимается', () => {
+  it('тёмная действует в разделах кабинета: вне их (главная, вход, юридические) атрибут снимается', () => {
     window.localStorage.setItem(THEME_KEY, 'dark');
-    applyTheme('/consultant');
-    expect(root()).toBe('dark');
-    applyTheme('/profile');
-    expect(root()).toBeNull();
-    applyTheme('/');
-    expect(root()).toBeNull();
+    for (const path of ['/consultant', '/profile', '/test', '/employer', '/employer/search', '/projects/abc']) {
+      applyTheme(path);
+      expect(root(), path).toBe('dark');
+    }
+    for (const path of ['/', '/auth', '/privacy', '/terms', '/employerx', '/design/consultant-a']) {
+      applyTheme(path);
+      expect(root(), path).toBeNull();
+    }
   });
 
-  it('инлайн-скрипт до гидрации ставит тёмную только на /consultant и только при выборе', () => {
+  it('инлайн-скрипт до гидрации ставит тёмную только в разделах кабинета и только при выборе', () => {
     const run = () => new Function(THEME_SCRIPT)();
     window.history.replaceState(null, '', '/consultant');
     run();
@@ -50,7 +52,11 @@ describe('тема страницы', () => {
     run();
     expect(root()).toBe('dark');
     document.documentElement.removeAttribute('data-theme');
-    window.history.replaceState(null, '', '/profile');
+    window.history.replaceState(null, '', '/employer/search');
+    run();
+    expect(root()).toBe('dark');
+    document.documentElement.removeAttribute('data-theme');
+    window.history.replaceState(null, '', '/');
     run();
     expect(root()).toBeNull();
   });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { APPLICATION_STATUS_LABEL, applyApi, myApplicationsApi } from '@/lib/applications-api';
 import { CONSENT_TEXTS } from '@/server/consent/texts';
@@ -53,7 +54,7 @@ export function ApplyPanel({ vacancyId, companyName }: { vacancyId: string; comp
     <Field label={`Сообщение компании (до ${APPLICATION_MESSAGE_MAX} символов, необязательно)`}>
       <textarea className={ui.input} rows={4} maxLength={APPLICATION_MESSAGE_MAX} value={message} onChange={(e) => setMessage(e.target.value)} />
     </Field>
-    <label className={styles.fine}><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> {disclosure.label} ({companyName}), если компания примет отклик. До этого она видит анонимную карточку, как в подборке. {disclosure.paragraphs[1]}</label>
+    <label className={styles.fine}><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> {disclosure.label} ({companyDisplayName(companyName)}), если компания примет отклик. До этого она видит анонимную карточку, как в подборке. {disclosure.paragraphs[1]}</label>
     {error && <Notice tone="error">{error}</Notice>}
     <div className={styles.actions}><Button variant="primary" disabled={!agree || busy} loading={busy} onClick={() => void submit()}>Отправить отклик</Button><Button disabled={busy} onClick={() => setOpen(false)}>Отмена</Button></div>
   </div>;

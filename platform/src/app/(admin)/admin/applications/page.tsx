@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { FilterForm } from '@/components/admin/FilterForm';
 import { APPLICATION_STATUS_LABEL, fmtDate } from '@/components/admin/labels';
@@ -49,7 +50,7 @@ export default async function AdminApplicationsPage({ searchParams }: { searchPa
                 <Link href={`/admin/vacancies/${a.vacancy.id}`}>{a.vacancy.title}</Link>
               </td>
               <td>
-                <Link href={`/admin/companies/${a.company.id}`}>{a.company.name}</Link>
+                <Link href={`/admin/companies/${a.company.id}`}>{companyDisplayName(a.company.name)}</Link>
               </td>
               <td>
                 {APPLICATION_STATUS_LABEL[a.status]}

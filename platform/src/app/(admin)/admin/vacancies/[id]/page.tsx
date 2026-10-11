@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { VacancyActions } from '@/components/admin/actions';
 import { APPLICATION_STATUS_LABEL, GRADE_LABEL, INVITATION_STATUS_LABEL, SPEC_LABEL, fmtDate, fmtDateTime, fmtMoney } from '@/components/admin/labels';
@@ -26,7 +27,7 @@ export default async function AdminVacancyPage({ params }: { params: Promise<{ i
           <dd className={styles.mono}>{v.id}</dd>
           <dt>Компания</dt>
           <dd>
-            <Link href={`/admin/companies/${v.company.id}`}>{v.company.name}</Link>
+            <Link href={`/admin/companies/${v.company.id}`}>{companyDisplayName(v.company.name)}</Link>
           </dd>
           <dt>Направление</dt>
           <dd>{`${SPEC_LABEL[v.specialization]} · ${GRADE_LABEL[v.grade]}`}</dd>

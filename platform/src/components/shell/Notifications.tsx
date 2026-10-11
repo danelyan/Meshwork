@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Notice, Popover } from '@/components/ui';
 import { readError } from '@/lib/api';
@@ -46,7 +47,7 @@ export function Notifications({ role }: { role: string }) {
       {error && <Notice tone="error">{error}</Notice>}
       {!feed && !error && <p role="status">Загружаем…</p>}
       {feed?.items.length === 0 && <p>Новых событий пока нет.</p>}
-      {feed?.items.map((item) => <Link className={styles.item} href={item.href} key={item.id} data-unread={item.unread} onClick={() => setOpen(false)}><strong>{item.text}</strong><span>{item.detail}</span><time dateTime={item.at}>{new Date(item.at).toLocaleDateString('ru-RU')}</time></Link>)}
+      {feed?.items.map((item) => <Link className={styles.item} href={item.href} key={item.id} data-unread={item.unread} onClick={() => setOpen(false)}><strong>{companyDisplayName(item.text)}</strong><span>{companyDisplayName(item.detail)}</span><time dateTime={item.at}>{new Date(item.at).toLocaleDateString('ru-RU')}</time></Link>)}
     </Popover>
   </div>;
 }

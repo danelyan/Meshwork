@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { companyDisplayName } from '@/lib/company-brand';
 import { notFound } from 'next/navigation';
 import styles from '@/components/employer/Employer.module.css';
 import { MatchResults } from '@/components/employer/MatchResults';
@@ -33,7 +34,7 @@ export default async function NeedMatchesPage({ params, searchParams }: Props) {
     <div className={styles.head}><div><h1>Подборка<br />под вакансию<span className={styles.accent}>.</span></h1><p className={styles.lead}>Кандидаты вокруг вакансий твоей команды. Выбери человека на карте, чтобы увидеть, какие требования он закрывает и чем это подтверждено.</p></div><Button href={`${basePath}/edit`} size="sm">Изменить вакансию</Button></div>
     {v.archived && <Notice>Вакансия закрыта. Эта подборка доступна для просмотра.</Notice>}
     <VacancySwitcher vacancies={vacancies} currentId={v.id} />
-    <MatchResults result={result} basePath={basePath} favoriteScope={s.employerProfileId} companyName={ctx.companyName} />
+    <MatchResults result={result} basePath={basePath} favoriteScope={s.employerProfileId} companyName={companyDisplayName(ctx.companyName)} />
     <VacancyApplications vacancyId={v.id} />
     <details className={styles.evidenceDetails}><summary>Задание для проекта и проверка навыков</summary><EmployerProjectBlock vacancyId={v.id} specialization={v.specialization} grade={v.grade} salaryFrom={v.salaryFrom} salaryTo={v.salaryTo} archived={v.archived} initialTask={project.task} templates={project.templates} criteriaOptions={project.criteriaOptions} /></details>
   </div>;

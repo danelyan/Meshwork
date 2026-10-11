@@ -1,4 +1,5 @@
 import { EmployerConsentGate } from '@/components/consent/EmployerConsentGate';
+import { companyDisplayName } from '@/lib/company-brand';
 import { employerConsentsMissing } from '@/server/consent/service';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -32,7 +33,7 @@ export default async function EmployerCallsPage() {
   return (
     <div className={styles.page}>
       <div>
-        <Kicker>{ctx.companyName}</Kicker>
+        <Kicker>{companyDisplayName(ctx.companyName)}</Kicker>
         <h1>Защиты проектов</h1>
         <p className={styles.meta}>
           Видны только кандидаты, принявшие ваше приглашение. Идущую защиту можно слушать и вмешаться; слабая защита при сильном проекте -

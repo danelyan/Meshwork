@@ -45,7 +45,7 @@ it('работодатель ведёт по ссылке next в /employer, к�
   const fetchFn = stubFetch({ employer: { id: 'demo-employer', name: 'x' }, candidate: { id: 'c', name: 'y' }, next: '/consultant' });
   render(<DemoScreen next="/employer/search" />);
   // первый такой чип — шаг маршрута жюри со своим `to` (/employer); чип карточки фич ниже идёт по общему next
-  fireEvent.click((await screen.findAllByRole('button', { name: 'Войти как Анна Кравец · Северный Поток' })).at(-1)!);
+  fireEvent.click((await screen.findAllByRole('button', { name: 'Войти как Анна Кравец · Т-Банк' })).at(-1)!);
   await waitFor(() => expect(push).toHaveBeenCalledWith('/employer/search'));
   expect(JSON.parse(String(fetchFn.mock.calls[1]![1]!.body))).toEqual({ employerUserId: 'demo-employer' });
 });

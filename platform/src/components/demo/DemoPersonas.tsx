@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { type DemoPersona, demoEmployerLogin, demoFreshLogin, demoLogin, getDemoAccounts } from '@/lib/api';
 import { safeNext } from '@/server/auth/redirect';
@@ -70,7 +71,7 @@ export function PersonaRow({ persona, state, disabledReason }: { persona: DemoPe
       <button
         type="button"
         className={styles.row}
-        aria-label={persona.kind === 'fresh' ? persona.name : `Войти как ${persona.name}`}
+        aria-label={persona.kind === 'fresh' ? companyDisplayName(persona.name) : `Войти как ${companyDisplayName(persona.name)}`}
         aria-describedby={blocked ? `${persona.id}-why` : undefined}
         disabled={busy || blocked}
         onClick={() => state.enter(persona)}
@@ -78,10 +79,10 @@ export function PersonaRow({ persona, state, disabledReason }: { persona: DemoPe
         <span className={styles.step} aria-hidden="true">{persona.stage ?? '⌂'}</span>
         <span className={styles.text}>
           <span className={styles.head}>
-            <span className={styles.name}>{persona.name}</span>
+            <span className={styles.name}>{companyDisplayName(persona.name)}</span>
             <span className={styles.badge}>{persona.badge}</span>
           </span>
-          <span className={styles.sees}>{persona.sees}</span>
+          <span className={styles.sees}>{companyDisplayName(persona.sees)}</span>
           {blocked && <span id={`${persona.id}-why`} className={styles.why}>{disabledReason}</span>}
         </span>
         <span className={styles.go} aria-hidden="true">{state.pending === persona.id ? '…' : '→'}</span>
@@ -132,13 +133,13 @@ export function PersonaChip({ persona, state, agreed, to }: { persona: DemoPerso
     <button
       type="button"
       className={styles.chip}
-      title={blocked ? `${persona.sees} Сначала отметь согласие.` : persona.sees}
-      aria-label={persona.kind === 'fresh' ? persona.name : `Войти как ${persona.name}`}
+      title={blocked ? `${companyDisplayName(persona.sees)} Сначала отметь согласие.` : companyDisplayName(persona.sees)}
+      aria-label={persona.kind === 'fresh' ? persona.name : `Войти как ${companyDisplayName(persona.name)}`}
       disabled={state.pending !== null || blocked}
       onClick={() => state.enter(persona, to)}
     >
       <span className={styles.chipStep} aria-hidden="true">{persona.stage ?? '⌂'}</span>
-      <span>{persona.name}</span>
+      <span>{companyDisplayName(persona.name)}</span>
       <span className={styles.chipBadge}>{state.pending === persona.id ? 'Вхожу…' : persona.badge}</span>
     </button>
   );
@@ -211,14 +212,14 @@ export function PersonaStepper({ state, agreed }: { state: PersonasState; agreed
             <p className={styles.ends} aria-hidden="true"><span>{specialists[0]!.badge}</span><span>{specialists[specialists.length - 1]!.badge}</span></p>
             <div className={styles.card} aria-live="polite">
               <p className={styles.cardHead}>
-                <span className={styles.name}>{current.stage} · {current.name}</span>
+                <span className={styles.name}>{current.stage} · {companyDisplayName(current.name)}</span>
                 <span className={styles.badge}>{current.badge}</span>
               </p>
-              <p className={styles.sees}>{current.sees}</p>
+              <p className={styles.sees}>{companyDisplayName(current.sees)}</p>
               <button
                 type="button"
                 className={styles.enter}
-                aria-label={current.kind === 'fresh' ? current.name : `Войти как ${current.name}`}
+                aria-label={current.kind === 'fresh' ? companyDisplayName(current.name) : `Войти как ${companyDisplayName(current.name)}`}
                 aria-describedby={blocked ? 'persona-why' : undefined}
                 disabled={state.pending !== null || blocked}
                 onClick={() => state.enter(current)}

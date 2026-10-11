@@ -40,5 +40,5 @@ it('company cards use the public examples and do not navigate to the assistant',
   expect(screen.queryAllByRole('link')).toHaveLength(0);
   expect(DEMO_HIRING_COMPANIES.map(c => c.name)).toEqual(SHOWCASE.companies.map(c => c.name));
   expect(screen.getAllByText('Ozon')).toHaveLength(2);
-  expect(screen.getByText('Примеры реальных компаний · вакансии и зарплаты демонстрационные')).toBeTruthy();
+  expect(screen.queryByText(/демонстрационные/)).toBeNull();
 });

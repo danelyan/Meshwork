@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { companyDisplayName, companyDisplayDescription } from '@/lib/company-brand';
 import { useRouter } from 'next/navigation';
 
 import { ApiError } from '@/lib/api';
@@ -64,10 +65,10 @@ export function CompanyForm({ company }: { company: CompanyBody }) {
       </h2>
       <form className={styles.form} onSubmit={submit} noValidate aria-label="Профиль компании">
         <Field label="Название" hint="Так компанию увидят кандидаты в приглашении." error={fields.name}>
-          <input className={ui.input} value={form.name} maxLength={120} autoComplete="organization" onChange={set('name')} />
+          <input className={ui.input} value={companyDisplayName(form.name)} maxLength={120} autoComplete="organization" onChange={set('name')} />
         </Field>
         <Field label="О компании" hint="Чем занимается, продукт, масштаб. До 600 символов." error={fields.description}>
-          <textarea className={ui.input} rows={4} maxLength={600} value={form.description} onChange={set('description')} />
+          <textarea className={ui.input} rows={4} maxLength={600} value={companyDisplayDescription(form.name, form.description) ?? ''} onChange={set('description')} />
         </Field>
         <div className={styles.row}>
           <Field label="Направление" hint="Отрасль: финтех, e-commerce, медиа..." error={fields.industry}>

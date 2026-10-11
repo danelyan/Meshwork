@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 import { useState } from 'react';
 
 import { grantConsentApi } from '@/lib/consent-api';
@@ -30,7 +31,7 @@ function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint?: SceneAsideData[
               </span>
               <span className={styles.stepText}>
                 <span className={styles.stepName}>
-                  <span className={styles.full}>{s.label}</span>
+                  <span className={styles.full}>{companyDisplayName(s.label)}</span>
                   <span className={styles.short}>{s.short}</span>
                 </span>
                 <span className={styles.stepNote}>{s.note}</span>
@@ -43,7 +44,7 @@ function Roadmap({ steps, hint }: { steps: JourneyStep[]; hint?: SceneAsideData[
       </ol>
       {hint && (
         <p className={styles.hint} data-testid="aside-hint">
-          <span className={styles.hintTitle}>{hint.title}</span> <span className={styles.hintText}>{hint.text}</span>
+          <span className={styles.hintTitle}>{companyDisplayName(hint.title)}</span> <span className={styles.hintText}>{companyDisplayName(hint.text)}</span>
         </p>
       )}
     </nav>
@@ -227,7 +228,7 @@ function StepBlockView({ block, market, docs, role }: { block: StepBlock; market
       return <StepCard id="step-live" title="Живая защита" text={c.text} extra={block.live?.company} href={c.cta?.href} cta={c.cta?.label} blocker={block.blocker} />;
     }
     case 'hired':
-      return block.hired ? <StepCard id="step-hired" title="Нанят" text={`Компания отметила найм: ${block.hired.company}.`} href="/invitations" cta="Открыть приглашения" /> : null;
+      return block.hired ? <StepCard id="step-hired" title="Нанят" text={`Компания отметила найм: ${companyDisplayName(block.hired.company)}.`} href="/invitations" cta="Открыть приглашения" /> : null;
   }
 }
 

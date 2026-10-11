@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { FilterForm } from '@/components/admin/FilterForm';
 import { GRADE_LABEL, SPEC_LABEL, fmtDate, fmtMoney } from '@/components/admin/labels';
@@ -47,7 +48,7 @@ export default async function AdminVacanciesPage({ searchParams }: { searchParam
                 <Link href={`/admin/vacancies/${v.id}`}>{v.title}</Link> {v.archived && <Tag tone="outline">архив</Tag>}
               </td>
               <td>
-                <Link href={`/admin/companies/${v.company.id}`}>{v.company.name}</Link>
+                <Link href={`/admin/companies/${v.company.id}`}>{companyDisplayName(v.company.name)}</Link>
               </td>
               <td>{`${SPEC_LABEL[v.specialization]} · ${GRADE_LABEL[v.grade]}`}</td>
               <td>{fmtMoney(v.salaryFrom, v.salaryTo)}</td>

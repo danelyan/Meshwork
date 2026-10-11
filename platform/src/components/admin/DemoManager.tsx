@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { Button, Notice, Panel, Tag } from '@/components/ui';
 
@@ -65,7 +66,7 @@ export function DemoManager({ initial }: { initial: DemoData }) {
               <tbody>
                 {data.junk.vacancies.map((v) => (
                   <tr key={v.id}>
-                    <td>вакансия · {v.company}</td>
+                    <td>вакансия · {companyDisplayName(v.company)}</td>
                     <td>{v.title}</td>
                     <td className={styles.mono}>{v.id}</td>
                   </tr>
@@ -73,7 +74,7 @@ export function DemoManager({ initial }: { initial: DemoData }) {
                 {data.junk.companies.map((c) => (
                   <tr key={c.id}>
                     <td>компания гостя (удалится с гостевым аккаунтом: {c.guestUserIds.length})</td>
-                    <td>{c.name}</td>
+                    <td>{companyDisplayName(c.name)}</td>
                     <td className={styles.mono}>{c.id}</td>
                   </tr>
                 ))}
@@ -141,7 +142,7 @@ export function DemoManager({ initial }: { initial: DemoData }) {
           <tbody>
             {data.companies.map((c) => (
               <tr key={c.id}>
-                <td>{c.name}</td>
+                <td>{companyDisplayName(c.name)}</td>
                 <td>{c.vacancies}</td>
                 <td className={styles.mono}>{c.id}</td>
               </tr>

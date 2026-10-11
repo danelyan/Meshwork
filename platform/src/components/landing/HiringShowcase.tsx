@@ -98,14 +98,13 @@ export function HiringShowcase() {
           </span>
         </div>
       </div>
-      <p className={styles.demo}>Примеры реальных компаний · вакансии и зарплаты демонстрационные</p>
       <div className={styles.rail}>
         <div className={styles.track}>
           {[0, 1].map(copy => <div key={copy} className={styles.group} aria-hidden={copy === 1 ? true : undefined}>
             {DEMO_HIRING_COMPANIES.map((company, index) => {
               const matches = match.companies.some(item => item.id === company.id);
               return <div key={company.id} className={styles.tile} style={{ animationDelay: `${index % 4 * -2.5}s`, animationDuration: `${9.5 + index % 4 * 1.5}s` }}>
-                <div className={`${styles.company} ${matches ? styles.matched : ''}`} data-match={matches}>
+                <div className={`${styles.company} ${matches ? styles.matched : ''}`} data-match={matches} tabIndex={copy === 0 ? 0 : -1}>
                   <span className={styles.cardTop}><span className={styles.letter}><CompanyLogo company={company} className={styles.logo} /></span>{matches && <em className={styles.badge}>ищет тебя</em>}</span>
                   <b className={styles.name}>{company.name}</b>
                   <small className={styles.focus}>{company.focus}<br />{company.description}</small>

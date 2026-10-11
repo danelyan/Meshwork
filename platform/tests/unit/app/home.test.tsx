@@ -60,7 +60,7 @@ describe('главная', () => {
   it('подборка демонстрационная, карточки компаний не ведут в помощника', () => {
     render(<Landing data={DATA} signedIn={false} />);
     const section = within(screen.getByRole('region', { name: /^Сейчас нанимают\s*\.$/ }));
-    expect(section.getByText('Примеры реальных компаний · вакансии и зарплаты демонстрационные')).toBeDefined();
+    expect(section.queryByText(/демонстрационные/)).toBeNull();
     expect(section.queryAllByRole('link')).toHaveLength(0);
     expect(section.getAllByText('Ozon')).toHaveLength(2);
     expect(section.queryByText('Команда А')).toBeNull();
@@ -76,7 +76,7 @@ describe('главная', () => {
   });
   it('данные публичных примеров не превращаются в фиктивную живую ленту', () => {
     render(<Landing data={{ companies: [] }} signedIn={false} />);
-    expect(screen.getByText('Примеры реальных компаний · вакансии и зарплаты демонстрационные')).toBeDefined();
+    expect(screen.queryByText(/демонстрационные/)).toBeNull();
     expect(screen.queryByText(/1240|86%/)).toBeNull();
   });
   it('дубли каретки скрыты от ассистивных технологий', () => {
@@ -116,7 +116,7 @@ describe('страница /', () => {
     render(await HomePage());
     const section = within(screen.getByRole('region', { name: /^Сейчас нанимают\s*\.$/ }));
     expect(section.queryAllByRole('link')).toHaveLength(0);
-    expect(section.getByText('Примеры реальных компаний · вакансии и зарплаты демонстрационные')).toBeDefined();
+    expect(section.queryByText(/демонстрационные/)).toBeNull();
     expect(screen.queryByText('Данные на этой странице - иллюстрация')).toBeNull();
     expect(dbCalls.n).toBe(0);
   });

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import styles from '@/components/call/call.module.css';
 import { DefenseEntry } from '@/components/call/DefenseEntry';
@@ -33,7 +34,7 @@ export default async function DefenseRoomIndex() {
           <b>
             У работодателей {pending.total === 1 ? 'есть вопрос' : `${pending.total} вопроса(ов)`} к тебе
           </b>
-          <span className={styles.meta}>{pending.byCompany.map((c) => `${c.companyName}: ${c.count}`).join(' · ')}</span>
+          <span className={styles.meta}>{pending.byCompany.map((c) => `${companyDisplayName(c.companyName)}: ${c.count}`).join(' · ')}</span>
           <div>
             <DefenseEntry questions label={pending.activeSessionId ? 'Продолжить ответы' : 'Ответить'} />
           </div>

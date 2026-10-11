@@ -1,4 +1,5 @@
 import { ModerationDecision } from '@/components/admin/ModerationDecision';
+import { companyDisplayName } from '@/lib/company-brand';
 import { Button, Tag } from '@/components/ui';
 import { can } from '@/server/admin/permissions';
 import { listComplaints } from '@/server/admin/moderation/complaints';
@@ -32,7 +33,7 @@ export default async function ComplaintsPage({ searchParams }: { searchParams: P
         {items.map((c) => (
           <article key={c.id} className={m.item}>
             <div className={m.head}>
-              <strong>{c.company.name}</strong>
+              <strong>{companyDisplayName(c.company.name)}</strong>
               <span className={styles.mono}>{fmt.format(new Date(c.createdAt))} · {c.candidate}</span>
               <Tag>{REASON[c.reason] ?? c.reason}</Tag>
             </div>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { CandidateActions, UserActions } from '@/components/admin/actions';
 import { RevealPii } from '@/components/admin/RevealPii';
@@ -170,7 +171,7 @@ export default async function AdminCandidatePage({ params }: { params: Promise<{
                 <td className={styles.mono}>
                   <Link href={`/admin/invitations/${i.id}`}>{fmtDate(i.createdAt)}</Link>
                 </td>
-                <td>{i.company ? <Link href={`/admin/companies/${i.company.id}`}>{i.company.name}</Link> : '—'}</td>
+                <td>{i.company ? <Link href={`/admin/companies/${i.company.id}`}>{companyDisplayName(i.company.name)}</Link> : '–'}</td>
                 <td>{i.vacancy?.title ?? 'без потребности'}</td>
                 <td>{fmtMoney(i.salaryFrom, i.salaryTo)}</td>
                 <td>{INVITATION_STATUS_LABEL[i.status]}</td>

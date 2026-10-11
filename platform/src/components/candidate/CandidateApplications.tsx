@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { APPLICATION_STATUS_LABEL, revokeApplicationDisclosureApi } from '@/lib/applications-api';
 import { formatDate } from '@/lib/labels';
@@ -29,7 +30,7 @@ export function CandidateApplications({ applications }: { applications: Candidat
     {!applications.length ? <Panel className={styles.empty}><p>Откликов пока нет. Откликнуться можно на карте вакансий.</p><Button href="/career">К вакансиям</Button></Panel> : <div className={styles.stack}>{applications.map((a) => {
       const disclosed = a.disclosed && !revoked[a.id];
       return <Panel key={a.id} as="article" className={styles.card} aria-labelledby={`app-${a.id}`} data-testid="my-application">
-        <div className={styles.cardHead}><div><Kicker>{a.vacancy.companyName}</Kicker><h3 id={`app-${a.id}`}>{a.vacancy.title}</h3></div><Tag className={styles.invitationStatus} data-status={a.status}>{APPLICATION_STATUS_LABEL[a.status]}</Tag></div>
+        <div className={styles.cardHead}><div><Kicker>{companyDisplayName(a.vacancy.companyName)}</Kicker><h3 id={`app-${a.id}`}>{a.vacancy.title}</h3></div><Tag className={styles.invitationStatus} data-status={a.status}>{APPLICATION_STATUS_LABEL[a.status]}</Tag></div>
         <p className={styles.meta}>Отправлен {formatDate(a.createdAt)}{a.viewedAt ? ` · просмотрен ${formatDate(a.viewedAt)}` : ''}{a.respondedAt ? ` · ответ ${formatDate(a.respondedAt)}` : ''}{a.vacancy.archived ? ' · вакансия закрыта' : ''}</p>
         {a.message && <p>{a.message}</p>}
         {a.status === 'accepted' ? (disclosed ? <div role="status"><p>Компания приняла отклик и видит ваше имя и способ связи.</p><Button size="sm" disabled={busy !== null} onClick={() => void revoke(a.id)}>Отозвать раскрытие</Button><p className={styles.fine}>После отзыва компания снова видит псевдоним. Данные, которые она уже получила, отозвать невозможно.</p></div> : <p role="status">Раскрытие отозвано: компания видит псевдоним.</p>)

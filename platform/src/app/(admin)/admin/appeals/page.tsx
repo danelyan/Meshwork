@@ -1,4 +1,5 @@
 import { ModerationDecision } from '@/components/admin/ModerationDecision';
+import { companyDisplayName } from '@/lib/company-brand';
 import { Button } from '@/components/ui';
 import { listAppeals } from '@/server/admin/moderation/appeals';
 import { can } from '@/server/admin/permissions';
@@ -31,7 +32,7 @@ export default async function AppealsPage({ searchParams }: { searchParams: Prom
         {items.map((a) => (
           <article key={a.id} className={m.item}>
             <div className={m.head}>
-              <strong>{a.company.name}</strong>
+              <strong>{companyDisplayName(a.company.name)}</strong>
               <span className={styles.mono}>{fmt.format(new Date(a.createdAt))}</span>
             </div>
             <blockquote className={m.quote}>{a.text}</blockquote>

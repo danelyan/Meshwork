@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { companyDisplayName } from '@/lib/company-brand';
+import { CompanyLogo } from '@/components/landing/CompanyLogo';
 
 import { getRecommendations, type RecommendationsView } from '@/lib/api';
 import { LEVEL_LABEL, isLevel } from '@/lib/labels';
@@ -28,7 +30,7 @@ export const provenCount = (target: CareerVacancy) => target.matched.filter((ite
 export function filterTargets<T extends TargetRec>(targets: T[], filters: Filters): T[] {
   const query = filters.query.trim().toLocaleLowerCase('ru');
   return targets.filter((target) =>
-    (!query || [target.companyName, target.title, specLabel(target.specialization), target.reason, ...target.missing.map((m) => m.statement), ...('stack' in target && Array.isArray(target.stack) ? target.stack : [])].join(' ').toLocaleLowerCase('ru').includes(query)) &&
+    (!query || [companyDisplayName(target.companyName), target.companyName, target.title, specLabel(target.specialization), target.reason, ...target.missing.map((m) => m.statement), ...('stack' in target && Array.isArray(target.stack) ? target.stack : [])].join(' ').toLocaleLowerCase('ru').includes(query)) &&
     (!filters.specialization || target.specialization === filters.specialization) &&
     (!filters.grade || target.grade === filters.grade) &&
     (!filters.salary || target.salaryTo >= Number(filters.salary)) && (!filters.fit || coveragePercent(target) >= Number(filters.fit)),
@@ -175,17 +177,17 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
                 </svg>
                 <div className={styles.you}><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="16" r="8" /><path d="M6 44c1.5-10 8-15 16-15s14.5 5 16 15z" /></svg><span>Вы</span></div>
                 {mapTargets.map((target, i) => { const angle = i * 2.39996 - .8; const radius = 95 + (100 - coveragePercent(target)) * 1.25; return <button key={target.vacancyId} type="button" className={`${styles.node} ${target.vacancyId === selected?.vacancyId ? styles.selectedNode : ''}`} aria-pressed={target.vacancyId === selected?.vacancyId} onClick={() => setSelectedId(target.vacancyId)} style={{ left: `${50 + Math.cos(angle) * radius / 6}%`, top: `${50 + Math.sin(angle) * radius * .9 / 5.2}%`, '--delay': `${i * -.4}s` } as CSSProperties}>
-                  <b>{target.companyName.slice(0, 1)}</b><span>{target.companyName}<small>{target.title}</small></span>
+                  <b><CompanyLogo company={{ name: target.companyName }} /></b><span>{companyDisplayName(target.companyName)}<small>{target.title}</small></span>
                 </button>; })}
                 {mapTargets.map((target, i) => { const angle = i * 2.39996 - .8; const radius = 95 + (100 - coveragePercent(target)) * 1.25; return <span key={target.vacancyId} className={styles.mapPercent} data-active={target.vacancyId === selected?.vacancyId} style={{ left: `${50 + Math.cos(angle) * radius / 12}%`, top: `${50 + Math.sin(angle) * radius * .9 / 10.4}%` }}>{coveragePercent(target)}%</span>; })}
               </div>
             </div>
-          </> : <ul className={styles.vacancyList} ref={listRef}>{filtered.map((target) => <li key={target.vacancyId}><button data-vacancy-id={target.vacancyId} className={`${styles.vacancyRow} ${selected?.vacancyId === target.vacancyId ? styles.activeRow : ''}`} onClick={() => setSelectedId(target.vacancyId)} aria-pressed={selected?.vacancyId === target.vacancyId}><span className={styles.letter}>{target.companyName.slice(0, 1)}</span><span><b>{target.companyName}</b><span>{target.title}</span><small>{money.format(target.salaryFrom)}–{money.format(target.salaryTo)} ₽ · {specLabel(target.specialization)}</small></span><strong>{coveragePercent(target)}%<small>закрываешь {target.covered} из {target.total}</small></strong></button></li>)}</ul>}
+          </> : <ul className={styles.vacancyList} ref={listRef}>{filtered.map((target) => <li key={target.vacancyId}><button data-vacancy-id={target.vacancyId} className={`${styles.vacancyRow} ${selected?.vacancyId === target.vacancyId ? styles.activeRow : ''}`} onClick={() => setSelectedId(target.vacancyId)} aria-pressed={selected?.vacancyId === target.vacancyId}><span className={styles.letter}><CompanyLogo company={{ name: target.companyName }} /></span><span><b>{companyDisplayName(target.companyName)}</b><span>{target.title}</span><small>{money.format(target.salaryFrom)}–{money.format(target.salaryTo)} ₽ · {specLabel(target.specialization)}</small></span><strong>{coveragePercent(target)}%<small>закрываешь {target.covered} из {target.total}</small></strong></button></li>)}</ul>}
           <div className={styles.mapControls}>{mode === 'map' && <><Button size="sm" aria-label="Уменьшить карту" disabled={zoom <= .8} onClick={() => setZoom((z) => Math.max(.8, z - .1))}>−</Button><Button size="sm" aria-label="Увеличить карту" disabled={zoom >= 1.5} onClick={() => setZoom((z) => Math.min(1.5, z + .1))}>+</Button><Button size="sm" aria-label="Приостановить анимацию" aria-pressed={!moving} onClick={() => setMoving(!moving)}>{moving ? 'Ⅱ' : '▶'}</Button><span className={styles.mapLegend}><i />Ваши связи</span></>}</div>
         </section>
         {selected && <Panel className={styles.detail} aria-label="Выбранная вакансия">
           <div className={styles.resultBar}><Kicker>Ваше соответствие</Kicker><Button size="sm" disabled={saving} aria-label={saved.includes(selected.vacancyId) ? 'Убрать из избранного' : 'Сохранить вакансию'} aria-pressed={saved.includes(selected.vacancyId)} onClick={() => void toggleSave(selected.vacancyId)}>{saved.includes(selected.vacancyId) ? '★' : '☆'}</Button></div>
-          <div className={styles.selectedCompany}><span>{selected.companyName.slice(0, 1)}</span><div><h2>{selected.companyName}</h2><p>{selected.title}</p></div></div>
+          <div className={styles.selectedCompany}><span><CompanyLogo company={{ name: selected.companyName }} /></span><div><h2>{companyDisplayName(selected.companyName)}</h2><p>{selected.title}</p></div></div>
           <div className={styles.score}>{coveragePercent(selected)}<span>%</span><small>совпадение<br />с требованиями вакансии</small></div>
           <p className={styles.meta}>Указано {selected.covered} из {selected.total} требований · доказано {provenCount(selected)}{provenCount(selected) < selected.covered ? ' - остальное пока со слов, его усилит тест, ссылка на работу или проект' : ''}.</p>
           <p className={styles.meta}>{money.format(selected.salaryFrom)}–{money.format(selected.salaryTo)} ₽ / месяц</p>
@@ -201,7 +203,7 @@ export function CareerPage({ savedOnly = false }: { savedOnly?: boolean }) {
           {details?.tasks?.length ? <div><h3>Как приблизиться к цели</h3><ul className={styles.requirements}>{details.tasks.map((task) => <li key={task.taskId}><span>{task.title}</span></li>)}</ul></div> : null}
           <details className={styles.vacancyDescription}><summary>Смотреть вакансию ↗</summary><h3>{selected.title}</h3><p>{selected.description || 'Компания пока не добавила описание.'}</p><p>{selected.teamDescription}</p><p>{selected.stack.join(', ')}</p></details>
           {(() => { const cta = chooseGapCta(selected, categories); return <div className={styles.gapCta}>{cta.href ? <Button variant="cta" href={cta.href}>{cta.label}</Button> : <Notice>{cta.label}</Notice>}<p className={styles.fine}>{cta.hint}</p></div>; })()}
-          <ApplyPanel key={selected.vacancyId} vacancyId={selected.vacancyId} companyName={selected.companyName} />
+          <ApplyPanel key={selected.vacancyId} vacancyId={selected.vacancyId} companyName={companyDisplayName(selected.companyName)} />
           <Button loading={saving} onClick={() => void toggleSave(selected.vacancyId)}>{saved.includes(selected.vacancyId) ? 'Убрать из избранного' : 'Сохранить вакансию'}</Button>
           <p className={styles.fine}>Совпадение по требованиям, а не вероятность найма.</p>
         </Panel>}

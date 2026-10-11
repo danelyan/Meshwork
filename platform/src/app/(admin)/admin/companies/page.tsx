@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { FilterForm } from '@/components/admin/FilterForm';
 import { Pager } from '@/components/admin/Pager';
@@ -43,7 +44,7 @@ export default async function AdminCompaniesPage({ searchParams }: { searchParam
           {data.items.map((c) => (
             <tr key={c.id}>
               <td>
-                <Link href={`/admin/companies/${c.id}`}>{c.name}</Link>
+                <Link href={`/admin/companies/${c.id}`}>{companyDisplayName(c.name)}</Link>
               </td>
               <td className={styles.mono}>{c.inn ?? '—'}</td>
               <td>{c.trust === null ? '—' : `${c.trust} (${BAND[c.trustBand!]})`}</td>

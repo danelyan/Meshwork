@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { companyDisplayName, companyDisplayDescription } from '@/lib/company-brand';
 
 import { CompanyActions } from '@/components/admin/actions';
 import { RevealPii } from '@/components/admin/RevealPii';
@@ -21,7 +22,7 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
   const c = await orNotFound(getCompanyCard(id));
   return (
     <>
-      <h1 className={styles.title}>{c.name}</h1>
+      <h1 className={styles.title}>{companyDisplayName(c.name)}</h1>
       <Panel className={styles.section}>
         <dl className={styles.kv}>
           <dt>id</dt>
@@ -29,7 +30,7 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
           <dt>Отрасль</dt>
           <dd>{c.industry ?? '—'}</dd>
           <dt>Описание</dt>
-          <dd>{c.description ?? '—'}</dd>
+          <dd>{companyDisplayDescription(c.name, c.description) ?? '–'}</dd>
           <dt>ИНН</dt>
           <dd>
             <span className={styles.mono}>{c.inn ?? '—'}</span>

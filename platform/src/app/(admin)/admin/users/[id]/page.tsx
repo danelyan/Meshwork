@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { UserActions } from '@/components/admin/actions';
 import { RevealPii } from '@/components/admin/RevealPii';
@@ -39,7 +40,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           <dt>Профиль</dt>
           <dd>
             {u.candidate && <Link href={`/admin/candidates/${u.candidate.id}`}>{u.candidate.pseudonym}</Link>}
-            {u.employerProfile && <Link href={`/admin/companies/${u.employerProfile.company.id}`}>{u.employerProfile.company.name}</Link>}
+            {u.employerProfile && <Link href={`/admin/companies/${u.employerProfile.company.id}`}>{companyDisplayName(u.employerProfile.company.name)}</Link>}
             {!u.candidate && !u.employerProfile && '—'}
           </dd>
           <dt>Блокировка</dt>

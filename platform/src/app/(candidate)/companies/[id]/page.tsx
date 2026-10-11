@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { companyDisplayName, companyDisplayDescription } from '@/lib/company-brand';
 import { notFound } from 'next/navigation';
 import styles from '@/components/candidate/Candidate.module.css';
 import { Button, Kicker, Tag } from '@/components/ui';
@@ -23,9 +24,9 @@ export default async function Page({ params }: Props) {
   return <div className={styles.page}>
     <div><Button href="/companies" size="sm">← Все компании</Button></div>
     <header className={styles.heading}>
-      <h1>{company.name}<i>.</i></h1>
+      <h1>{companyDisplayName(company.name)}<i>.</i></h1>
       {company.industry && <Kicker>{company.industry}</Kicker>}
-      {company.fullDescription?.split('\n').filter((l) => l.trim()).map((l, i) => <p key={i}>{l}</p>)}
+      {companyDisplayDescription(company.name, company.fullDescription)?.split('\n').filter((l) => l.trim()).map((l, i) => <p key={i}>{l}</p>)}
       <p>Открытых вакансий: {vacancies.length}{company.specializations.length > 0 && <> · {company.specializations.map((s) => <Tag key={s}>{specLabel(s)}</Tag>)}</>}</p>
     </header>
     {vacancies.map((v) => <CompanyVacancyCard key={v.vacancyId} vacancy={v} categories={view.categories} />)}

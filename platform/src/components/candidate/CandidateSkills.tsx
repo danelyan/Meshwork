@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { companyDisplayName } from '@/lib/company-brand';
 import { getProfile, getRecommendations, listTestAttemptsApi, request, type AttemptSummary, type RecommendationsView } from '@/lib/api';
 import { specLabel } from '@/lib/directions';
 import { gradeLabel } from '@/lib/grades';
@@ -28,7 +29,7 @@ export function recommendationTargetLabel(recs: RecommendationsView): string {
   if (kind === 'category' && id && grade) return `${specLabel(id)} · ${gradeLabel(grade)}`;
   if (kind === 'vacancy' && id) {
     const vacancy = recs.targets?.find((row) => row.vacancyId === id);
-    return vacancy ? `${vacancy.companyName} · ${vacancy.title}` : 'Требования выбранной вакансии';
+    return vacancy ? `${companyDisplayName(vacancy.companyName)} · ${vacancy.title}` : 'Требования выбранной вакансии';
   }
   return 'Цель не выбрана';
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
+import { companyDisplayName } from '@/lib/company-brand';
+import { CompanyLogo } from '@/components/landing/CompanyLogo';
 import { chooseGapCta, type GapCategory } from '@/lib/career-gap';
 import type { CareerVacancy } from '@/server/recommend/career';
 import { Button, Notice, Panel } from '../ui';
@@ -31,7 +33,7 @@ export function SavedVacancies({ vacancies, categories, saving, error, onRemove 
             <div className={styles.savedScrollArea} style={{ width: 760 * zoom, height: 560 * zoom }}><div className={styles.savedSurface} style={{ transform: `scale(${zoom})` }}>
               <svg viewBox="0 0 760 560" className={styles.connections} aria-hidden="true">{[110, 185, 265].map((radius) => <ellipse key={radius} cx="380" cy="280" rx={radius} ry={radius * .85} className={styles.orbit} />)}{nodes.map((vacancy, index) => { const { x, y } = position(vacancy, index); return <path key={vacancy.vacancyId} d={`M380 280L${x} ${y}`} className={selected.vacancyId === vacancy.vacancyId ? styles.selectedConnection : styles.connection} />; })}</svg>
               <div className={styles.you}><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="16" r="8" /><path d="M6 44c1.5-10 8-15 16-15s14.5 5 16 15z" /></svg><span>Вы</span></div>
-              {nodes.map((vacancy, index) => { const { x, y } = position(vacancy, index); return <button key={vacancy.vacancyId} className={`${styles.node} ${styles.savedNode} ${selected.vacancyId === vacancy.vacancyId ? styles.selectedNode : ''}`} aria-pressed={selected.vacancyId === vacancy.vacancyId} onClick={() => setSelectedId(vacancy.vacancyId)} style={{ left: `${x / 7.6}%`, top: `${y / 5.6}%`, '--delay': `${index * -.4}s` } as CSSProperties}><b>{vacancy.companyName.slice(0, 1)}</b><span>{vacancy.companyName}<small>{vacancy.title}</small></span><strong>{coveragePercent(vacancy)}%</strong></button>; })}
+              {nodes.map((vacancy, index) => { const { x, y } = position(vacancy, index); return <button key={vacancy.vacancyId} className={`${styles.node} ${styles.savedNode} ${selected.vacancyId === vacancy.vacancyId ? styles.selectedNode : ''}`} aria-pressed={selected.vacancyId === vacancy.vacancyId} onClick={() => setSelectedId(vacancy.vacancyId)} style={{ left: `${x / 7.6}%`, top: `${y / 5.6}%`, '--delay': `${index * -.4}s` } as CSSProperties}><b><CompanyLogo company={{ name: vacancy.companyName }} /></b><span>{companyDisplayName(vacancy.companyName)}<small>{vacancy.title}</small></span><strong>{coveragePercent(vacancy)}%</strong></button>; })}
             </div></div>
           </div>
           <div className={styles.mapControls}><Button size="sm" aria-label="Уменьшить карту" disabled={zoom <= .8} onClick={() => setZoom(Math.max(.8, zoom - .1))}>−</Button><Button size="sm" aria-label="Увеличить карту" disabled={zoom >= 1.5} onClick={() => setZoom(Math.min(1.5, zoom + .1))}>+</Button><Button size="sm" aria-label="Приостановить анимацию" aria-pressed={!moving} onClick={() => setMoving(!moving)}>{moving ? 'Ⅱ' : '▶'}</Button><span className={styles.mapLegend}><i />Ваши связи</span></div>
@@ -48,7 +50,7 @@ export function SavedVacancies({ vacancies, categories, saving, error, onRemove 
           <p className={styles.fine}>Сохранение не открывает компании ваше имя и контакт.</p>
         </Panel>
       </div>
-      <Panel className={styles.savedListPanel}><h2>Все сохранённые вакансии</h2><ul className={styles.vacancyList}>{vacancies.map((vacancy) => <li key={vacancy.vacancyId}><button className={`${styles.vacancyRow} ${selected.vacancyId === vacancy.vacancyId ? styles.activeRow : ''}`} aria-pressed={selected.vacancyId === vacancy.vacancyId} onClick={() => setSelectedId(vacancy.vacancyId)}><span className={styles.letter}>{vacancy.companyName.slice(0, 1)}</span><span><b>{vacancy.companyName}</b><span>{vacancy.title}</span><small>{money.format(vacancy.salaryFrom)} - {money.format(vacancy.salaryTo)} ₽</small></span><strong>{coveragePercent(vacancy)}%</strong></button></li>)}</ul></Panel>
+      <Panel className={styles.savedListPanel}><h2>Все сохранённые вакансии</h2><ul className={styles.vacancyList}>{vacancies.map((vacancy) => <li key={vacancy.vacancyId}><button className={`${styles.vacancyRow} ${selected.vacancyId === vacancy.vacancyId ? styles.activeRow : ''}`} aria-pressed={selected.vacancyId === vacancy.vacancyId} onClick={() => setSelectedId(vacancy.vacancyId)}><span className={styles.letter}><CompanyLogo company={{ name: vacancy.companyName }} /></span><span><b>{companyDisplayName(vacancy.companyName)}</b><span>{vacancy.title}</span><small>{money.format(vacancy.salaryFrom)} - {money.format(vacancy.salaryTo)} ₽</small></span><strong>{coveragePercent(vacancy)}%</strong></button></li>)}</ul></Panel>
     </> : <div className={styles.savedEmpty}>Пока пусто. Сохраняйте вакансии кнопкой ☆ в панели справа на карте.<Button href="/career">Перейти на карту →</Button></div>}
   </div>;
 }

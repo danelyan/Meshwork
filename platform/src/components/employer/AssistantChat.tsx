@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { openEmployerAssistantStream } from '@/lib/employer-api';
@@ -18,7 +19,6 @@ import { scrollToEnd, useStickToBottom } from '../chat/scroll';
 import { Button, Notice, VisuallyHidden } from '../ui';
 
 import { AssistantCandidateCard } from './AssistantCandidateCard';
-import { CompanyDraftRow, ProjectTaskDraftRow } from './AssistantDraftCards';
 import styles from './Employer.module.css';
 import { InviteForm } from './InviteForm';
 import { GRADE_LABEL, SPEC_LABEL } from './labels';
@@ -44,7 +44,7 @@ export interface AssistantEmbedded {
 
 /** Типы событий потока помощника (server/agent/employer/types.ts) — остальное парсер отбрасывает. */
 const EMPLOYER_EVENT_TYPES: ReadonlySet<EmployerAgentEvent['type']> = new Set([
-  'conversation', 'step', 'queue', 'ask', 'candidates', 'invitation_draft', 'need_draft', 'company_draft', 'project_task_draft', 'message', 'delta', 'discard', 'error', 'done',
+  'conversation', 'step', 'queue', 'ask', 'candidates', 'invitation_draft', 'need_draft', 'message', 'delta', 'discard', 'error', 'done',
 ] as const);
 
 let seq = 0;
@@ -55,26 +55,7 @@ const nextId = () => `e${++seq}`;
  * Самостоятельно — страница /employer/assistant; `embedded` — продолжение онбординга
  * работодателя. Карточки кандидатов — компактные, с кнопкой «Пригласить»: отправляет человек.
  */
-export interface AssistantPage {
-  path: string;
-  vacancyId?: string | null;
-}
-
-export function AssistantChat({
-  initial,
-  embedded,
-  demoNoLlm,
-  page,
-  quickPrompts,
-}: {
-  initial?: EmployerRestoredChat;
-  embedded?: AssistantEmbedded;
-  demoNoLlm?: boolean;
-  /** Откуда пишет работодатель (плавающая панель): уходит в тело сообщения как `page`. */
-  page?: AssistantPage;
-  /** Чипы над полем ввода: клик отправляет текст. */
-  quickPrompts?: string[];
-}) {
+export function AssistantChat({ initial, embedded, demoNoLlm }: { initial?: EmployerRestoredChat; embedded?: AssistantEmbedded; demoNoLlm?: boolean }) {
   const refreshAside = useAsideRefresh();
   const [items, setItems] = useState<Item[]>(initial?.items ?? []);
   const [text, setText] = useState('');
@@ -111,7 +92,7 @@ export function AssistantChat({
       abortRef.current = ctrl;
       try {
         await embedded?.beforeSend?.();
-        const stream = await openEmployerAssistantStream({ text: msg, conversationId: conversationRef.current, ...(page ? { page } : {}) }, ctrl.signal);
+        const stream = await openEmployerAssistantStream({ text: msg, conversationId: conversationRef.current }, ctrl.signal);
         const reader = stream.getReader();
         const decoder = new TextDecoder();
         const parser = createSseParser<EmployerAgentEvent>(EMPLOYER_EVENT_TYPES);
@@ -132,7 +113,7 @@ export function AssistantChat({
         refreshAside();
       }
     },
-    [busy, embedded, page, push, refreshAside],
+    [busy, embedded, push, refreshAside],
   );
 
   const started = items.some((it) => it.role === 'user');
@@ -194,9 +175,6 @@ export function AssistantChat({
         {busy ? 'Помощник работает…' : ''}
       </VisuallyHidden>
       <div ref={endRef} className={chatStyles.end} />
-      {quickPrompts && quickPrompts.length > 0 && (
-        <QuickReplies label="Быстрые запросы" items={quickPrompts.map((q) => ({ value: q, label: q }))} disabled={busy} onPick={(v) => void send(v)} />
-      )}
       <Composer
         label="Сообщение помощнику"
         value={text}
@@ -237,14 +215,14 @@ function EventRow({ item }: { item: AgentItem<EmployerAgentEvent> }) {
       return (
         <AssistantRow>
           <Bubble>
-            <StreamingText text={event.text} streaming={item.streaming} animate={Boolean(item.live)} />
+            <StreamingText text={companyDisplayName(event.text)} streaming={item.streaming} animate={Boolean(item.live)} />
           </Bubble>
         </AssistantRow>
       );
     case 'step':
       return (
         <AssistantRow mark={false}>
-          <Reply lines={[{ text: event.text, secondary: true }]} />
+          <Reply lines={[{ text: companyDisplayName(event.text), secondary: true }]} />
         </AssistantRow>
       );
     case 'queue':
@@ -289,10 +267,6 @@ function EventRow({ item }: { item: AgentItem<EmployerAgentEvent> }) {
       return <InvitationDraftRow draft={event.draft} />;
     case 'need_draft':
       return <NeedDraftRow draft={event.draft} />;
-    case 'company_draft':
-      return <CompanyDraftRow draft={event.draft} />;
-    case 'project_task_draft':
-      return <ProjectTaskDraftRow draft={event.draft} />;
     default:
       return null;
   }

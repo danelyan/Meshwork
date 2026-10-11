@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { companyDisplayName } from '@/lib/company-brand';
 
 import { COMPLAINT_REASON_LABEL, COMPLAINT_STATUS_LABEL, INVITATION_STATUS_LABEL, fmtDateTime, fmtMoney } from '@/components/admin/labels';
 import { Panel } from '@/components/ui';
@@ -21,7 +22,7 @@ export default async function AdminInvitationPage({ params }: { params: Promise<
           <dt>id</dt>
           <dd className={styles.mono}>{i.id}</dd>
           <dt>Компания</dt>
-          <dd>{i.company ? <Link href={`/admin/companies/${i.company.id}`}>{i.company.name}</Link> : '—'}</dd>
+          <dd>{i.company ? <Link href={`/admin/companies/${i.company.id}`}>{companyDisplayName(i.company.name)}</Link> : '–'}</dd>
           <dt>Потребность</dt>
           <dd>{i.vacancy ? <Link href={`/admin/vacancies/${i.vacancy.id}`}>{i.vacancy.title}</Link> : 'без потребности'}</dd>
           <dt>Кандидат</dt>

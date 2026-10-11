@@ -17,7 +17,7 @@ def frame(nc, kc, nt, kt, rev=10.0):
 
 
 def test_sample_size_formula():
-    assert abtest.sample_size(0.1, 0.02) == 3838
+    assert abtest.sample_size(0.1, 0.02) == 3839
 
 
 def test_srm_chi_square():

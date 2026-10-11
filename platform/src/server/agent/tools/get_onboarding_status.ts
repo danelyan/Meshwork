@@ -8,30 +8,6 @@ import type { AgentTool } from '../types';
 import { EmptyInput } from './shared';
 import { GRADES } from '@/lib/grades';
 
-/**
- * Модели лейна onboarding (`CandidateProfile` по candidateId, `OnboardingState`
- * по userId) читаются через делегат по имени: инструмент компилируется и
- * работает и до слияния их миграции (делегата или таблицы нет → `profile: null`,
- * `profileAvailable: false`). После слияния интегратору ничего менять не нужно,
- * кроме теста «с анкетой» (см. отчёт лейна agentq).
- */
-type FindUnique = (args: { where: Record<string, string> }) => Promise<unknown>;
-export function optionalDelegate(name: 'candidateProfile' | 'onboardingState'): FindUnique | undefined {
-  const d = (prisma as unknown as Record<string, { findUnique?: FindUnique } | undefined>)[name];
-  return typeof d?.findUnique === 'function' ? d.findUnique.bind(d) : undefined;
-}
-
-async function readOptional(name: 'candidateProfile' | 'onboardingState', where: Record<string, string>): Promise<{ ok: boolean; row: unknown }> {
-  const find = optionalDelegate(name);
-  if (!find) return { ok: false, row: null };
-  try {
-    return { ok: true, row: await find({ where }) };
-  } catch {
-    // таблицы ещё нет (миграция onboarding не применена) — мягкая деградация
-    return { ok: false, row: null };
-  }
-}
-
 const Grade = z.enum(GRADES);
 /** Анкета со слов кандидата: только то, что нужно для совета. Город и контакты в модель не отдаём. */
 const ProfileSchema = z.object({
@@ -92,15 +68,16 @@ export const getOnboardingStatus: AgentTool<Record<string, never>, z.infer<typeo
     if (!cand) throw Object.assign(new Error('Кандидат не найден'), { code: 'not_found' });
     const [journey, prof, state] = await Promise.all([
       journeyState(ctx.candidateId),
-      readOptional('candidateProfile', { candidateId: ctx.candidateId }),
-      cand.user ? readOptional('onboardingState', { userId: cand.user.id }) : Promise.resolve({ ok: false, row: null }),
+      prisma.candidateProfile.findUnique({ where: { candidateId: ctx.candidateId } }),
+      cand.user ? prisma.onboardingState.findUnique({ where: { userId: cand.user.id } }) : null,
     ]);
-    const profile = prof.row ? ProfileSchema.parse(prof.row) : null;
-    const st = state.row as { stepId?: unknown; skipped?: unknown; answers?: unknown } | null;
+    const profile = prof ? ProfileSchema.parse(prof) : null;
+    const st = state as { stepId?: unknown; skipped?: unknown; answers?: unknown } | null;
     return {
       specialization: cand.specialization,
       fspState: cand.fspState,
-      profileAvailable: prof.ok,
+      // Анкета читается всегда; поле оставлено, чтобы форма ответа инструмента не менялась.
+      profileAvailable: true,
       profile,
       intake: privateIntake(st?.answers),
       onboarding: {

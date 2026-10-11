@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
-import { buildHistory, fitHistory, HISTORY_WINDOW, OMITTED_NOTE } from '@/server/agent/history';
+import { buildHistory, fitHistory, HISTORY_WINDOW, INTERRUPTED_TOOL_RESULT, OMITTED_NOTE } from '@/server/agent/history';
 import type { ChatMessage } from '@/server/llm/types';
 
 type Row = { role: 'system' | 'user' | 'assistant' | 'tool'; content: string; toolCalls: Prisma.JsonValue; toolCallId: string | null };
@@ -18,6 +18,46 @@ describe('buildHistory', () => {
     expect(h.map((m) => m.role)).toEqual(['user', 'assistant', 'tool', 'assistant']);
     expect(h[1]?.toolCalls?.[0]?.name).toBe('get_profile');
     expect(h[2]?.toolCallId).toBe('c1');
+  });
+
+  it('ход остановлен посреди пачки вызовов: вызовам без результата дописывается заглушка', () => {
+    const calls = ['c1', 'c2', 'c3'].map((id) => ({ id, name: 'get_profile', arguments: {} }));
+    const h = buildHistory([
+      row('user', 'покажи профиль'),
+      row('assistant', '', { toolCalls: calls }),
+      row('tool', '{"ok":1}', { toolCallId: 'c1' }),
+      // «Стоп»: c2 и c3 не выполнялись, следующего сообщения ассистента нет
+      row('user', 'ещё раз'),
+      row('assistant', '', { toolCalls: [{ id: 'd1', name: 'get_profile', arguments: {} }] }),
+    ]);
+    expect(h.map((m) => [m.role, m.toolCallId ?? null])).toEqual([
+      ['user', null],
+      ['assistant', null],
+      ['tool', 'c1'],
+      ['tool', 'c2'],
+      ['tool', 'c3'],
+      ['user', null],
+      ['assistant', null],
+      ['tool', 'd1'],
+    ]);
+    expect(h[2]?.content).toBe('{"ok":1}');
+    for (const i of [3, 4, 7]) expect(h[i]?.content).toBe(INTERRUPTED_TOOL_RESULT);
+    expect(JSON.parse(INTERRUPTED_TOOL_RESULT)).toMatchObject({ error: { code: 'aborted' } });
+    // у каждого id из toolCalls ровно один результат
+    for (const m of h.filter((x) => x.toolCalls?.length)) {
+      for (const c of m.toolCalls ?? []) expect(h.filter((x) => x.role === 'tool' && x.toolCallId === c.id)).toHaveLength(1);
+    }
+  });
+
+  it('полная пачка вызовов не меняется', () => {
+    const rows = [
+      row('user', 'привет'),
+      row('assistant', '', { toolCalls: [{ id: 'c1', name: 't', arguments: {} }, { id: 'c2', name: 't', arguments: {} }] }),
+      row('tool', 'раз', { toolCallId: 'c1' }),
+      row('tool', 'два', { toolCallId: 'c2' }),
+      row('assistant', 'готово'),
+    ];
+    expect(buildHistory(rows).map((m) => m.content)).toEqual(['привет', '', 'раз', 'два', 'готово']);
   });
 
   it('окно сдвигается к ближайшему user, чтобы не начинать с осиротевшего tool; старое — сводкой', () => {

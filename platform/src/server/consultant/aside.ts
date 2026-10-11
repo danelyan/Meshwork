@@ -428,7 +428,7 @@ export function hintFor(role: 'candidate' | 'employer', steps: JourneyStep[], vi
 export async function loadCandidateDocs(candidateId: string): Promise<AsideDoc[]> {
   const [uploads, sources, claims] = await Promise.all([
     prisma.upload.findMany({ where: { candidateId }, select: { id: true, filename: true, extracted: true, storageKey: true }, orderBy: { createdAt: 'desc' }, take: 20 }),
-    prisma.source.findMany({ where: { candidateId, kind: { in: ['url', 'github', 'codeforces', 'stackoverflow'] } }, select: { id: true, origin: true, claims: { where: { status: { not: 'rejected' } }, select: { id: true } } }, orderBy: { fetchedAt: 'desc' }, take: 10 }),
+    prisma.source.findMany({ where: { candidateId, kind: { in: ['url', 'github', 'codeforces', 'stackoverflow'] } }, select: { id: true, kind: true, origin: true }, orderBy: { fetchedAt: 'desc' }, take: 10 }),
     prisma.claim.findMany({ where: { candidateId, status: { not: 'rejected' } }, select: { sourceRef: true } }),
   ]);
   const status = (n: number) => (n > 0 ? `разобран, ${claimsWord(n)}` : 'разобран, утверждений нет');
@@ -436,7 +436,10 @@ export async function loadCandidateDocs(candidateId: string): Promise<AsideDoc[]
     const n = claims.filter((c) => c.sourceRef.startsWith(`${u.filename}#`)).length;
     return { id: u.id, name: u.filename, kind: 'file', status: u.extracted ? status(n) : 'разбирается', hasFile: Boolean(u.storageKey) };
   });
-  const links = sources.map((s): AsideDoc => ({ id: s.id, name: s.origin.replace(/^https?:\/\//, ''), kind: 'link', status: status(s.claims.length) }));
+  // Как у файлов — по sourceRef: связь Claim.sourceId конвейер не заполняет. Строки источника — `origin#…`,
+  // у GitHub ещё и `github:логин/репозиторий#…` (collector/github.ts).
+  const fromSource = (s: { kind: string; origin: string }, ref: string) => ref.startsWith(`${s.origin}#`) || (s.kind === 'github' && ref.startsWith(`${s.origin}/`));
+  const links = sources.map((s): AsideDoc => ({ id: s.id, name: s.origin.replace(/^https?:\/\//, ''), kind: 'link', status: status(claims.filter((c) => fromSource(s, c.sourceRef)).length) }));
   return [...files, ...links];
 }
 

@@ -320,6 +320,24 @@ describe('реплики помощника', () => {
     expect(templateLead(step('documents'), c, { step: step('goal'), value: 'grade_confirm', label: 'x' })).toMatch(/тест/);
     expect(templateLead(step('fsp'), c, { step: step('documents'), value: undefined, label: null })).toMatch(/вернуться/);
   });
+  it('шаблоны говорят от лица Киры в женском роде', () => {
+    const prev = { step: step('goal'), value: 'job_search', label: 'Ищу работу' };
+    const c = ctx({ specialization: 'backend', needSpecialization: 'frontend' }, { role: 'candidate' });
+    expect(templateLead(step('grade'), c, prev)).toBe('Backend - поняла.');
+    expect(templateLead(step('grade'), ctx({ goal: 'grade_confirm', specialization: 'backend' }), prev)).toMatch(/^Backend - поняла\. Раз хочешь/);
+    expect(templateLead(step('grade'), ctx(), prev)).toBe('Поняла.');
+    expect(templateLead(step('city'), c, prev)).toBe('Офис или гибрид - поняла.');
+    expect(templateLead(step('inn'), c, prev)).toBe('Записала.');
+    expect(templateLead(step('needGrades'), c, prev)).toBe('Frontend - поняла.');
+    expect(templateLead(step('needGrades'), ctx(), prev)).toBe('Поняла.');
+    // ни один шаблон не говорит о себе в мужском роде
+    const masculine = /(?<![\p{L}])(понял|записал|принял|нашёл|нашел|собрал|прочитал|подготовил|смог|готов)(?![\p{L}])/iu;
+    for (const s of [...BASE_STEPS, ...CANDIDATE_STEPS, ...EMPLOYER_STEPS]) {
+      for (const cx of [c, ctx(), ctx({ goal: 'grade_confirm' }, { role: 'employer' })]) {
+        for (const p of [prev, null]) expect(templateLead(s, cx, p), s.id).not.toMatch(masculine);
+      }
+    }
+  });
   it('ответ модели: короткий текст без разметки, иначе — шаблон', () => {
     expect(cleanLead('«Отлично, Иван.»')).toBe('Отлично, Иван.');
     expect(cleanLead('# Заголовок')).toBeNull();

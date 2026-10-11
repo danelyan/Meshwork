@@ -66,6 +66,19 @@ describe('reply-stream: дельты реплики', () => {
     expect(evs).toEqual([]);
   });
 
+  it('пауза между кусками не оставляет слушателей abort на сигнале хода', async () => {
+    const ctrl = new AbortController();
+    const added = vi.spyOn(ctrl.signal, 'addEventListener');
+    const removed = vi.spyOn(ctrl.signal, 'removeEventListener');
+    const s = createReplyStream(() => undefined, ctrl.signal, () => 1);
+    const text = 'раз два три четыре пять шесть семь восемь девять десять одиннадцать двенадцать';
+    expect(await s.finish(text)).toBe(text);
+    const on = added.mock.calls.filter((c) => c[0] === 'abort');
+    const off = removed.mock.calls.filter((c) => c[0] === 'abort');
+    expect(on.length).toBe(splitChunks(text).length);
+    expect(off.map((c) => c[1])).toEqual(on.map((c) => c[1]));
+  });
+
   it('клиент ушёл (pace): нарезка не ждёт, но message с полным текстом отдаётся и сохраняется', async () => {
     const evs: Ev[] = [];
     const pace = new AbortController();

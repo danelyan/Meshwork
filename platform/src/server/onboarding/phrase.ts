@@ -67,8 +67,8 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
       return 'Теперь про работу: по направлению тебя и будут искать.';
     case 'grade': {
       const s = specLabel(ctx.answers.specialization);
-      if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s} - понял. ` : ''}Раз хочешь подтвердить грейд, скажи, на какой претендуешь.`;
-      return s ? `${s} - понял.` : 'Понял.';
+      if (ctx.answers.goal === 'grade_confirm') return `${s ? `${s} - поняла. ` : ''}Раз хочешь подтвердить грейд, скажи, на какой претендуешь.`;
+      return s ? `${s} - поняла.` : 'Поняла.';
     }
     case 'experience':
       return 'Теперь уточним твой опыт. Он поможет выбрать подходящий следующий шаг.';
@@ -81,7 +81,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'formats':
       return 'Хороший набор.';
     case 'city':
-      return 'Офис или гибрид - понял.';
+      return 'Офис или гибрид - поняла.';
     case 'salary':
       return 'Почти закончили. Компании приходят сразу с вилкой - укажи, на что рассчитываешь.';
     case 'candidateContact':
@@ -91,7 +91,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
     case 'companyName':
       return 'Ты от лица компании - тогда сначала о ней.';
     case 'inn':
-      return 'Записал.';
+      return 'Записала.';
     case 'industry':
       return prev?.step.id === 'inn' ? 'ИНН в порядке.' : 'Дальше.';
     case 'about':
@@ -102,7 +102,7 @@ export function templateLead(step: StepDef, ctx: StepContext, prev: PrevAnswer |
       return 'Теперь о том, кого ищешь.';
     case 'needGrades': {
       const s = specLabel(ctx.answers.needSpecialization);
-      return s ? `${s} - понял.` : 'Понял.';
+      return s ? `${s} - поняла.` : 'Поняла.';
     }
     case 'needStack':
       return 'Уточним стек - по нему подберу утверждения каталога.';

@@ -3,7 +3,6 @@ vi.mock('@/server/recommend', async () => (await import('./mocks')).recommendMoc
 import { dispatchToolCall } from '@/server/agent/dispatch';
 import { runTurn } from '@/server/agent/loop';
 import { tools } from '@/server/agent/tools';
-import { optionalDelegate } from '@/server/agent/tools/get_onboarding_status';
 import type { AgentEvent, ToolContext } from '@/server/agent/types';
 import { resetLlmClient } from '@/server/llm/client';
 import { clearStubResponses, createStubProvider } from '@/server/llm/providers/stub';
@@ -86,18 +85,13 @@ describe('инструменты «ведёт по платформе»', () => 
     expect(String(r.json.hint)).toMatch(/кнопка кандидата/);
   });
 
-  it('get_onboarding_status: подтверждённые есть, категории нет → test; анкета читается, если модель лейна onboarding есть', async () => {
+  it('get_onboarding_status: подтверждённые есть, категории нет → test; анкеты нет → profile null', async () => {
     await seedClaim('confirmed');
     const r = await call('get_onboarding_status');
     expect(r.json.nextStep).toBe('test');
     // Демо-кандидат без аккаунта — анкету не требуем
     expect((r.json.steps as Record<string, boolean>).onboarding).toBe(true);
-    if (optionalDelegate('candidateProfile')) {
-      expect(r.json.profileAvailable).toBe(true);
-      expect(r.json.profile).toBeNull();
-    } else {
-      expect(r.json).toMatchObject({ profileAvailable: false, profile: null });
-    }
+    expect(r.json).toMatchObject({ profileAvailable: true, profile: null });
   });
 
   it('get_test_status: категория из теста и рекомендация; экран теста — /test', async () => {
@@ -124,6 +118,13 @@ describe('инструменты «ведёт по платформе»', () => 
     expect(inv).toHaveLength(1);
     expect(inv[0]).toMatchObject({ companyName: 'Тест-Банк', vacancyTitle: 'Go-разработчик', salaryFrom: 260_000, salaryTo: 260_000, status: 'sent' });
     expect(r.json.pending).toBe(1);
+    // открытое, но без ответа приглашение по-прежнему «ждёт ответа» (как pending в journeyState)
+    await prisma.invitation.updateMany({ where: { candidateId: CAND }, data: { status: 'viewed' } });
+    const viewed = await call('get_invitations');
+    expect(viewed.json.invitations as Record<string, unknown>[]).toHaveLength(1);
+    expect((viewed.json.invitations as Record<string, unknown>[])[0]).toMatchObject({ status: 'viewed' });
+    expect(viewed.json.pending).toBe(1);
+    expect((await call('get_invitations', { status: 'sent' })).json.invitations).toEqual([]);
   });
 
   it('explain_evidence: свой claim — уровень, почему и пути; чужой — not_found', async () => {

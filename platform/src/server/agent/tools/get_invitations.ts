@@ -5,8 +5,14 @@ import { prisma } from '@/server/db';
 import type { AgentTool } from '../types';
 import { GRADES } from '@/lib/grades';
 
+/** «Ждут ответа» — как в пути кандидата (journey.ts): отправлено или уже открыто, ответа ещё нет. */
+export const PENDING_STATUSES = ['sent', 'viewed'] as const;
+
 const Input = z.object({
-  status: z.enum(['sent', 'viewed', 'accepted', 'declined', 'hired', 'withdrawn', 'closed_hired', 'all']).default('sent').describe('sent — ждут ответа кандидата (по умолчанию); viewed — просмотрены; hired — компания отметила найм (финальный этап); withdrawn — компания отозвала приглашение; all — все'),
+  status: z
+    .enum(['pending', 'sent', 'viewed', 'accepted', 'declined', 'hired', 'withdrawn', 'closed_hired', 'all'])
+    .default('pending')
+    .describe('pending — ждут ответа кандидата: отправленные и уже открытые (по умолчанию); sent — отправлены, ещё не открыты; viewed — открыты, ответа нет; hired — компания отметила найм (финальный этап); withdrawn — компания отозвала приглашение; all — все'),
   limit: z.number().int().min(1).max(10).default(5),
 });
 const Output = z.object({
@@ -33,7 +39,10 @@ const Output = z.object({
   note: z.string(),
 });
 
-/** Входящие приглашения работодателей (R-C-11). Контакты компании сюда не входят: они открываются только после принятия. */
+/**
+ * Входящие приглашения работодателей (R-C-11). Способ связи компании отдаётся сразу — он виден до принятия (ТЗ 2.2);
+ * контакта кандидата здесь нет: компания увидит его только после принятия.
+ */
 export const getInvitations: AgentTool<z.infer<typeof Input>, z.infer<typeof Output>> = {
   name: 'get_invitations',
   description:
@@ -45,7 +54,8 @@ export const getInvitations: AgentTool<z.infer<typeof Input>, z.infer<typeof Out
   // сообщение работодателя — внешний текст
   untrusted: true,
   async handler(ctx, { status, limit }) {
-    const where = { candidateId: ctx.candidateId, ...(status === 'all' ? {} : { status }) };
+    const pendingWhere = { candidateId: ctx.candidateId, status: { in: [...PENDING_STATUSES] } };
+    const where = status === 'pending' ? pendingWhere : { candidateId: ctx.candidateId, ...(status === 'all' ? {} : { status }) };
     const [rows, pending] = await Promise.all([
       prisma.invitation.findMany({
         where,
@@ -62,7 +72,7 @@ export const getInvitations: AgentTool<z.infer<typeof Input>, z.infer<typeof Out
           vacancy: { select: { title: true, specialization: true, grade: true, company: { select: { name: true, contact: true } } } },
         },
       }),
-      prisma.invitation.count({ where: { candidateId: ctx.candidateId, status: 'sent' } }),
+      prisma.invitation.count({ where: pendingWhere }),
     ]);
     return {
       invitations: rows.map((r) => ({

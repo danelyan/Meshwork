@@ -18,6 +18,33 @@ export function toChatMessage(m: Pick<DbMessage, 'role' | 'content' | 'toolCalls
   return out;
 }
 
+/** Результат-заглушка вызова, который не выполнился: ход остановили («Стоп», таймаут) посреди пачки вызовов. */
+export const INTERRUPTED_TOOL_RESULT = JSON.stringify({ error: { code: 'aborted', message: 'Вызов не выполнен: ход остановлен' } });
+
+/**
+ * У каждого вызова в сообщении ассистента должен быть результат: провайдеры отвергают историю, где
+ * на часть id из `toolCalls` нет сообщения `tool`. После остановки хода посреди пачки такие вызовы
+ * остаются в базе — им дописывается заглушка сразу за результатами той же пачки.
+ */
+function closeToolCalls(messages: ChatMessage[]): ChatMessage[] {
+  const out: ChatMessage[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i] as ChatMessage;
+    out.push(m);
+    if (m.role !== 'assistant' || !m.toolCalls?.length) continue;
+    const answered = new Set<string>();
+    while (messages[i + 1]?.role === 'tool') {
+      const t = messages[++i] as ChatMessage;
+      out.push(t);
+      if (t.toolCallId) answered.add(t.toolCallId);
+    }
+    for (const call of m.toolCalls) {
+      if (!answered.has(call.id)) out.push({ role: 'tool', content: INTERRUPTED_TOOL_RESULT, toolCallId: call.id });
+    }
+  }
+  return out;
+}
+
 function clip(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max)}\n[… обрезано]`;
 }
@@ -27,7 +54,8 @@ function clip(text: string, max: number): string {
  * последние HISTORY_WINDOW сообщений, сдвинутое к ближайшему сообщению user,
  * чтобы не начинать с осиротевшего `tool` (провайдеры такое отвергают); всё,
  * что раньше окна, — одна сводка «user: …» в начале. Результаты инструментов
- * вне последнего хода режутся до HISTORY_MAX_CHARS.
+ * вне последнего хода режутся до HISTORY_MAX_CHARS. Вызовам без результата
+ * (ход остановлен посреди пачки) дописывается заглушка — см. closeToolCalls.
  */
 export function buildHistory(
   messages: Pick<DbMessage, 'role' | 'content' | 'toolCalls' | 'toolCallId'>[],
@@ -39,7 +67,7 @@ export function buildHistory(
   let start = Math.max(0, dialog.length - window);
   while (start > 0 && start < dialog.length && dialog[start]?.role !== 'user') start--;
   const older = dialog.slice(0, start);
-  const recent = dialog.slice(start).map(toChatMessage);
+  const recent = closeToolCalls(dialog.slice(start).map(toChatMessage));
   const lastUserIdx = recent.map((m) => m.role).lastIndexOf('user');
   const out: ChatMessage[] = recent.map((m, i) =>
     m.role === 'tool' && i < lastUserIdx ? { ...m, content: clip(m.content, maxChars) } : m,

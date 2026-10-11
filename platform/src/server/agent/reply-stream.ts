@@ -41,11 +41,17 @@ export function splitChunks(text: string): string[] {
   return out;
 }
 
+/** Пауза между кусками. Слушатель `abort` снимается и по таймеру: иначе на длинной реплике они копятся на сигнале хода. */
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve) => {
     if (ms <= 0 || signal?.aborted) return resolve();
-    const t = setTimeout(resolve, ms);
-    signal?.addEventListener('abort', () => (clearTimeout(t), resolve()), { once: true });
+    const done = () => {
+      clearTimeout(t);
+      signal?.removeEventListener('abort', done);
+      resolve();
+    };
+    const t = setTimeout(done, ms);
+    signal?.addEventListener('abort', done, { once: true });
   });
 
 export interface ReplyStream {

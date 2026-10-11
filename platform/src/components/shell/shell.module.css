@@ -31,7 +31,7 @@
 .frame:has([data-dashboard]) .container { max-width: none; padding-top: 32px; }
 @media (max-width: 640px) { .frame:has([data-dashboard]) { --page-pad: 16px; } }
 
-.skip { position: fixed; left: 16px; top: -70px; z-index: 30; background: var(--ink); color: var(--landing-white); padding: 12px; }
+.skip { position: fixed; left: 16px; top: -70px; z-index: 30; background: var(--ink); color: var(--on-ink); padding: 12px; }
 .skip:focus { top: 8px; }
 
 /* --- шапка --- */
@@ -39,11 +39,12 @@
   position: sticky; top: 0; z-index: 20; min-height: var(--landing-header-h); display: flex; align-items: center; padding: 0 var(--page-pad);
   background: var(--role-bar-bg); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-bottom: var(--role-rule-w) solid var(--role-rule);
 }
-/* Тёмная сцена консультанта (тема или созвон) заходит под полупрозрачную шапку и серит её — тогда шапка сплошная. */
-.frame:has([data-scene-theme='dark'], [data-call]) .header { background: var(--paper); }
+/* Созвон (тёмная сцена при любой теме) заходит под полупрозрачную шапку и серит её — тогда шапка сплошная.
+   Тёмная тема страницы шапку не трогает: её стекло и рамка — смысловые токены (tokens.css, data-theme на <html>). */
+.frame:has([data-call]) .header { background: var(--paper); }
 .brand { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 19px; }
 .brand:hover { color: var(--blue); }
-.brand img { height: 34px; width: auto; display: block; filter: grayscale(1) brightness(0); }
+.brand img { height: 34px; width: auto; display: block; filter: var(--logo-filter); }
 .brand span { font-weight: 500; font-size: 15px; color: var(--muted); }
 .nav { display: flex; gap: 4px; margin-left: 56px; align-items: center; min-width: 0; }
 .nav a { padding: 12px 18px; font-weight: 500; font-size: 15px; color: var(--muted); white-space: nowrap; }
@@ -57,9 +58,9 @@
 .themeToggle:hover { background: var(--surface-hover); border-color: var(--line); }
 .login {
   height: 48px; padding: 0 22px; display: flex; align-items: center; border: 0; cursor: pointer;
-  background: var(--ink); color: var(--landing-white); font-weight: 600; font-size: 15px; white-space: nowrap;
+  background: var(--ink); color: var(--on-ink); font-weight: 600; font-size: 15px; white-space: nowrap;
 }
-.login:hover { background: var(--blue); color: var(--landing-white); }
+.login:hover { background: var(--blue); color: var(--on-ink); }
 /* меню аккаунта (AccountMenu, ADR 0004) */
 .account { position: relative; display: flex; }
 .accountBtn {

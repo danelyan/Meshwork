@@ -1,15 +1,15 @@
 'use client';
 
-import { setSceneTheme, useSceneTheme } from '@/components/avatar/scene-theme';
+import { setTheme, useTheme } from './theme';
 
 import styles from './shell.module.css';
 
 /**
- * Иконка темы экрана консультанта в шапке (идея владельца 10.10). Тема и её хранение — `scene-theme.ts`
- * (тот же переключатель, что в dev-панели); в светлой теме показываем луну, в тёмной — солнце.
+ * Иконка темы экрана консультанта в шапке (идея владельца 10.10). Тема и её хранение — `theme.ts`
+ * (тот же переключатель, что в dev-панели; тема действует на всю страницу /consultant); в светлой теме показываем луну, в тёмной — солнце.
  */
 export function ThemeToggle() {
-  const dark = useSceneTheme() === 'dark';
+  const dark = useTheme() === 'dark';
   return (
     <button
       type="button"
@@ -17,7 +17,7 @@ export function ThemeToggle() {
       aria-pressed={dark}
       aria-label="Тёмная тема"
       title={dark ? 'Светлая тема' : 'Тёмная тема'}
-      onClick={() => setSceneTheme(dark ? 'light' : 'dark')}
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
     >
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         {dark ? (

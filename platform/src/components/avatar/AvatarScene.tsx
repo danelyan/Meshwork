@@ -17,7 +17,6 @@ import type { CallKind } from '@/server/call/types';
 import { CallProvider, useCallMode } from '../call/CallContext';
 import { HeadView } from './HeadView';
 import { PanelSplitter } from './PanelSplitter';
-import { useSceneTheme } from './scene-theme';
 import { MuteToggle, StateChip, StopButton, Subtitles } from './Speaking';
 import { CompanionVoiceProvider } from './voice';
 import styles from './AvatarScene.module.css';
@@ -112,12 +111,11 @@ export function AvatarScene({ variant, demo, initial, children, aside, label = '
 function SideScene({ label, aside, children }: { label: string; aside?: SceneAsideData; children: ReactNode }) {
   const call = useCallMode();
   const inCall = Boolean(call?.open);
-  // светлая по умолчанию; созвон всегда на тёмной сцене (tokens.css, data-scene-theme)
-  const theme = useSceneTheme();
+  // Тема — на <html> (components/shell/theme.ts), сцена следует ей через [data-scene]; созвон всегда тёмный
+  // ([data-call], tokens.css).
   const sceneRef = useRef<HTMLDivElement>(null);
-  const dark = theme === 'dark' || inCall;
   return (
-    <div ref={sceneRef} className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-call={inCall || undefined} data-scene-theme={theme}>
+    <div ref={sceneRef} className={`${styles.sideScene}${aside ? ` ${styles.withAside}` : ''}`} data-testid="scene-call-side" data-call={inCall || undefined} data-scene>
       <PanelSplitter scene={sceneRef} />
       <section className={styles.sideStage} aria-label={label}>
         {inCall ? (
@@ -143,7 +141,7 @@ function SideScene({ label, aside, children }: { label: string; aside?: SceneAsi
         )}
       </section>
       {aside && <SceneAside data={aside} className={styles.sideAside} />}
-      <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll data-theme={dark ? 'feed-dark' : undefined} inert={inCall || undefined} aria-hidden={inCall || undefined}>
+      <div className={styles.sidePanel} data-testid="side-panel" data-feed-scroll inert={inCall || undefined} aria-hidden={inCall || undefined}>
         {inCall && <p className={styles.callPause}>Идёт созвон - чат на паузе</p>}
         {children}
       </div>

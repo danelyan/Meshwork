@@ -136,8 +136,6 @@ export const API_ACCESS = {
   '/api/auth/role/switch': 'account',
   '/api/auth/onboarding/complete': 'account',
   '/api/onboarding': 'account',
-  // Журнал редакций ответов опроса (C05): только свой, только кандидат.
-  '/api/onboarding/history': 'candidate',
   // Флаг DEMO_LOGIN проверяет обработчик (выключен → 404).
   '/api/demo/login': 'public',
   '/api/demo/resume': 'candidate',
@@ -150,7 +148,6 @@ export const API_ACCESS = {
   '/api/expert/attempt/[id]/signal': 'public',
   '/api/profile': 'candidate',
   '/api/profile/details': 'candidate',
-  '/api/profile/pdf': 'candidate',
   '/api/profile/resume-fields': 'candidate',
   '/api/profile/contact': 'candidate',
   '/api/profile/privacy': 'candidate',

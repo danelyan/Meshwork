@@ -107,9 +107,7 @@ export function parseFilters(raw: Raw): { filters: MatchFilters; limit: number }
   if (grade.success) filters.grade = grade.data;
   if (stack.length) filters.stack = stack;
   if (first(raw.fsp) === '1') filters.fsp = true;
-  // pool=all — явное расширение пула кандидатами без категории (M05). Прежний category=1 («только с категорией»)
-  // совпадает с режимом по умолчанию и принимается как no-op, чтобы старые ссылки не ломались.
-  if (first(raw.pool) === 'all' || first(raw.untested) === '1') filters.expandPool = true; // untested=1 — синоним из main 11.10
+  if (first(raw.untested) === '1') filters.includeUntested = true; // по умолчанию только с категорией по тесту
   // Подкатегория — только из справочника и только вместе со своим направлением (иначе отбрасывается).
   const sub = getSubcategory(first(raw.sub));
   if (sub && !fullstack && (!filters.specialization || filters.specialization === sub.specialization)) {
@@ -134,6 +132,6 @@ export function filtersToQuery(f: MatchFilters): string {
   if (f.grade) p.set('grade', f.grade);
   if (f.stack?.length) p.set('stack', f.stack.join(','));
   if (f.fsp) p.set('fsp', '1');
-  if (f.expandPool) p.set('pool', 'all');
+  if (f.includeUntested) p.set('untested', '1');
   return p.toString();
 }

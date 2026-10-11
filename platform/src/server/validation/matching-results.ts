@@ -25,14 +25,16 @@ const Row = z.object({
   bNdcg: z.number(),
 });
 
-const MethodMetrics = z.object({
-  p5: z.number().optional(),
-  p10: z.number().optional(),
-  ndcg10: z.number().optional(),
-  recall50: z.number().nullish(),
-  mrr: z.number().optional(),
-});
 const Interval = z.object({ mean: z.number(), lo: z.number(), hi: z.number() });
+// run.ts пишет метрики методов интервалами {mean, lo, hi} (бутстреп), старые прогоны — числом; блоку нужна точка.
+const Metric = z.union([z.number(), Interval.transform((i) => i.mean)]);
+const MethodMetrics = z.object({
+  p5: Metric.optional(),
+  p10: Metric.optional(),
+  ndcg10: Metric.optional(),
+  recall50: Metric.nullish(),
+  mrr: Metric.optional(),
+});
 
 /** Расширенный прогон (лейн match-eval): методы, разница с бутстреп-интервалом. Все поля необязательны. */
 const Extended = z.object({

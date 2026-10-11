@@ -66,8 +66,9 @@ export function DashboardFrame({ account, children, employerSummary, bare = fals
         {isEmployer && employerSummary}
         <p>{isEmployer ? 'Имя и контакт кандидата откроются после принятия приглашения.' : 'Контакты доступны компании только после вашего согласия на приглашение.'}</p>
       </div>
+      {/* Помощник по подбору - в потоке боковой колонки, а не поверх страницы: плавающая карточка закрывала «Пригласить» и поля формы. */}
+      {isEmployer && !consultant && <div className={styles.assistant}><EmployerConsultantDock /></div>}
     </aside>}
     <div className={styles.content}>{children}</div>
-    {isEmployer && !bare && !consultant && <EmployerConsultantDock />}
   </div>;
 }

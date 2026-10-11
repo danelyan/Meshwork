@@ -249,12 +249,15 @@
 .previewInvitation h2 { font-size: 17px; margin: 0; }
 .previewInvitation h3 { font-size: 20px; margin: 0; }
 .previewInvitation .salary { font-size: 22px; }
-.consultantDock { position: fixed; right: 24px; bottom: 24px; z-index: 25; width: 210px; border: 1px solid var(--glass-border); background: var(--employer-modal,var(--glass-strong)); backdrop-filter: blur(22px) saturate(1.5); box-shadow: var(--landing-shadow-md); text-decoration: none; }
+/* Помощник по подбору стоит в потоке боковой колонки кабинета (DashboardFrame), а не поверх страницы: плавающая карточка закрывала «Пригласить» и поля формы. */
+.consultantDock { display: block; border: 1px solid var(--glass-border); background: var(--employer-modal,var(--glass-strong)); text-decoration: none; }
+.consultantDock:hover { border-color: var(--blue); }
 .dockPortrait { position: relative; height: 130px; overflow: hidden; background: var(--avatar-stage); }
 .dockPortrait img { object-fit: contain; object-position: center 25%; }
 .consultantDock > span { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 14px 12px; font-size: 11px; }
 .consultantDock b { color: var(--blue); font-size: 20px; }
-@media (max-width: 760px) { .consultantDock { width: auto; max-width: calc(100vw - 32px); right: 16px; bottom: 16px; } .dockPortrait { display: none; } .page { padding-bottom: 90px; } }
+/* колонка свёрнута в полосу разделов (DashboardFrame, 1050px): компактная ссылка без портрета */
+@media (max-width: 1050px) { .dockPortrait { display: none; } .consultantDock > span { min-height: 44px; padding: 0 12px; white-space: nowrap; } }
 .sidebarQuota { display: grid; gap: 8px; padding-top: 18px; border-top: 1px solid var(--line); }
 .sidebarQuota strong { font-size: 28px; letter-spacing: -.04em; }
 .sidebarQuota strong span { color: var(--muted); font-size: 14px; font-weight: 400; }
@@ -373,3 +376,9 @@
 .compareTable thead th { color: var(--muted); font: var(--fs-xs) var(--mono); font-weight: 400; overflow-wrap: anywhere; }
 .compareTable tr[data-lead='true'] { box-shadow: inset 3px 0 0 var(--blue); background: var(--accent-fill); }
 .compareTable tfoot th, .compareTable tfoot td { font-weight: 600; border-bottom: 0; }
+
+/* Поиск по базе: дозагрузка выдачи («Показать ещё») и подпись области фильтра по показанным строкам */
+.loadMore { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; color: var(--muted); font-size: var(--fs-sm); }
+.loadMore > span:first-child { margin-right: auto; }
+.searchScope { margin: 0; padding: 10px 18px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: var(--fs-sm); }
+.searchScope a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }

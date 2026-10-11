@@ -2,9 +2,9 @@ import Link from 'next/link';
 
 import type { MatchResult } from '@/server/employer/matching';
 import type { RelaxHint } from '@/server/employer/relax';
-import { filtersToQuery } from '@/server/employer/schemas';
+import { filtersToQuery, loadMoreLinks } from '@/server/employer/schemas';
 
-import { Notice } from '../ui';
+import { Button, Notice } from '../ui';
 
 import { MatchExplorer } from './MatchExplorer';
 import { CandidateSearchRows } from './CandidateSearchRows';
@@ -16,6 +16,8 @@ import { RefinementHistory } from './RefinementHistory';
 export function MatchResults({ result, basePath, favoriteScope, companyName }: { result: MatchResult; basePath: string; favoriteScope?: string; companyName?: string }) {
   const query = filtersToQuery(result.filters);
   const vacancy = result.vacancy;
+  // Поиск по базе: остальная выдача догружается ростом limit в адресе, фильтры те же.
+  const more = vacancy ? null : loadMoreLinks(basePath, result.filters, result.items.length, result.total);
   return (
     <>
       {vacancy ? <details className={styles.evidenceDetails}><summary>Уточнить подборку</summary><FilterForm action={basePath} filters={result.filters} /><RefinementHistory basePath={basePath} query={query} label={filtersLabel(result.filters)} /></details> : <><FilterForm action={basePath} filters={result.filters} /><RefinementHistory basePath={basePath} query={query} label={filtersLabel(result.filters)} /></>}
@@ -29,7 +31,19 @@ export function MatchResults({ result, basePath, favoriteScope, companyName }: {
           Под эти условия нет кандидатов с подтверждёнными карточками. Ослабь фильтры или сбрось их - прежние выдачи
           остались в списке выше.
         </Notice>
-      ) : !vacancy ? <CandidateSearchRows items={result.items} scope={favoriteScope} /> : (
+      ) : !vacancy ? (
+        <>
+          <CandidateSearchRows items={result.items} scope={favoriteScope} total={result.total} moreHref={(more?.all ?? more?.next)?.href} />
+          {result.items.length < result.total && (
+            <nav className={styles.loadMore} aria-label="Остальные кандидаты выдачи">
+              <span>Показано {result.items.length} из {result.total}.</span>
+              {more?.next && <Button href={more.next.href} scroll={false} prefetch={false} variant="ghost">Показать ещё {more.next.add}</Button>}
+              {more?.all && <Button href={more.all.href} scroll={false} prefetch={false} variant="ghost">{more.all.count < result.total ? `Показать первые ${more.all.count}` : `Показать всех ${more.all.count}`}</Button>}
+              {!more?.next && <span>Больше страница не показывает - сузь выдачу фильтрами выше.</span>}
+            </nav>
+          )}
+        </>
+      ) : (
         <MatchExplorer items={result.items} vacancyId={vacancy?.id ?? null} vacancyTitle={vacancy?.title} companyName={companyName} defaultSalary={vacancy ? { from: vacancy.salaryFrom, to: vacancy.salaryTo } : undefined} favoriteScope={favoriteScope} />
       )}
     </>

@@ -7,7 +7,7 @@ import { EmployerConsentGate } from '@/components/consent/EmployerConsentGate';
 import { requirePageEmployer } from '@/server/auth/page';
 import { employerConsentsMissing } from '@/server/consent/service';
 import { loadEmployerContext, searchBank } from '@/server/employer';
-import { parseFilters } from '@/server/employer/schemas';
+import { parseFilters, SEARCH_PAGE_MAX_LIMIT } from '@/server/employer/schemas';
 
 export const metadata: Metadata = { title: 'Поиск по базе - MESHWORK' };
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const ctx = await loadEmployerContext(s.employerProfileId);
   // ADR 0005: без оферты и обязательства по данным — вместо выдачи форма принятия условий.
   if ((await employerConsentsMissing(s.userId)).length) return <div className={styles.page}><h1>Поиск по базе<span className={styles.accent}>.</span></h1><EmployerConsentGate /></div>;
-  const { filters, limit } = parseFilters(await searchParams);
+  // «Показать ещё» растит limit в адресе - потолок страницы выше, чем у API.
+  const { filters, limit } = parseFilters(await searchParams, SEARCH_PAGE_MAX_LIMIT);
   const result = await searchBank(ctx.companyId, filters, limit);
   return (
     <div className={styles.page}>

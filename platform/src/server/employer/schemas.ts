@@ -26,9 +26,8 @@ export const VacancyInput = z
     title: z.string().trim().min(3, 'Не короче 3 символов').max(120),
     specialization: SpecializationSchema,
     grade: GradeSchema,
-    /** R-D-01: вилка обязательна и ненулевая — принятый отклик копирует её в приглашение без ввода работодателя. */
-    salaryFrom: z.number().int().min(1, 'Укажи зарплату «от»').max(10_000_000),
-    salaryTo: z.number().int().min(1, 'Укажи зарплату «до»').max(10_000_000),
+    salaryFrom: z.number().int().min(0).max(10_000_000),
+    salaryTo: z.number().int().min(0).max(10_000_000),
     teamDescription: optText(2000),
     description: optText(2000),
     stack: z.array(z.string().max(40)).max(15).default([]).transform(normalizeStack),
@@ -94,7 +93,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  * Фильтры выдачи из query-параметров (R-M-04: уточнение = новый URL, прежняя выдача
  * остаётся в истории). Неизвестное значение отбрасывается, а не ломает страницу.
  */
-export function parseFilters(raw: Raw): { filters: MatchFilters; limit: number } {
+export function parseFilters(raw: Raw, maxLimit: number = MAX_RESULT_LIMIT): { filters: MatchFilters; limit: number } {
   // ПРЕДЛОЖЕНИЕ агента: spec=fullstack - представление «backend + frontend» (fullstack.ts), не новое направление.
   const fullstack = first(raw.spec) === FULLSTACK;
   const spec = SpecializationSchema.safeParse(first(raw.spec));
@@ -117,7 +116,7 @@ export function parseFilters(raw: Raw): { filters: MatchFilters; limit: number }
     filters.specialization = sub.specialization;
     filters.subcategory = sub.id;
   }
-  const limit = Number.isInteger(limitN) && limitN > 0 ? Math.min(limitN, MAX_RESULT_LIMIT) : DEFAULT_RESULT_LIMIT;
+  const limit = Number.isInteger(limitN) && limitN > 0 ? Math.min(limitN, maxLimit) : DEFAULT_RESULT_LIMIT;
   return { filters, limit };
 }
 
@@ -125,6 +124,32 @@ export function searchParamsRecord(url: URL): Raw {
   const out: Raw = {};
   for (const [k, v] of url.searchParams) out[k] = v;
   return out;
+}
+
+/**
+ * Потолок выдачи на странице «Поиск по базе». Страница догружает кандидатов ростом `limit` в адресе («Показать ещё»),
+ * поэтому её потолок выше, чем у API (MAX_RESULT_LIMIT): иначе кандидаты за первой страницей недоступны.
+ */
+export const SEARCH_PAGE_MAX_LIMIT = 300;
+
+export interface LoadMoreLinks {
+  /** Следующая порция: `add` - сколько кандидатов добавится. */
+  next: { href: string; add: number } | null;
+  /** Вся доступная выдача сразу: `count` - сколько станет показано (меньше total, если упёрлись в потолок). */
+  all: { href: string; count: number } | null;
+}
+
+/** Ссылки дозагрузки выдачи: те же фильтры, больший `limit`. Оба null - показано всё, что страница может показать. */
+export function loadMoreLinks(basePath: string, filters: MatchFilters, shown: number, total: number, max: number = SEARCH_PAGE_MAX_LIMIT, step: number = DEFAULT_RESULT_LIMIT): LoadMoreLinks {
+  const reachable = Math.min(total, max);
+  if (shown >= reachable) return { next: null, all: null };
+  const query = filtersToQuery(filters);
+  const href = (limit: number) => `${basePath}?${query ? `${query}&` : ''}limit=${limit}`;
+  const nextLimit = Math.min(shown + step, reachable);
+  return {
+    next: { href: href(nextLimit), add: nextLimit - shown },
+    all: reachable > nextLimit ? { href: href(reachable), count: reachable } : null,
+  };
 }
 
 /** Обратно в query-строку (для ссылок «уточнить» и истории). */

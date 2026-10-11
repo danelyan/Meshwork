@@ -29,17 +29,25 @@
 .nav a[aria-current='page'] { background: var(--ink); color: var(--on-ink); font-weight: 600; }
 .note { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 14px; }
 .note p { margin: 0 0 12px; font: var(--fs-xs)/1.6 var(--mono); color: var(--muted); }
+/* карточка помощника по подбору (EmployerConsultantDock): низ боковой колонки; в свёрнутом меню (64px) ей нет места -
+   остаётся значок «ИИ-помощник» в списке разделов */
+.assistant { margin-top: 12px; }
+@media (min-width: 1051px) { .frame[data-collapsed] .assistant { display: none; } }
 .content { min-width: 0; }
 @media (max-width: 1050px) {
   .frame { display: block; }
-  .sidebar { position: relative; top: auto; padding: 8px var(--page-pad); border-right: 0; border-bottom: 1px solid var(--line); max-height: none; height: auto; }
+  /* полоса разделов и ссылка на помощника - в одну строку; на телефоне, где не помещаются, ссылка уходит на вторую */
+  .sidebar { position: relative; top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 8px var(--page-pad); border-right: 0; border-bottom: 1px solid var(--line); max-height: none; height: auto; }
   .identity, .note, .create, .summary, .collapse { display: none !important; }
   .frame[data-collapsed] .label { position: static; width: auto; height: auto; clip: auto; }
   .frame[data-collapsed] .sidebar { padding: 8px var(--page-pad); }
   .frame[data-collapsed] .nav a { justify-content: flex-start; padding: 10px 12px; }
-  .nav { display: flex; overflow-x: auto; gap: 4px; padding-bottom: 3px; }
+  .nav { display: flex; flex: 1 1 auto; min-width: 0; overflow-x: auto; gap: 4px; padding-bottom: 3px; }
   .nav a { flex: none; white-space: nowrap; padding: 10px 12px; font-size: var(--fs); }
+  .assistant { flex: none; margin: 0; }
 }
+/* телефон: ссылка на помощника занимала бы отдельную строку на каждой странице кабинета, а «ИИ-помощник» уже первый пункт этой полосы разделов */
+@media (max-width: 640px) { .assistant { display: none; } }
 @media print { .frame { display: block; } .sidebar { display: none; } }
 
 @media (prefers-reduced-motion: reduce) { .frame { transition: none; } }

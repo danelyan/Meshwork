@@ -68,6 +68,34 @@ describe('SMTP-клиент', () => {
     await expect(smtpSend({ host: '127.0.0.1', port: 1, secure: false }, 'a@b.test', 'x@y.test\r\nRCPT TO:<z@z>', '')).rejects.toThrow(/перевод строки/);
   });
 
+  it('с html — multipart/alternative: текст, затем HTML, обе части UTF-8 в base64', () => {
+    const html = `<p>Привет, код <b>123456</b></p>${'<span>длинная строка</span>'.repeat(20)}`;
+    const msg = buildMessage({ from: 'a@b.test', to: 'x@y.test', subject: 'Код', text: 'Привет, код 123456', html, boundary: 'fsp_test.1' });
+    const headEnd = msg.indexOf('\r\n\r\n');
+    const head = msg.slice(0, headEnd);
+    expect(head).toContain('Content-Type: multipart/alternative; boundary="fsp_test.1"');
+    expect(head).not.toContain('Content-Transfer-Encoding');
+    const parts = msg.slice(headEnd + 4).split(/(?:^|\r\n)--fsp_test\.1(?:--)?(?:\r\n|$)/).filter(Boolean);
+    expect(parts).toHaveLength(2);
+    const decoded = parts.map((part) => {
+      const [headers, body] = part.split('\r\n\r\n');
+      expect(body!.split('\r\n').every((line) => line.length <= 76)).toBe(true);
+      return { headers, text: Buffer.from(body!.replace(/\r\n/g, ''), 'base64').toString('utf8') };
+    });
+    expect(decoded[0]).toEqual({ headers: 'Content-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64', text: 'Привет, код 123456' });
+    expect(decoded[1]).toEqual({ headers: 'Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64', text: html });
+    expect(msg.endsWith('\r\n--fsp_test.1--')).toBe(true);
+  });
+
+  it('граница частей: своя у каждого письма; с переводом строки или кавычкой — отказ', () => {
+    const boundaryOf = () => /boundary="([^"]+)"/.exec(buildMessage({ from: 'a@b.test', to: 'x@y.test', subject: 't', text: 't', html: '<p>t</p>' }))![1];
+    expect(boundaryOf()).toMatch(/^fsp_[A-Za-z0-9.]+$/);
+    expect(boundaryOf()).not.toBe(boundaryOf());
+    for (const boundary of ['x"\r\nBcc: z@z.test', 'a b', '']) {
+      expect(() => buildMessage({ from: 'a@b.test', to: 'x@y.test', subject: 't', text: 't', html: '<p>t</p>', boundary })).toThrow(/граница/);
+    }
+  });
+
   it('addressOf: из «Имя <addr>» и голого адреса', () => {
     expect(addressOf('ФСП <a@b.test>')).toBe('a@b.test');
     expect(addressOf(' a@b.test ')).toBe('a@b.test');

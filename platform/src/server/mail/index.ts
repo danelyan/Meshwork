@@ -12,6 +12,8 @@ export interface MailMessage {
   to: string;
   subject: string;
   text: string;
+  /** HTML-вариант того же содержания (mail/layout.ts); без него письмо уходит только текстом. */
+  html?: string;
   /** Для журнала: verify | reset | invitation | … */
   kind: string;
 }
@@ -47,7 +49,7 @@ export async function sendMail(msg: MailMessage): Promise<void> {
     if (env.NODE_ENV !== 'test') console.info(`[mail] ${msg.kind} → ${msg.to}: ${msg.subject}\n${msg.text}`);
     return;
   }
-  const data = buildMessage({ from: env.MAIL_FROM, to: msg.to, subject: msg.subject, text: msg.text });
+  const data = buildMessage({ from: env.MAIL_FROM, to: msg.to, subject: msg.subject, text: msg.text, html: msg.html });
   await smtpSend(
     { host: env.SMTP_HOST, port: env.SMTP_PORT, secure: env.SMTP_SECURE, user: env.SMTP_USER, password: env.SMTP_PASSWORD },
     env.MAIL_FROM,

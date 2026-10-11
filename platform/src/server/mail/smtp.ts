@@ -130,21 +130,49 @@ function encodeMailbox(mailbox: string): string {
   return `${b64Header(m[1].replace(/^"|"$/g, ''))} <${m[2]}>`;
 }
 
-/** Текстовое письмо UTF-8: заголовки + тело в base64 (строки по 76 символов). */
-export function buildMessage(p: { from: string; to: string; subject: string; text: string; date?: Date; messageId?: string }): string {
+/** Часть письма: заголовки типа + тело UTF-8 в base64 (строки по 76 символов). */
+function textPart(subtype: 'plain' | 'html', content: string): string[] {
+  const body = Buffer.from(content.replace(/\r?\n/g, '\r\n'), 'utf8').toString('base64').replace(/.{1,76}/g, '$&\r\n');
+  return [`Content-Type: text/${subtype}; charset=UTF-8`, 'Content-Transfer-Encoding: base64', '', body.trimEnd()];
+}
+
+/**
+ * Письмо UTF-8: заголовки + тело. Без `html` — одно текстовое тело; с `html` — multipart/alternative
+ * (RFC 2046): сначала текст, затем HTML — клиент показывает последний вариант, который умеет.
+ */
+export function buildMessage(p: {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  date?: Date;
+  messageId?: string;
+  boundary?: string;
+}): string {
   assertNoCrlf(p.from, p.to, p.subject);
-  const body = Buffer.from(p.text.replace(/\r?\n/g, '\r\n'), 'utf8').toString('base64').replace(/.{1,76}/g, '$&\r\n');
   const domain = addressOf(p.from).split('@')[1] ?? 'localhost';
-  return [
+  const unique = () => `${Date.now()}.${Math.random().toString(36).slice(2)}`;
+  const headers = [
     `From: ${encodeMailbox(p.from)}`,
     `To: ${addressOf(p.to)}`,
     `Subject: ${b64Header(p.subject)}`,
     `Date: ${(p.date ?? new Date()).toUTCString()}`,
-    `Message-ID: <${p.messageId ?? `${Date.now()}.${Math.random().toString(36).slice(2)}`}@${domain}>`,
+    `Message-ID: <${p.messageId ?? unique()}@${domain}>`,
     'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: base64',
+  ];
+  if (!p.html) return [...headers, ...textPart('plain', p.text)].join('\r\n');
+  // Тела частей в base64, а в его алфавите нет «_» — граница внутри части не встретится.
+  const boundary = p.boundary ?? `fsp_${unique()}`;
+  if (!/^[A-Za-z0-9_.]{1,70}$/.test(boundary)) throw new SmtpError('SMTP: недопустимая граница частей письма');
+  return [
+    ...headers,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
     '',
-    body.trimEnd(),
+    `--${boundary}`,
+    ...textPart('plain', p.text),
+    `--${boundary}`,
+    ...textPart('html', p.html),
+    `--${boundary}--`,
   ].join('\r\n');
 }

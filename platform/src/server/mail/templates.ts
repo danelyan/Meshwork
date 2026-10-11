@@ -1,35 +1,73 @@
 import { getEnv } from '@/server/env';
 
 import type { MailMessage } from './index';
+import { type MailView, renderMailHtml } from './layout';
 
-/** Тексты писем. Только plain text: пользовательский текст не попадает в HTML. */
+/**
+ * Письма платформы: текст и HTML-вариант одного содержания. Текст — для клиентов без HTML и для журнала;
+ * HTML собирает `renderMailHtml`: поля передаются туда обычным текстом и экранируются в оболочке,
+ * поэтому пользовательский текст (компания, вакансия) разметкой не становится.
+ */
 const sign = () => `\n\n—\nФСП Карьера · ${getEnv().APP_URL}\nЕсли вы не запрашивали это письмо, просто проигнорируйте его.`;
 
+const html = (view: Omit<MailView, 'siteUrl'>) => renderMailHtml({ ...view, siteUrl: getEnv().APP_URL });
+
 export function verifyCodeMail(to: string, code: string): MailMessage {
+  const subject = `Код подтверждения: ${code}`;
   return {
     kind: 'verify',
     to,
-    subject: `Код подтверждения: ${code}`,
+    subject,
     text: `Код для подтверждения почты на ФСП Карьере: ${code}\n\nКод действует 15 минут. Никому его не сообщайте.${sign()}`,
+    html: html({
+      subject,
+      preheader: `Код ${code} действует 15 минут.`,
+      kicker: 'Подтверждение почты',
+      title: 'Код подтверждения',
+      lead: ['Введите этот код на странице регистрации, чтобы подтвердить почту на ФСП Карьере.'],
+      code,
+      notes: ['Код действует 15 минут. Никому его не сообщайте.'],
+    }),
   };
 }
 
 export function resetCodeMail(to: string, code: string): MailMessage {
+  const subject = `Восстановление пароля: код ${code}`;
   return {
     kind: 'reset',
     to,
-    subject: `Восстановление пароля: код ${code}`,
+    subject,
     text: `Код для смены пароля на ФСП Карьере: ${code}\n\nКод действует 15 минут. Если вы не просили сменить пароль, ничего не делайте — пароль останется прежним.${sign()}`,
+    html: html({
+      subject,
+      preheader: `Код ${code} действует 15 минут.`,
+      kicker: 'Восстановление пароля',
+      title: 'Код для смены пароля',
+      lead: ['Введите этот код на странице входа и задайте новый пароль на ФСП Карьере.'],
+      code,
+      notes: ['Код действует 15 минут.', 'Если вы не просили сменить пароль, ничего не делайте - пароль останется прежним.'],
+    }),
   };
 }
 
 /** Повторная регистрация на уже подтверждённую почту: не раскрываем это в ответе API, сообщаем владельцу ящика. */
 export function alreadyRegisteredMail(to: string): MailMessage {
+  const subject = 'Аккаунт с этой почтой уже есть';
+  const loginUrl = `${getEnv().APP_URL}/auth`;
   return {
     kind: 'already_registered',
     to,
-    subject: 'Аккаунт с этой почтой уже есть',
-    text: `Кто-то пытался зарегистрироваться на ФСП Карьере с этой почтой, но аккаунт уже есть.\n\nВойдите: ${getEnv().APP_URL}/auth\nЗабыли пароль — на странице входа выберите «Забыли пароль».${sign()}`,
+    subject,
+    text: `Кто-то пытался зарегистрироваться на ФСП Карьере с этой почтой, но аккаунт уже есть.\n\nВойдите: ${loginUrl}\nЗабыли пароль — на странице входа выберите «Забыли пароль».${sign()}`,
+    html: html({
+      subject,
+      preheader: 'Кто-то пытался зарегистрироваться с вашей почтой. Войдите или восстановите пароль.',
+      kicker: 'Регистрация',
+      title: subject,
+      lead: ['Кто-то пытался зарегистрироваться на ФСП Карьере с этой почтой, но аккаунт уже есть.'],
+      action: { label: 'Войти', href: loginUrl },
+      notes: ['Забыли пароль - на странице входа выберите «Забыли пароль».'],
+    }),
   };
 }
 
@@ -39,22 +77,55 @@ export function invitationMail(to: string, p: { companyName: string; vacancyTitl
   const what = p.vacancyTitle ? `на позицию «${p.vacancyTitle}»` : 'к разговору о работе';
   const range = p.salaryFrom === p.salaryTo ? rub(p.salaryFrom) : `от ${rub(p.salaryFrom)} до ${rub(p.salaryTo)}`;
   const salary = `\nЗарплата: ${range} в месяц.`;
+  const subject = `Новое приглашение от «${p.companyName}»`;
+  const answerUrl = `${getEnv().APP_URL}/invitations`;
   return {
     kind: 'invitation',
     to,
-    subject: `Новое приглашение от «${p.companyName}»`,
-    text: `Компания «${p.companyName}» приглашает вас ${what}.${salary}\n\nОтветить: ${getEnv().APP_URL}/invitations\nКонтакты компания увидит, только если вы примете приглашение.${sign()}`,
+    subject,
+    text: `Компания «${p.companyName}» приглашает вас ${what}.${salary}\n\nОтветить: ${answerUrl}\nКонтакты компания увидит, только если вы примете приглашение.${sign()}`,
+    html: html({
+      subject,
+      preheader: `Зарплата: ${range} в месяц. Ответьте в кабинете.`,
+      kicker: 'Приглашение',
+      title: `Вас приглашает «${p.companyName}»`,
+      // Компания и позиция — в заголовке и в таблице; абзац говорит, что делать, а не повторяет их.
+      lead: [`На ФСП Карьере вам пришло приглашение${p.vacancyTitle ? '' : ' к разговору о работе'}. Посмотрите условия и ответьте в кабинете.`],
+      facts: [
+        { label: 'Компания', value: p.companyName },
+        ...(p.vacancyTitle ? [{ label: 'Позиция', value: p.vacancyTitle }] : []),
+        { label: 'Зарплата', value: `${range} в месяц` },
+      ],
+      action: { label: 'Ответить на приглашение', href: answerUrl },
+      notes: ['Контакты компания увидит, только если вы примете приглашение.'],
+      accent: 'candidate',
+    }),
   };
 }
 
 export function invitationAnswerMail(to: string, p: { accepted: boolean; vacancyTitle: string | null }): MailMessage {
   const what = p.vacancyTitle ? ` на «${p.vacancyTitle}»` : '';
+  const subject = p.accepted ? 'Кандидат принял приглашение' : 'Кандидат отклонил приглашение';
+  const cabinetUrl = `${getEnv().APP_URL}${p.accepted ? '/employer/invitations' : '/employer'}`;
   return {
     kind: p.accepted ? 'invitation_accepted' : 'invitation_declined',
     to,
-    subject: p.accepted ? 'Кандидат принял приглашение' : 'Кандидат отклонил приглашение',
+    subject,
     text: p.accepted
-      ? `Кандидат принял ваше приглашение${what}. Имя и почта кандидата открыты в кабинете: ${getEnv().APP_URL}/employer/invitations${sign()}`
-      : `Кандидат отклонил ваше приглашение${what}. Подборка других кандидатов — в кабинете: ${getEnv().APP_URL}/employer${sign()}`,
+      ? `Кандидат принял ваше приглашение${what}. Имя и почта кандидата открыты в кабинете: ${cabinetUrl}${sign()}`
+      : `Кандидат отклонил ваше приглашение${what}. Подборка других кандидатов — в кабинете: ${cabinetUrl}${sign()}`,
+    html: html({
+      subject,
+      preheader: p.accepted ? 'Имя и почта кандидата открыты в кабинете.' : 'Подборка других кандидатов - в кабинете.',
+      kicker: 'Ответ на приглашение',
+      title: subject,
+      lead: [
+        p.accepted
+          ? `Кандидат принял ваше приглашение${what}. Имя и почта кандидата открыты в кабинете.`
+          : `Кандидат отклонил ваше приглашение${what}. Подборка других кандидатов - в кабинете.`,
+      ],
+      action: { label: p.accepted ? 'Открыть контакты кандидата' : 'Посмотреть других кандидатов', href: cabinetUrl },
+      accent: 'employer',
+    }),
   };
 }

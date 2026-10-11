@@ -1,4 +1,7 @@
+import { PrismaClient } from '@prisma/client';
 import { expect, test, type Page } from '@playwright/test';
+
+import { loadPlatformEnv } from '../scripts/load-env.mjs';
 
 // R-E-03..R-E-07: вход работодателя через /demo → подборка по потребности → приглашение →
 // кандидат из пула принимает → работодатель видит контакты. Нужен сид (db:seed: auth, employer, recommend, claims).
@@ -7,6 +10,19 @@ const POOL_TOP = 'Глеб Соколов'; // первый в подборке 
 // кандидаты пула по Frontend: E-02 их не приглашает, поэтому имена у них скрыты в любом порядке прогона
 const FRONTEND_POOL = ['Никита Захаров', 'Вера Лебедева', 'Тимур Гусев', 'Алина Морозова'];
 const VACANCY_URL = '**/employer/needs/demo-vac-be-m-1';
+
+// Тест создаёт потребность «E2E …» в той же БД, что и dev-сервер (DATABASE_URL из .env), - убираем за собой,
+// иначе мусор виден на «Моей карте» и в подборке. Заодно подчищаем хвосты упавших прогонов.
+// Резерв, если afterAll не отработал: node scripts/clean-e2e-vacancies.mjs --apply
+test.afterAll(async () => {
+  loadPlatformEnv();
+  const db = new PrismaClient();
+  try {
+    await db.vacancy.deleteMany({ where: { title: { startsWith: 'E2E ' }, company: { isDemo: true } } });
+  } finally {
+    await db.$disconnect();
+  }
+});
 
 // Работодатель входит персоной с /demo; кандидат пула в списки входа не попадает (решение владельца 11.10) -
 // его аккаунт открывает тот же API, что кнопки входа.

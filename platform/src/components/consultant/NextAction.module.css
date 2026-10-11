@@ -1,0 +1,7 @@
+/* Главное действие над полем ввода (NextAction, макет Astra v2): акцентная кнопка шага и запасное действие рядом. */
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bar > * { min-height: 44px; white-space: nowrap; }
+.primary { gap: 10px; }
+@media (max-width: 640px) {
+  .bar > * { flex: 1 1 auto; padding: 0 12px; }
+}

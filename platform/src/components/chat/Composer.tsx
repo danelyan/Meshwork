@@ -2,6 +2,7 @@
 
 import { type ClipboardEvent, type FormEvent, type KeyboardEvent, type ReactNode, type Ref, useEffect, useId, useRef, useState } from 'react';
 
+import { NextAction } from '../consultant/NextAction';
 import { Button, VisuallyHidden, cx } from '../ui';
 
 import { AttachmentChip, AttachmentLimitsHint } from './AttachmentChip';
@@ -127,6 +128,8 @@ export function Composer({
 
   return (
     <form className={styles.composer} onSubmit={submit} aria-label="Новое сообщение" data-testid="composer">
+      {/* Экран консультанта: главное действие шага над вводом; вне сцены (нет данных колонки) не рисуется. */}
+      <NextAction onAttach={attachments && !disabled ? () => fileRef.current?.click() : undefined} />
       {top}
       {files.length > 0 && (
         <ul className={styles.attachList} aria-label="Вложения">

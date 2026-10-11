@@ -10,7 +10,7 @@ import { INTERVIEW_LIMITS, clarificationHint, stageOf } from '@/server/interview
 
 
 import { HeadView } from '../avatar/HeadView';
-import { MuteToggle, StateChip } from '../avatar/Speaking';
+import { StateChip } from '../avatar/Speaking';
 import { useCompanionVoice } from '../avatar/voice';
 import { Criteria, ResultCard, Stages } from '../interview/InterviewPage';
 import { SKIP_ANSWER, summaryOf, turnsOf } from '../interview/helpers';
@@ -381,7 +381,6 @@ export function CallPanel() {
         )}
         <span className={styles.topRight}>
           {phase === 'live' && <StateChip />}
-          <MuteToggle />
           <button type="button" className={styles.close} onClick={mode?.close} aria-label="Свернуть звонок" title="Свернуть: созвон останется активным">
             ×
           </button>

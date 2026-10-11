@@ -97,6 +97,8 @@ export function makeModels(TIMEOUT_MS: number): Record<string, ModelDef> {
     ...selectelModel('qwen2', 'SELECTEL_QWEN2', 'qwen3-8-27b (Selectel)', TIMEOUT_MS),
     ...selectelModel('qwen-big', 'SELECTEL_QWENBIG', 'qwen3-vl-235b-a22b (Selectel)', TIMEOUT_MS),
     ...selectelModel('tpro', 'SELECTEL_TPRO', 't-pro-it-2-1 (Selectel)', TIMEOUT_MS),
+    ...selectelModel('gptoss', 'SELECTEL_GPTOSS', 'gpt-oss-120b (Selectel)', TIMEOUT_MS),
+    ...selectelModel('qwen-moe', 'SELECTEL_QWENMOE', 'qwen3-6-35b-a3b (Selectel)', TIMEOUT_MS),
   };
 }
 

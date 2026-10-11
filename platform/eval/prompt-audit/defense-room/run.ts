@@ -91,7 +91,8 @@ function leak(followUp: string, points: string[]): string | null {
 }
 
 async function runInterviewer() {
-  const rows = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- строки отчёта eval разной формы
+  const rows: any[] = [];
   for (const c of IV) {
     for (let r = 0; r < REPEAT; r++) {
       const item: PlanItem =
@@ -177,7 +178,7 @@ async function runEvaluator() {
     try {
       const v = await evaluateDefenseRoom({ projectTitle: 'Платёжный сервис', transcript, plan, projectScore: 0.9, employerAsked: 1, employerAnswered: 1 }, llm, 1);
       const per = EV.map((it) => {
-        const got = v.items.find((x) => x.itemId === it.id);
+        const got = v.items?.find((x) => x.itemId === it.id);
         const total = got?.total ?? null;
         return { id: it.id, note: it.note, total, scores: got?.scores ?? null, inRange: total !== null && total >= it.range[0] && total <= it.range[1] };
       });

@@ -49,6 +49,7 @@ const FACTORS: { key: string; label: string; get: Extract }[] = [
   { key: 'stack', label: 'Стек', get: (c) => c.boosts.stack },
   { key: 'project', label: 'Проект под потребность', get: (c) => c.boosts.project },
   { key: 'calls', label: 'Темы созвона', get: (c) => c.boosts.calls },
+  { key: 'semantic', label: 'Смежные навыки', get: (c) => c.boosts.semantic },
   { key: 'spec', label: 'Другая специализация', get: (c) => (c.boosts.specPenalty ? -c.boosts.specPenalty : 0) },
 ];
 

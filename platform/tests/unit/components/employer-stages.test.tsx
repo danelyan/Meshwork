@@ -128,6 +128,19 @@ describe('карточка: ступени 1–3', () => {
     render1({ ...BASE, explanation: ex, defenseRoom: null });
     expect(screen.queryByRole('region', { name: /Созвон|Проект|Защита/ })).toBeNull();
   });
+  it('смежные навыки: строка с вкладом в п.; без совпадений строки нет', () => {
+    render1({ ...BASE, boosts: { ...BASE.boosts, semantic: 0.034 }, explanation: { ...BASE.explanation, semantic: [{ need: 'PostgreSQL', via: 'Писал серверный код', sim: 0.69 }] } });
+    const row = screen.getByTestId('semantic-factor');
+    expect(row.textContent).toContain('Смежные навыки');
+    expect(row.textContent).toContain('+3,4 п.');
+    expect(row.textContent).toContain('PostgreSQL ≈ Писал серверный код (0,69)');
+    cleanup();
+    render(<ol><CandidateMatchCard item={{ ...BASE, boosts: { ...BASE.boosts, semantic: 0.034 }, explanation: { ...BASE.explanation, semantic: [{ need: 'PostgreSQL', via: 'Писал серверный код', sim: 0.69 }] } }} vacancyId="v1" compact /></ol>);
+    expect(screen.getByTestId('semantic-factor-compact').textContent).toContain('+3,4 п.');
+    cleanup();
+    render1(BASE);
+    expect(screen.queryByTestId('semantic-factor')).toBeNull();
+  });
 });
 
 describe('карточка: вопросы кандидату и комната защиты', () => {

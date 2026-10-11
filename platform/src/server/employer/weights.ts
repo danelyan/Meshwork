@@ -89,3 +89,15 @@ export const DEFAULT_RESULT_LIMIT = 20;
 export const MAX_RESULT_LIMIT = 50;
 
 export const GRADE_RANK: Record<Grade, number> = { junior: 0, middle: 1, senior: 2 };
+
+/**
+ * ПРЕДЛОЖЕНИЕ (R-N-02, семантический сигнал semantic.ts): смежные навыки — доля веса потребности, закрытая близким
+ * по смыслу утверждением (TF-IDF символьных n-грамм + adjacent каталога), × SEMANTIC_WEIGHT. Вес и дефолт —
+ * по eval/matching (eval/matching/semantic-sweep.ts; docs/validation-results.md, «Абляция подбора»).
+ * Замер 11.10 (расширенный набор, 247 × 24): при весе 0,05–0,2 P@5 0,925 и nDCG@10 0,773 без изменений, Recall@50
+ * 0,894 → 0,893, вакансий хуже BM25 4 → 4. Улучшения нет: формулировки каталога лексически разнесены (косинус n-грамм
+ * между записями — p99 0,11, ниже порога), а синтетический набор не содержит синонимов вне каталога. Поэтому
+ * дефолт ВЫКЛЮЧЕН; код и измерение остаются, включение — RankOptions.semantic.
+ */
+export const SEMANTIC_WEIGHT = 0.1;
+export const SEMANTIC_DEFAULT_ON = false;

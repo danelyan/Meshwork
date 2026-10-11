@@ -2,7 +2,7 @@
 
 Отдельный сервис для демонстрации интеграции платформы с Федерацией спортивного программирования:
 **ФСП ID** на Keycloak и **API реестра** (спортсмены, соревнования, протоколы, достижения, разряды,
-согласия) на синтетических данных. Опубликован на https://111-88-114-206.sslip.io (Selectel, сервер `fsp-id`).
+согласия) на синтетических данных. Опубликован на https://fsp-russia2.ru (Selectel, сервер `fsp-id`).
 
 > **Это не сервис ФСП и не интеграция с ним.** По ТЗ ни API, ни схема реестра ФСП не предоставляются
 > ([docs/fsp-integration.md](../docs/fsp-integration.md)). Контракт ниже — предложение команды, данные —
@@ -17,7 +17,7 @@
 | `keycloak` | Keycloak 26.5, реалм `fsp-id` импортируется из [`keycloak/fsp-id-realm.json`](keycloak/fsp-id-realm.json) при первом старте. Снаружи — `${PUBLIC_URL}/auth` |
 | `db` | PostgreSQL 16 для Keycloak (наружу не публикуется) |
 | `api` | Node 24, `node:http` + [`jose`](https://github.com/panva/jose) (проверка JWT по JWKS реалма) + Zod. Данные — [`data/dataset.json`](data/dataset.json) в памяти |
-| `caddy` | HTTPS (Let's Encrypt для домена из `PUBLIC_URL`), `/auth/*` → Keycloak, остальное → API |
+| `caddy` | HTTPS (Let's Encrypt для домена из `PUBLIC_URL`), `/auth/*` → Keycloak, остальное → API; имена из `REDIRECT_FROM` перенаправляет на `PUBLIC_URL` |
 
 Адреса (подставьте `PUBLIC_URL`):
 
@@ -147,6 +147,7 @@ DEPLOY_HOST=deploy@111.88.114.206 SSH_OPTS='-i ~/.ssh/fsp-id' bash scripts/deplo
 
 - Симулятор: контракт и данные вымышленные; реальные issuer, client, scopes и состав записи ФСП не выданы.
 - Один сервер, без резервирования и резервных копий; база Keycloak — в томе Docker.
-- Домен `sslip.io` — служебный; сертификат Let's Encrypt выдаётся на него.
+- Домен `fsp-russia2.ru` зарегистрирован командой и ФСП не принадлежит. `www.fsp-russia2.ru` и прежний адрес
+  `111-88-114-206.sslip.io` только перенаправляют на него: issuer токенов один, OIDC-клиенту нужен адрес из `PUBLIC_URL`.
 - Password grant у `fsp-career` включён для отладки и демо через curl; в целевой интеграции отключить.
 - Swagger UI на `/docs` подгружает скрипты с unpkg.com; сам API без внешних зависимостей.

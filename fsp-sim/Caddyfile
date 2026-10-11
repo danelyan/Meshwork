@@ -9,3 +9,8 @@
 		reverse_proxy api:8080
 	}
 }
+
+# Прочие имена сервера (www, прежний адрес) ведут на основной: issuer токенов привязан к PUBLIC_URL.
+{$REDIRECT_FROM} {
+	redir {$PUBLIC_URL}{uri} permanent
+}

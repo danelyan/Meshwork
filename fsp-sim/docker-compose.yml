@@ -74,6 +74,8 @@ services:
     image: caddy:2.11-alpine
     environment:
       PUBLIC_URL: ${PUBLIC_URL}
+      # Имена, с которых Caddy перенаправляет на PUBLIC_URL. Не заданы — служебное имя, на которое никто не придёт.
+      REDIRECT_FROM: ${REDIRECT_FROM:-http://redirect.invalid}
     ports:
       - "80:80"
       - "443:443"

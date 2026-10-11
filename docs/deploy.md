@@ -96,14 +96,16 @@ DEPLOY_PUBKEY='ssh-ed25519 AAAA… deploy' STAND_DOMAIN=<домен> bash stand-
 
 | | |
 | --- | --- |
-| Адрес | https://111-88-114-206.sslip.io, проверка — `/api/v1/health`; домен `sslip.io` указывает на адрес сервера без DNS-настроек |
+| Адрес | https://fsp-russia2.ru, проверка — `/api/v1/health`; A-записи домена (DNS у reg.ru) указывают на адрес сервера. `www.fsp-russia2.ru` и прежний адрес `111-88-114-206.sslip.io` перенаправляются на основной (`REDIRECT_FROM`) |
 | Сервер | `fsp-id`, `PRC50.2-4096`, сетевой диск 30 ГБ `basicssd`, Ubuntu 24.04, зона `ru-7a`, сеть `fsp-net`, группа безопасности `fsp-stand` (22, 80, 443), плавающий адрес 111.88.114.206 |
 | Создан | 10 октября 2026 года скриптом [`fsp-sim/scripts/selectel-server.sh`](../fsp-sim/scripts/selectel-server.sh) через API Selectel (диск из образа → сервер → группа безопасности на порту → плавающий адрес) |
 | Подготовка | [`fsp-sim/scripts/bootstrap-server.sh`](../fsp-sim/scripts/bootstrap-server.sh) от root: Docker Engine, пользователь `deploy`, `/opt/fsp/fsp-sim`, swap 2 ГБ, ufw |
 | Деплой | Вручную: `DEPLOY_HOST=deploy@111.88.114.206 SSH_OPTS='-i ~/.ssh/fsp-id' bash scripts/deploy.sh` из `fsp-sim/` — rsync каталога и `docker compose up -d --build`, затем проверка health. GitHub Actions этот каталог не выкладывает |
-| `.env` | `/opt/fsp/fsp-sim/.env` (600): `PUBLIC_URL`, пароли администратора Keycloak и базы, `FSP_CAREER_CLIENT_SECRET` (сгенерированы на сервере, в репозитории нет); `FSP_PARTNER_DEMO_SECRET` и `FSP_DEMO_PASSWORD` — значения по умолчанию из `.env.example` (публичные демо-данные) |
+| `.env` | `/opt/fsp/fsp-sim/.env` (600): `PUBLIC_URL`, `REDIRECT_FROM`, пароли администратора Keycloak и базы, `FSP_CAREER_CLIENT_SECRET` (сгенерированы на сервере, в репозитории нет); `FSP_PARTNER_DEMO_SECRET` и `FSP_DEMO_PASSWORD` — значения по умолчанию из `.env.example` (публичные демо-данные) |
 | Обновить реалм | Импорт идёт только в пустую базу: `docker compose down -v && docker compose up -d --build` на сервере (сбросит сессии) |
 | Журналы | `docker compose logs -f keycloak`, `docker compose logs -f api` в `/opt/fsp/fsp-sim` |
+
+Issuer токенов привязан к `PUBLIC_URL`: при смене домена симулятора вместе с `PUBLIC_URL` меняются `FSP_OIDC_ISSUER` и `FSP_API_URL` в `.env` стенда, иначе вход и привязка ФСП ID на стенде перестают работать.
 
 Сервер оплачивается почасово с того же баланса, что и стенд.
 

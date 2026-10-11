@@ -728,7 +728,9 @@ async function finalizeConfirm(a: AttemptWithItems, now: Date): Promise<AttemptW
   if (!source) throw errors.notFound('Исходная попытка не найдена');
   const est = estimateTheta([...source.clean, ...own]);
   const index = assessAttempt(observationsOf(a.items, byId), est.theta, parseSignals(a.signals));
-  const d = decideConfirm(source.clean, own, a.grade, integrityBlocks() ? index.level : 'low');
+  // Собственный индекс подтверждающей попытки учитывается в любом режиме: в silent она снимает ограничение выдачи
+  // (ranking-hold.ts), и high у неё самой не должен это ограничение снимать (Codex-ревью 11.10).
+  const d = decideConfirm(source.clean, own, a.grade, index.level);
   const integrity: StoredIntegrity = { ...index, blocking: d.blockedByRisk, confirmGrade: null, confirmedBy: null, computedAt: now.toISOString() };
   const ops: Prisma.PrismaPromise<unknown>[] = [
     prisma.testAttempt.update({

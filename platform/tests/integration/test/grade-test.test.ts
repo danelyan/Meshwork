@@ -536,6 +536,27 @@ describe('индекс честности и подтверждающий тес
     expect((await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(A)), ctx(src))).status).toBe(409);
   });
 
+  it('silent: подтверждающий тест с собственным индексом high ограничение не снимает - confirmedBy нет, категория одна, повтор - 409', async () => {
+    vi.unstubAllEnvs();
+    resetEnvCache();
+    const { attemptId: src } = await startAttempt(A, 'backend', 'middle', T0, { seed: 1 });
+    const fast = await playTimed(A, src, 0, 4, shifted);
+    expect(fast.v.status).toBe('passed');
+    expect(fast.v.result?.integrity?.rankingHold).toBe(true);
+    const started = await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(A)), ctx(src));
+    expect(started.status).toBe(201);
+    const { attemptId: conf } = (await started.json()) as { attemptId: string };
+
+    // Подтверждающая попытка тоже «быстро и с ловушкой»: её индекс high, порог по θ пройден, но подтверждения нет.
+    const done = await playTimed(A, conf, fast.endSec + 600, 4, shifted);
+    expect(done.v.status).toBe('not_confirmed');
+    expect(JSON.stringify((await prisma.testAttempt.findUniqueOrThrow({ where: { id: conf } })).integrity)).toContain('"blocking":true');
+    expect(await prisma.candidateCategory.count({ where: { candidateId: A, grade: 'middle', source: 'test' } })).toBe(1);
+    const srcView = await getAttempt(A, src);
+    expect(srcView.result?.integrity).toMatchObject({ needsConfirmation: false, confirmedBy: null, rankingHold: true });
+    expect((await confirmStartRoute(jsonRequest(`/api/test/attempt/${src}/confirm-start`, 'POST', undefined, cookie(A)), ctx(src))).status).toBe(409);
+  });
+
   it('silent, TEST_INTEGRITY_RANKING=false: выдача категорию учитывает - уведомления нет, подтверждающий тест не нужен', async () => {
     vi.unstubAllEnvs();
     vi.stubEnv('TEST_INTEGRITY_RANKING', 'false');

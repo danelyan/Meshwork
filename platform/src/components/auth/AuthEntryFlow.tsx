@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 import { Button, Notice } from '@/components/ui';
 import { PersonaStepper, useDemoPersonas } from '@/components/demo/DemoPersonas';
@@ -47,8 +46,10 @@ export function AuthEntryFlow({ yandexEnabled, fspHint = null, demoEnabled, next
         <section className={styles.method} aria-label="Вход на платформу">
           <h3>Войти на платформу</h3>
           <div className={styles.sso}>
-            <YandexSignIn enabled={yandexEnabled} next={destination} fsp fspHint={fspHint} agreed={agreed} hideWhenOff />
+            <YandexSignIn enabled={yandexEnabled} next={destination} fsp agreed={agreed} hideWhenOff />
           </div>
+          {/* Чем войти в симулятор — под рядом кнопок: внутри ряда подсказка сжимает кнопку ФСП ID до полоски. */}
+          {fspHint && <p className={styles.hint}>Вход в симулятор ФСП ID: {fspHint}</p>}
           <p className={styles.hint} title="ФСП ID - вход спортсмена ФСП: аккаунт специалиста. Реестр ФСП на стенде - симулятор с синтетическими участниками. Пароль Яндекса платформе не передаётся.">ФСП ID - достижения сразу в профиле</p>
           <p className={styles.or}>или</p>
           <button type="button" className={styles.accordion} aria-expanded={emailOpen} aria-controls="auth-email" onClick={() => setEmailOpen(!emailOpen)}>
@@ -62,7 +63,6 @@ export function AuthEntryFlow({ yandexEnabled, fspHint = null, demoEnabled, next
           <h3>Демо-профиль</h3>
           <p className={styles.hint}>Вымышленные данные, вход без пароля. Этапы пути соискателя; компании - с вакансиями и приглашениями.</p>
           <PersonaStepper state={personas} agreed={agreed} />
-          <p className={styles.hint}><Link href="/demo">Для жюри: маршрут на 5 минут →</Link></p>
         </section>}
       </div>
       {personas.pending && <p role="status" className={styles.hint}>Входим…</p>}

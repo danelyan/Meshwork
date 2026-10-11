@@ -167,3 +167,9 @@ it('подсказка «чем войти в симулятор ФСП ID» п�
   flow();
   expect(screen.queryByText(/Вход в симулятор ФСП ID/)).toBeNull();
 });
+
+it('подсказка симулятора стоит под рядом кнопок входа, а не внутри него: в ряду она сжимает кнопку ФСП ID',()=>{
+  flow(null, true, 'логин fsp-10001, пароль demo-pass');
+  const row = screen.getByText('Войти через ФСП ID').closest('a')!.parentElement!;
+  expect(row.contains(screen.getByText(/Вход в симулятор ФСП ID/))).toBe(false);
+});

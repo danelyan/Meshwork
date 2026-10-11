@@ -206,7 +206,7 @@ const SESSION_USER = obj({
 });
 
 const FILTER_QUERY = [
-  { name: 'spec', description: 'Специализация', schema: en('backend', 'frontend') },
+  { name: 'spec', description: 'Специализация или fullstack (есть категории и в backend, и в frontend; грейд - меньший из двух)', schema: en('backend', 'frontend', 'ai', 'engineering', 'fullstack') },
   { name: 'grade', description: 'Грейд', schema: en('junior', 'middle') },
   { name: 'stack', description: 'Технологии через запятую, не больше 10', schema: str() },
   { name: 'fsp', description: '`1` — только с достижениями ФСП', schema: en('1') },

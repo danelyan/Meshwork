@@ -5,6 +5,7 @@
 //    вживую, пока созвон идёт; после завершения или отзыва Г5 — как прочие работодатели (полный доступ только по Г5).
 import { disclosedCandidateIds } from '../consent/service';
 import { prisma } from '../db';
+import { defenseVisibleTo } from '../defense-room/visibility';
 import { errors } from '../errors';
 import { type CallAccess, type CallEvent, type CallVerdict, depthStatus, type PublicCallVerdict } from './types';
 
@@ -30,6 +31,13 @@ export async function hasAcceptedInvitation(employerProfileId: string, candidate
   return (await disclosedCandidateIds(p.companyId, [candidateId])).has(candidateId);
 }
 
+/** Защита видна компании работодателя: ИИ-защита или своя живая (ADR 0008). */
+async function defenseOwnedOrAi(employerProfileId: string, callId: string): Promise<boolean> {
+  const p = await prisma.employerProfile.findUnique({ where: { id: employerProfileId }, select: { companyId: true } });
+  if (!p) return false;
+  return (await prisma.callSession.count({ where: { id: callId, ...defenseVisibleTo(p.companyId) } })) > 0;
+}
+
 /**
  * Решение по доступу. Чужой кандидату созвон и созвон скрытого кандидата без accepted — 404
  * (не раскрываем существование).
@@ -44,7 +52,12 @@ export async function resolveCallAccess(
   }
   if (!who.employerProfileId) throw errors.forbidden('Доступно кандидату или работодателю');
   const accepted = await hasAcceptedInvitation(who.employerProfileId, call.candidateId);
-  if (accepted) return { role: 'employer', access: 'full', recording: true };
+  if (accepted) {
+    // Живая защита принадлежит компании, по чьему приглашению прошла (ADR 0008, visibility.ts): accepted у другой
+    // компании не открывает её транскрипт и запись - для неё такой защиты нет (404).
+    if (call.kind === 'defense' && !(await defenseOwnedOrAi(who.employerProfileId, call.id))) throw errors.notFound('Созвон не найден');
+    return { role: 'employer', access: 'full', recording: true };
+  }
   // Участник комнаты защиты видит транскрипт только пока звонок идёт (иначе комната не работает); после
   // завершения его доступ такой же, как у прочих работодателей: полный — только при действующем раскрытии (Г5).
   const live = call.status === 'active' || call.status === 'pending';

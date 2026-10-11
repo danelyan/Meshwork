@@ -4,6 +4,8 @@
 import { GET as matches } from '@/app/api/employer/vacancies/[id]/matches/route';
 import { employerTools } from '@/server/agent/employer/tools';
 import type { EmployerToolContext } from '@/server/agent/employer/types';
+import { resolveCallAccess } from '@/server/call/access';
+import { getCallForViewer, getRecording, getVideo } from '@/server/call/service';
 import { listEmployerCalls } from '@/server/defense-room';
 import { resolveViewer } from '@/server/defense-room/access';
 import { createInvitation } from '@/server/employer/invitations';
@@ -123,6 +125,11 @@ describe('видимость защит работодателю (ADR 0008)', ()
     const principalY = { userId: DEMO_EMPLOYER.userId, role: 'employer' as const, candidateId: null, employerProfileId: Y.employerProfileId };
     await expect(resolveViewer(principalY, liveId)).rejects.toMatchObject({ status: 404 });
     await expect(resolveViewer(principalY, aiId)).resolves.toMatchObject({ viewer: { role: 'employer', companyId: Y.companyId } });
+    // Созвон, запись и видео чужой живой защиты по /api/call/* - тоже 404, даже при accepted и раскрытии.
+    await expect(getCallForViewer(principalY, liveId)).rejects.toMatchObject({ status: 404 });
+    await expect(getRecording(principalY, liveId)).rejects.toMatchObject({ status: 404 });
+    await expect(getVideo(principalY, liveId, '000')).rejects.toMatchObject({ status: 404 });
+    await expect(resolveCallAccess(principalY, { id: aiId, candidateId: CAND, kind: 'defense', status: 'finished' })).resolves.toMatchObject({ access: 'full', recording: true });
   });
 
   it('X после своего accepted видит свою живую защиту в списке и в комнате', async () => {

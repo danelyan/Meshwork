@@ -18,11 +18,11 @@ const RULES = [
 const ICONS = { link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', test: 'M4 4h16v16H4z M8 12l3 3 5-6', code: 'M8 6l-5 6 5 6 M16 6l5 6-5 6 M14 4l-4 16', salary: 'M8 20V4h6a4 4 0 0 1 0 8H6 M6 16h8', lock: 'M5 11h14v10H5z M8 11V7a4 4 0 0 1 7.6-1.7' };
 
 /** React port of landing-astra. Showcase figures are fictional; authentication is the existing product flow. */
-export function Landing({ signedIn }: { data: LandingData; signedIn: boolean }) {
+export function Landing({ signedIn, demoEnabled = false }: { data: LandingData; signedIn: boolean; demoEnabled?: boolean }) {
   return <div className={styles.page} data-landing-astra>
     <Background /><LandingHeader signedIn={signedIn} />
     <main id="main" className={styles.main}>
-      <Hero signedIn={signedIn} /><HiringShowcase signedIn={signedIn} /><LandingSections signedIn={signedIn} />
+      <Hero signedIn={signedIn} demoEnabled={demoEnabled} /><HiringShowcase signedIn={signedIn} /><LandingSections signedIn={signedIn} />
       <section className={styles.section} id="why" aria-labelledby="why-title">
         <h2 id="why-title">Почему это работает<i>.</i></h2>
         <ol className={styles.rules}>{RULES.map(([title, text, icon], index) => <li key={title}>

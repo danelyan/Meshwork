@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 
 import { Landing } from '@/components/landing/Landing';
 import { SHOWCASE } from '@/components/landing/showcase';
+import { getEnv } from '@/server/env';
 import { SESSION_COOKIE, parseSession } from '@/server/session';
 
 export const metadata: Metadata = {
@@ -15,5 +16,6 @@ export default async function HomePage() {
   // гостевые «Приступим» и «Войти» (модалка входа поверх входа). Без БД: протухшую куку отсеет гвард /consultant.
   const signedIn = parseSession((await cookies()).get(SESSION_COOKIE)?.value) !== null;
   // Реальные логотипы на графе и отдельная демонстрационная лента из экспорта.
-  return <Landing data={SHOWCASE} signedIn={signedIn} />;
+  // Ссылка «Для жюри» (lane jury-all) — только при DEMO_LOGIN.
+  return <Landing data={SHOWCASE} signedIn={signedIn} demoEnabled={getEnv().DEMO_LOGIN} />;
 }

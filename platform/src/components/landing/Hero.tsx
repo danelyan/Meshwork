@@ -4,7 +4,7 @@ import { HeroGraph } from './HeroGraph';
 import styles from './Hero.module.css';
 import { Start } from './Start';
 
-export function Hero({ signedIn }: { signedIn: boolean }) {
+export function Hero({ signedIn, demoEnabled = false }: { signedIn: boolean; demoEnabled?: boolean }) {
   return (
     <section className={styles.hero} aria-labelledby="hero-title">
       <div>
@@ -23,6 +23,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
           <li><a href="https://fsp-russia.ru/" target="_blank" rel="noopener noreferrer">ФСП ID и достижения</a></li>
         </ul>
         {!signedIn && <Link className={styles.entry} href="/auth"><b>Уже есть аккаунт? Войти</b></Link>}
+        {demoEnabled && <Link className={styles.jury} href="/demo">Для жюри: маршрут на 5 минут и проверка цифр →</Link>}
       </div>
       <HeroGraph />
     </section>

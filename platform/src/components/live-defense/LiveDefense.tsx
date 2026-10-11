@@ -2,6 +2,7 @@
 
 // lane live-slots (ADR 0008, «Назначение живой защиты: слоты»): блок живой защиты в карточке приглашения.
 // Работодатель предлагает 2–5 слотов по МСК, кандидат выбирает один (с согласием на запись) или пишет «ни один не подходит».
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -146,7 +147,7 @@ export function CandidateLiveDefense({ invitationId, live: initial, hasRecording
   if (!live) {
     // Приглашение принято, проекта нет: компания не сможет назначить защиту, пока его не сдать.
     return accepted && !projectReady
-      ? <p className={styles.fine} data-testid="live-project-hint">Чтобы компания смогла назначить живую защиту, сдайте проект в разделе <a href="/projects">«Проекты»</a>.</p>
+      ? <p className={styles.fine} data-testid="live-project-hint">Чтобы компания смогла назначить живую защиту, сдайте проект в разделе <Link href="/projects">«Проекты»</Link>.</p>
       : null;
   }
 

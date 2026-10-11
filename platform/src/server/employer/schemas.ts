@@ -135,5 +135,6 @@ export function filtersToQuery(f: MatchFilters): string {
   if (f.stack?.length) p.set('stack', f.stack.join(','));
   if (f.fsp) p.set('fsp', '1');
   if (f.expandPool) p.set('pool', 'all');
+  if (f.subcategory && !f.fullstack) p.set('sub', f.subcategory); // parseFilters читает `sub`; с fullstack не сочетается
   return p.toString();
 }

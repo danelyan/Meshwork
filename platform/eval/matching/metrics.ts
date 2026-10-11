@@ -79,3 +79,25 @@ export function bootstrapDiff(a: number[], b: number[], reps: number, seed: numb
   if (a.length !== b.length) throw new Error('bootstrapDiff: разная длина');
   return bootstrapMean(a.map((x, i) => x - b[i]!), reps, seed);
 }
+
+/**
+ * Взвешенная κ Коэна с квадратичными весами для оценок 0…k−1 (согласие двух размечающих сверх случайного).
+ * 1 — полное совпадение, 0 — на уровне случая. Все оценки у обоих одинаковые и совпадают — 1.
+ */
+export function weightedKappa(a: number[], b: number[], k = 3): number {
+  if (a.length !== b.length || a.length === 0) throw new Error('weightedKappa: разная или нулевая длина');
+  const n = a.length;
+  const obs = Array.from({ length: k }, () => new Array<number>(k).fill(0));
+  const ra = new Array<number>(k).fill(0), rb = new Array<number>(k).fill(0);
+  a.forEach((x, i) => { obs[x]![b[i]!]!++; ra[x]!++; rb[b[i]!]!++; });
+  let o = 0, e = 0;
+  for (let i = 0; i < k; i++) for (let j = 0; j < k; j++) {
+    const w = ((i - j) ** 2) / ((k - 1) ** 2);
+    o += w * obs[i]![j]! / n;
+    e += w * (ra[i]! / n) * (rb[j]! / n);
+  }
+  return e === 0 ? 1 : 1 - o / e;
+}
+
+/** Консенсус двух разметок 0/1/2: среднее, округлённое вверх на половине (1 и 2 → 2, 0 и 1 → 1). */
+export const consensusOf = (a: number, b: number): number => Math.round((a + b) / 2);

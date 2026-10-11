@@ -56,6 +56,26 @@ const AblationRow = z.object({
 const Ablation = z.object({ note: z.string().optional(), profiles: z.number(), vacancies: z.number(), rows: z.array(AblationRow) });
 export type MatchingAblation = z.infer<typeof Ablation>;
 
+/** Слепая разметка (eval/matching/blind-eval.ts): два ИИ-размечающих, κ, методы по разметкам. Блок необязательный. */
+const BlindMetric = z.object({ p5: Interval, p5strict: Interval.optional(), ndcg10: Interval });
+const BlindSet = z.object({
+  methods: z.record(z.string(), BlindMetric),
+  deltaOursMinusBm25: BlindMetric,
+  deltaOursMinusBaselineClaims: BlindMetric.optional(),
+});
+const Blind = z.object({
+  note: z.string().optional(),
+  vacancies: z.number(),
+  pool: z.number(),
+  pairs: z.number(),
+  labelers: z.object({ a: z.string(), b: z.string() }),
+  kappa: z.object({ ab: z.number(), aVsGenerator: z.number(), bVsGenerator: z.number(), consensusVsGenerator: z.number().optional() }),
+  exactAgreementAB: z.number().optional(),
+  coverageTop10: z.record(z.string(), z.number()).optional(),
+  sets: z.object({ a: BlindSet, b: BlindSet, consensus: BlindSet, generator: BlindSet.optional() }),
+});
+export type MatchingBlind = z.infer<typeof Blind>;
+
 export type MatchingSummary = z.infer<typeof Summary>;
 export type MatchingRow = z.infer<typeof Row>;
 export type MatchingExtended = z.infer<typeof Extended>;
@@ -68,6 +88,8 @@ export interface MatchingResults {
   legacyExtended: MatchingExtended | null;
   /** Абляция сигналов формулы (если есть в results.json). */
   ablation: MatchingAblation | null;
+  /** Независимая слепая разметка (если есть в results.json). */
+  blind: MatchingBlind | null;
 }
 
 const optional = (v: unknown): MatchingExtended | null => {
@@ -80,11 +102,16 @@ const parseAblation = (v: unknown): MatchingAblation | null => {
   return v !== undefined && r.success ? r.data : null;
 };
 
+const parseBlind = (v: unknown): MatchingBlind | null => {
+  const r = Blind.safeParse(v);
+  return v !== undefined && r.success ? r.data : null;
+};
+
 /** Разбор results.json; обязательная часть не сошлась — исключение (тест это ловит до стенда). */
 export function parseMatchingResults(json: unknown): MatchingResults {
   const base = z.object({ summary: Summary, rows: z.array(Row) }).parse(json);
   const o = json as Record<string, unknown>;
-  return { summary: base.summary, rows: base.rows, extended: optional(o.extended), legacyExtended: optional(o.legacyExtended), ablation: parseAblation(o.ablation) };
+  return { summary: base.summary, rows: base.rows, extended: optional(o.extended), legacyExtended: optional(o.legacyExtended), ablation: parseAblation(o.ablation), blind: parseBlind(o.blind) };
 }
 
 export function matchingResults(): MatchingResults {

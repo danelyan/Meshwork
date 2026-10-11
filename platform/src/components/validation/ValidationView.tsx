@@ -71,6 +71,59 @@ function AblationBlock({ ab }: { ab: NonNullable<MatchingResults['ablation']> })
   );
 }
 
+/** Слепая разметка: два ИИ-размечающих разных моделей, κ и ours/BM25/базовая линия на A, B и консенсусе. */
+function BlindBlock({ bl }: { bl: NonNullable<MatchingResults['blind']> }) {
+  const sign = (x: number) => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(x).toFixed(3).replace('.', ',')}`;
+  const iv = (x: { mean: number; lo: number; hi: number }) => `${dec(x.mean)} (${dec(x.lo)}; ${dec(x.hi)})`;
+  const sets = [
+    ['Разметка A', bl.sets.a],
+    ['Разметка B', bl.sets.b],
+    ['Консенсус A и B', bl.sets.consensus],
+    ...(bl.sets.generator ? [['Генератор (для сравнения)', bl.sets.generator] as const] : []),
+  ] as const;
+  return (
+    <>
+      <h3>Независимая разметка (слепая)</h3>
+      <p className={styles.soft}>
+        Оговорка: размечали два ИИ-агента разных моделей ({bl.labelers.a} и {bl.labelers.b}), не люди. {bl.vacancies} вакансий × {bl.pool} кандидатов
+        ({bl.pairs} пар) — первые места объединённой выдачи нашего подбора и BM25. Размечающие видели только текст вакансии и профиля, без скрытой истины
+        генератора и без баллов; кандидаты вне пула считаются нерелевантными. Согласие A и B — взвешенная κ Коэна {dec(bl.kappa.ab)}; с разметкой
+        генератора: A {dec(bl.kappa.aVsGenerator)}, B {dec(bl.kappa.bVsGenerator)}. Интервалы — бутстреп по {bl.vacancies} вакансиям, поэтому широкие.
+      </p>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Разметка</th>
+              <th>Метод</th>
+              <th className={styles.num}>P@5</th>
+              <th className={styles.num}>nDCG@10</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sets.flatMap(([title, set]) => [
+              ...Object.entries(set.methods).map(([m, x]) => (
+                <tr key={`${title}-${m}`}>
+                  <td>{title}</td>
+                  <td>{METHOD_LABEL[m] ?? m}</td>
+                  <td className={styles.num}>{iv(x.p5)}</td>
+                  <td className={styles.num}>{iv(x.ndcg10)}</td>
+                </tr>
+              )),
+              <tr key={`${title}-delta`}>
+                <td>{title}</td>
+                <td>Наш − BM25</td>
+                <td className={styles.num}>{`${sign(set.deltaOursMinusBm25.p5.mean)} (${sign(set.deltaOursMinusBm25.p5.lo)}; ${sign(set.deltaOursMinusBm25.p5.hi)})`}</td>
+                <td className={styles.num}>{`${sign(set.deltaOursMinusBm25.ndcg10.mean)} (${sign(set.deltaOursMinusBm25.ndcg10.lo)}; ${sign(set.deltaOursMinusBm25.ndcg10.hi)})`}</td>
+              </tr>,
+            ])}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 function ExtendedBlock({ title, ext }: { title: string; ext: MatchingExtended }) {
   const methods = Object.entries(ext.methods ?? {});
   const metrics = Object.keys(METRIC_LABEL).filter((m) => methods.some(([, v]) => typeof v[m as keyof typeof v] === 'number'));
@@ -345,8 +398,9 @@ export function ValidationView({ grade, matching, juryLink = false }: { grade: G
           {matching.legacyExtended && <ExtendedBlock title="Тот же набор: BM25, случайный порядок, интервалы" ext={matching.legacyExtended} />}
           {matching.extended && <ExtendedBlock title="Расширенная синтетика" ext={matching.extended} />}
           {matching.ablation && <AblationBlock ab={matching.ablation} />}
+          {matching.blind && <BlindBlock bl={matching.blind} />}
           <h3>Как повторить (из platform/, без БД и сети)</h3>
-          <pre className={styles.code}>{'npx tsx eval/matching/run.ts --no-write\nnpx tsx eval/matching/ablation.ts --no-write'}</pre>
+          <pre className={styles.code}>{'npx tsx eval/matching/run.ts --no-write\nnpx tsx eval/matching/ablation.ts --no-write\nnpx tsx eval/matching/blind-eval.ts --no-write'}</pre>
           <p className={styles.soft}>
             Свой набор вакансий, кандидатов и разметки можно прогнать через то же ранжирование прямо на сайте — страница «Проверить на своих данных» (/evaluate)
             или POST /api/evaluate.

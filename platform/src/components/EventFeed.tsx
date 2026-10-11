@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { type ReactNode, useState } from 'react';
 
 import type { ClaimAction } from '@/lib/api';
+import { groupClaimsByQuote } from '@/lib/claim-topics';
 import { type CardClaim, normalizeClaim } from '@/lib/claims-view';
 import type { AgentEvent } from '@/server/agent/types';
 
@@ -173,8 +174,15 @@ function ClaimsBlock({
           {bulkError}
         </p>
       )}
+      {onAction && open.length > 0 && (
+        <p className={styles.cardsHint}>
+          Это мы поняли из вашего резюме. «Да» — подтверждаете, Кира спросит об этом на созвоне; «Нет» — уберём.
+        </p>
+      )}
       {onAction &&
-        claims.map((c) => <ClaimCard key={c.id} claim={c} onAction={onAction} busy={bulk} />)}
+        groupClaimsByQuote(claims).map(([first, ...rest]) => (
+          <ClaimCard key={first!.id} claim={first!} group={[first!, ...rest]} onAction={onAction} busy={bulk} />
+        ))}
     </section>
   );
 }

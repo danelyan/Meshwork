@@ -6,4 +6,5 @@
 .cards { display: grid; gap: 12px; min-width: 0; width: 100%; }
 .cardsHead { display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
 .cardsTitle { font-size: var(--fs-lg); line-height: 1.35; color: var(--ink); margin: 0; }
+.cardsHint { font-size: var(--fs-sm); line-height: 1.5; color: var(--muted); margin: 0; }
 .cardsTitle a { color: var(--blue); text-decoration: underline; text-underline-offset: 4px; }

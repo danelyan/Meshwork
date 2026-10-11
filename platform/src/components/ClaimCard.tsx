@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 import { stripLimitsPrefix } from '@/lib/plural';
 
+import { claimTopics, normText } from '@/lib/claim-topics';
 import { shownWording, type CardClaim } from '@/lib/claims-view';
 import type { ClaimAction } from '@/lib/api';
 
@@ -12,24 +13,29 @@ import ui from './ui.module.css';
 
 export interface ClaimCardProps {
   claim: CardClaim;
+  /**
+   * Склеенная карточка: все утверждения группы с одной цитатой и статусом (claim — первое).
+   * «Да/Нет» применяются ко всем; «Поправить» скрыто (одна формулировка не заменит несколько).
+   */
+  group?: CardClaim[];
   /** Выполняет действие на сервере и обновляет claim у родителя; бросает ошибку с понятным текстом. */
   onAction: (claim: CardClaim, action: ClaimAction, statement?: string) => Promise<void>;
   /** Блокировка снаружи (например, идёт «подтвердить все»). */
   busy?: boolean;
 }
 
-/** Формулировка из цитаты совпадает с ней — цитату второй раз не повторяем. */
-function norm(s: string): string {
-  return s.toLocaleLowerCase('ru').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-}
+const norm = normText;
 
 const STATE_TEXT = { confirmed: 'Подтверждено', edited: 'Исправлено и подтверждено', rejected: 'Отклонено' } as const;
 
-export function ClaimCard({ claim, onAction, busy = false }: ClaimCardProps) {
+export function ClaimCard({ claim, group, onAction, busy = false }: ClaimCardProps) {
   const { status } = claim;
   // Крупно — формулировка под цитату (в роде кандидата); каталожная — мелко, как тема созвона.
   const statement = shownWording(claim);
-  const catalogNote = claim.wording && claim.statement !== statement && status !== 'edited' ? claim.statement : '';
+  const all = group && group.length > 1 ? group : [claim];
+  const merged = all.length > 1;
+  // Темы созвона: каталожные утверждения без глагола в роде; у исправленных вручную — не показываем.
+  const topics = status === 'edited' ? '' : claimTopics(all.filter((c) => c.wording && c.statement !== shownWording(c)).map((c) => ({ statement: c.statement, quote: claim.quote })));
   const sameAsQuote = norm(statement) === norm(claim.quote);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(statement);
@@ -41,7 +47,8 @@ export function ClaimCard({ claim, onAction, busy = false }: ClaimCardProps) {
     setPending(true);
     setError(null);
     try {
-      await onAction(claim, action, text);
+      // По одному, последовательно: при сбое уже применённые обновят статус у родителя, остальные останутся открытыми.
+      for (const c of all) await onAction(c, action, text);
       if (action === 'edit') setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось выполнить действие.');
@@ -67,9 +74,9 @@ export function ClaimCard({ claim, onAction, busy = false }: ClaimCardProps) {
       <div className={styles.meta}>
         {sameAsQuote && <span>Дословно из вашего документа</span>}
         {claim.sourceRef && <span>Источник: {claim.sourceRef}</span>}
-        {catalogNote && (
+        {topics && (
           <span className={styles.catalog}>
-            <b>Проверим на созвоне:</b> {catalogNote}
+            <b>На созвоне спросим про:</b> {topics}
           </span>
         )}
         {claim.limits && (
@@ -107,9 +114,11 @@ export function ClaimCard({ claim, onAction, busy = false }: ClaimCardProps) {
           <button type="button" className={`${ui.btn} ${ui.primary} ${ui.small}`} onClick={() => void run('confirm')} disabled={disabled}>
             Да
           </button>
-          <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => { setDraft(statement); setEditing(true); }} disabled={disabled}>
-            Поправить
-          </button>
+          {!merged && (
+            <button type="button" className={`${ui.btn} ${ui.small}`} onClick={() => { setDraft(statement); setEditing(true); }} disabled={disabled}>
+              Поправить
+            </button>
+          )}
           <button type="button" className={`${ui.btn} ${ui.danger} ${ui.small}`} onClick={() => void run('reject')} disabled={disabled}>
             Нет
           </button>

@@ -57,14 +57,15 @@ describe('главная', () => {
     for (const link of cabinet) expect(link.getAttribute('href')).toBe('/consultant');
     expect(screen.getByRole('link', { name: /Приступим/ }).getAttribute('href')).toBe('/consultant');
   });
-  it('подборка явно демонстрационная и ведёт в существующий вход', () => {
+  it('подборка демонстрационная, карточки компаний не ведут в помощника', () => {
     render(<Landing data={DATA} signedIn={false} />);
     const section = within(screen.getByRole('region', { name: /^Сейчас нанимают\s*\.$/ }));
-    expect(section.getByText('Демо-подборка · вымышленные компании и вакансии')).toBeDefined();
-    expect(section.getByRole('link', { name: /Аврора Лабс/ }).getAttribute('href')).toBe('/auth?next=%2Fconsultant');
+    expect(section.getByText('Примеры реальных компаний · вакансии и зарплаты демонстрационные')).toBeDefined();
+    expect(section.queryAllByRole('link')).toHaveLength(0);
+    expect(section.getAllByText('Ozon')).toHaveLength(2);
     expect(section.queryByText('Команда А')).toBeNull();
     expect(screen.queryByRole('list', { name: 'Платформа в цифрах' })).toBeNull();
-    expect(section.getByRole('status').textContent).toBe('4 компании ищут Backend Middle');
+    expect(section.getByRole('status').textContent).toBe('3 компании ищут Backend Middle');
   });
   it('граф показывает эти же логотипы без выдуманного процента соответствия', () => {
     const { container } = render(<Landing data={DATA} signedIn={false} />);
@@ -75,18 +76,17 @@ describe('главная', () => {
   });
   it('данные публичных примеров не превращаются в фиктивную живую ленту', () => {
     render(<Landing data={{ companies: [] }} signedIn={false} />);
-    expect(screen.getByText('Демо-подборка · вымышленные компании и вакансии')).toBeDefined();
+    expect(screen.getByText('Примеры реальных компаний · вакансии и зарплаты демонстрационные')).toBeDefined();
     expect(screen.queryByText(/1240|86%/)).toBeNull();
   });
   it('дубли каретки скрыты от ассистивных технологий', () => {
     const { container } = render(<Landing data={SHOWCASE} signedIn={false} />);
     const section = screen.getByRole('region', { name: /^Сейчас нанимают\s*\.$/ });
-    const cards = section.querySelectorAll('a[data-match]');
-    expect(cards).toHaveLength(18);
-    const duplicates = [...container.querySelectorAll('#companies [aria-hidden="true"] a')];
-    expect(duplicates).toHaveLength(9);
-    for (const duplicate of duplicates) expect(duplicate.getAttribute('tabindex')).toBe('-1');
-    expect(within(section).getAllByRole('link')).toHaveLength(9);
+    const cards = section.querySelectorAll('div[data-match]');
+    expect(cards).toHaveLength(16);
+    const duplicates = [...container.querySelectorAll('#companies [aria-hidden="true"] [data-match]')];
+    expect(duplicates).toHaveLength(8);
+    expect(within(section).queryAllByRole('link')).toHaveLength(0);
   });
   it('знаки ФСП в шапке, под стрелкой и в подвале ведут на официальный сайт', () => {
     render(<Landing data={DATA} signedIn={false} />);
@@ -115,8 +115,8 @@ describe('страница /', () => {
     const { default: HomePage } = await import('@/app/page');
     render(await HomePage());
     const section = within(screen.getByRole('region', { name: /^Сейчас нанимают\s*\.$/ }));
-    expect(section.getAllByRole('link')).toHaveLength(9);
-    expect(section.getByText('Демо-подборка · вымышленные компании и вакансии')).toBeDefined();
+    expect(section.queryAllByRole('link')).toHaveLength(0);
+    expect(section.getByText('Примеры реальных компаний · вакансии и зарплаты демонстрационные')).toBeDefined();
     expect(screen.queryByText('Данные на этой странице - иллюстрация')).toBeNull();
     expect(dbCalls.n).toBe(0);
   });

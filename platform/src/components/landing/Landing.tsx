@@ -22,7 +22,7 @@ export function Landing({ signedIn, demoEnabled = false }: { data: LandingData; 
   return <div className={styles.page} data-landing-astra>
     <Background /><LandingHeader signedIn={signedIn} juryEnabled={demoEnabled} />
     <main id="main" className={styles.main}>
-      <Hero signedIn={signedIn} demoEnabled={demoEnabled} /><HiringShowcase signedIn={signedIn} /><LandingSections signedIn={signedIn} />
+      <Hero signedIn={signedIn} demoEnabled={demoEnabled} /><HiringShowcase /><LandingSections signedIn={signedIn} />
       <section className={styles.section} id="why" aria-labelledby="why-title">
         <h2 id="why-title">Почему это работает<i>.</i></h2>
         <ol className={styles.rules}>{RULES.map(([title, text, icon], index) => <li key={title}>

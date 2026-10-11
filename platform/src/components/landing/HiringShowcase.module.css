@@ -54,3 +54,5 @@
   .company, .meter i { transition: none; }
   .company:hover, .company:focus-visible { transform: none; }
 }
+
+.logo { width: 100%; height: 100%; padding: 6px; object-fit: contain; }

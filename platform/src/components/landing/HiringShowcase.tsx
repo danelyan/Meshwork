@@ -1,32 +1,32 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import { Chip } from '@/components/ui';
 
 import styles from './HiringShowcase.module.css';
+import { SHOWCASE } from './showcase';
+import { CompanyLogo } from './CompanyLogo';
 
 const SPECIALIZATIONS = ['Backend', 'Frontend', 'Mobile', 'Data / ML', 'DevOps', 'QA'] as const;
 const GRADES = ['Junior', 'Middle', 'Senior'] as const;
 type Specialization = typeof SPECIALIZATIONS[number];
 type Grade = typeof GRADES[number];
 
-/** Fictional data from Karina's export, not live vacancies or matching results. */
+/** Public company examples with illustrative hiring figures, not live vacancies or matching results. */
 export const DEMO_HIRING_COMPANIES: readonly {
-  id: string; name: string; focus: string; description: string; vacancies: number;
+  id: string; name: string; focus: string; description: string | null; logoSrc?: string; vacancies: number;
   specializations: readonly Specialization[]; grades: readonly Grade[]; minimum: number; maximum: number;
 }[] = [
-  { id: 'sc-1', name: 'Аврора Лабс', focus: 'Backend · Middle, Senior', description: 'Облачная платформа для логистики', vacancies: 4, specializations: ['Backend'], grades: ['Middle', 'Senior'], minimum: 280, maximum: 420 },
-  { id: 'sc-2', name: 'Кедр', focus: 'Frontend · Junior, Middle', description: 'Сервис электронных очередей', vacancies: 3, specializations: ['Frontend'], grades: ['Junior', 'Middle'], minimum: 140, maximum: 260 },
-  { id: 'sc-3', name: 'Полюс Системс', focus: 'Backend, Data · Middle', description: 'Аналитика для промышленности', vacancies: 5, specializations: ['Backend', 'Data / ML'], grades: ['Middle'], minimum: 240, maximum: 380 },
-  { id: 'sc-4', name: 'Вектор Пэй', focus: 'Backend · Junior, Middle', description: 'Платёжный шлюз для малого бизнеса', vacancies: 2, specializations: ['Backend'], grades: ['Junior', 'Middle'], minimum: 150, maximum: 300 },
-  { id: 'sc-5', name: 'Маяк Мобайл', focus: 'Mobile · Middle, Senior', description: 'Приложения для ритейла', vacancies: 3, specializations: ['Mobile'], grades: ['Middle', 'Senior'], minimum: 260, maximum: 400 },
-  { id: 'sc-6', name: 'Тундра Тех', focus: 'DevOps · Middle', description: 'Инфраструктура и мониторинг', vacancies: 2, specializations: ['DevOps'], grades: ['Middle'], minimum: 250, maximum: 350 },
-  { id: 'sc-7', name: 'Ладога Софт', focus: 'Frontend, Backend · Junior', description: 'Образовательная платформа', vacancies: 4, specializations: ['Frontend', 'Backend'], grades: ['Junior'], minimum: 100, maximum: 180 },
-  { id: 'sc-8', name: 'Квант Ривер', focus: 'ML, Backend · Senior', description: 'Рекомендательные системы', vacancies: 2, specializations: ['Data / ML', 'Backend'], grades: ['Senior'], minimum: 380, maximum: 480 },
-  { id: 'sc-9', name: 'Бирюза', focus: 'QA, Backend · Junior, Middle', description: 'Маркетплейс услуг', vacancies: 3, specializations: ['QA', 'Backend'], grades: ['Junior', 'Middle'], minimum: 120, maximum: 240 },
-];
+  { vacancies: 4, specializations: ['Backend'], grades: ['Middle', 'Senior'], minimum: 280, maximum: 420 },
+  { vacancies: 3, specializations: ['Frontend'], grades: ['Junior', 'Middle'], minimum: 140, maximum: 260 },
+  { vacancies: 5, specializations: ['Backend', 'Data / ML'], grades: ['Middle'], minimum: 240, maximum: 380 },
+  { vacancies: 2, specializations: ['Backend'], grades: ['Junior', 'Middle'], minimum: 150, maximum: 300 },
+  { vacancies: 3, specializations: ['Mobile'], grades: ['Middle', 'Senior'], minimum: 260, maximum: 400 },
+  { vacancies: 2, specializations: ['DevOps', 'QA'], grades: ['Middle'], minimum: 250, maximum: 350 },
+  { vacancies: 4, specializations: ['Frontend', 'Backend'], grades: ['Junior'], minimum: 100, maximum: 180 },
+  { vacancies: 2, specializations: ['Data / ML', 'Backend'], grades: ['Senior'], minimum: 380, maximum: 480 },
+].map((example, index) => ({ ...SHOWCASE.companies[index]!, ...example, specializations: example.specializations as Specialization[], grades: example.grades as Grade[] }));
 
 export function getDemoHiringMatch(specialization: Specialization, grade: Grade) {
   const companies = DEMO_HIRING_COMPANIES.filter(company => company.specializations.includes(specialization) && company.grades.includes(grade));
@@ -69,11 +69,10 @@ function AnimatedCount({ value }: { value: number }) {
   return <b className={styles.count} aria-hidden="true">{shown}</b>;
 }
 
-export function HiringShowcase({ signedIn }: { signedIn: boolean }) {
+export function HiringShowcase() {
   const [specialization, setSpecialization] = useState<Specialization>('Backend');
   const [grade, setGrade] = useState<Grade>('Middle');
   const match = getDemoHiringMatch(specialization, grade);
-  const destination = signedIn ? '/consultant' : '/auth?next=%2Fconsultant';
   const label = `${match.count} ${plural(match.count, ['компания', 'компании', 'компаний'])} ${match.count === 1 ? 'ищет' : 'ищут'} ${specialization} ${grade}`;
   const pay = match.count ? `${match.minimum}-${match.maximum}k ₽ / мес.` : 'Пока нет совпадений';
 
@@ -99,19 +98,19 @@ export function HiringShowcase({ signedIn }: { signedIn: boolean }) {
           </span>
         </div>
       </div>
-      <p className={styles.demo}>Демо-подборка · вымышленные компании и вакансии</p>
+      <p className={styles.demo}>Примеры реальных компаний · вакансии и зарплаты демонстрационные</p>
       <div className={styles.rail}>
         <div className={styles.track}>
           {[0, 1].map(copy => <div key={copy} className={styles.group} aria-hidden={copy === 1 ? true : undefined}>
             {DEMO_HIRING_COMPANIES.map((company, index) => {
               const matches = match.companies.some(item => item.id === company.id);
               return <div key={company.id} className={styles.tile} style={{ animationDelay: `${index % 4 * -2.5}s`, animationDuration: `${9.5 + index % 4 * 1.5}s` }}>
-                <Link href={destination} tabIndex={copy === 1 ? -1 : undefined} className={`${styles.company} ${matches ? styles.matched : ''}`} data-match={matches}>
-                  <span className={styles.cardTop}><span className={styles.letter}>{company.name.charAt(0)}</span>{matches && <em className={styles.badge}>ищет тебя</em>}</span>
+                <div className={`${styles.company} ${matches ? styles.matched : ''}`} data-match={matches}>
+                  <span className={styles.cardTop}><span className={styles.letter}><CompanyLogo company={company} className={styles.logo} /></span>{matches && <em className={styles.badge}>ищет тебя</em>}</span>
                   <b className={styles.name}>{company.name}</b>
                   <small className={styles.focus}>{company.focus}<br />{company.description}</small>
                   <span className={styles.cardBottom}><span>{company.vacancies} {plural(company.vacancies, ['вакансия', 'вакансии', 'вакансий'])}</span><em>до {company.maximum}k</em></span>
-                </Link>
+                </div>
               </div>;
             })}
           </div>)}

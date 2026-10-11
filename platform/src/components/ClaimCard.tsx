@@ -72,7 +72,7 @@ export function ClaimCard({ claim, group, onAction, busy = false }: ClaimCardPro
         </blockquote>
       )}
       <div className={styles.meta}>
-        {sameAsQuote && <span>Дословно из твоего документа</span>}
+        {sameAsQuote && <span>{fromImage(claim.sourceRef) ? 'Распознано с картинки - проверь цифры и названия' : 'Дословно из твоего документа'}</span>}
         {claim.sourceRef && <span>Источник: {claim.sourceRef}</span>}
         {topics && (
           <span className={styles.catalog}>
@@ -136,4 +136,9 @@ export function ClaimCard({ claim, group, onAction, busy = false }: ClaimCardPro
       )}
     </article>
   );
+}
+
+/** Источник — картинка (OCR, server/collector/ocr.ts): текст распознан, а не взят из текстового слоя. */
+function fromImage(ref: string | null | undefined): boolean {
+  return /\.(jpe?g|png)#/i.test(ref ?? '');
 }

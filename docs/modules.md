@@ -76,7 +76,7 @@
 - **Ограничения:** «найдено в реестре» для ИНН — демо-метка, запроса в ЕГРЮЛ нет; ФСП ID — имитация.
 
 ### `directions` (`server/directions.ts`, `lib/directions.ts`, `lib/grades.ts`)
-- **Назначение:** четыре направления (backend, frontend, ai, engineering), 17 подкатегорий и три грейда
+- **Назначение:** четыре направления (backend, frontend, ai, engineering), 18 подкатегорий и три грейда (список и счётчики — [документ сдачи § 2.1](submission/fsp-career.md#21-справочник-направлений-подкатегорий-и-грейдов-r-t-05))
   (`junior < middle < senior`) — единый список для кода, UI и сида ([ADR 0003, дополнение 10.10](decisions/0003-three-stage-assessment.md); R-T-05).
   Подкатегория `active` ⇔ банк теста полон (6 Junior + 4 Middle + 4 Senior).
 - **Модели:** `Subcategory` (`id` вида `backend.web-api`, `status active|planned`).
@@ -154,7 +154,7 @@
 
 ### `test` — тест на грейд ([ADR 0002](decisions/0002-grade-test.md))
 - **Назначение:** адаптивный тест IRT 2PL (EAP по сетке, информация Фишера, randomesque 3). Генераторы заданий `be.*`, `fe.*`,
-  `ai.*`, `eng.*` — 241 семейство, по 14–15 на каждую из 17 подкатегорий (6 Junior + 4–5 Middle + 4 Senior). Пул попытки — семейства
+  `ai.*`, `eng.*` — 492 семейства: 26–27 на каждую из 17 исходных подкатегорий, 18 у `ai.bi-analytics`, 29 общих (минимум пула — 6 Junior + 4 Middle + 4 Senior). Пул попытки — семейства
   подкатегории (`poolFor`); заявка Senior идёт по Senior-пулу с дозадаванием Middle (до 4), заявка Middle и Junior — по всему пулу с
   дозадаванием Junior (до 3). Пороги θ: Junior −0,7, Middle −0,1, Senior +0,8; подтверждение при P ≥ 0,8; версия политики `adr-0002-v4`.
   Итог — `CandidateCategory` и подъём подтверждённых утверждений до `platform`.

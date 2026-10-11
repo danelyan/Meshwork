@@ -93,8 +93,10 @@ export function makeModels(TIMEOUT_MS: number): Record<string, ModelDef> {
     },
     // Selectel Dedicated Inference (vLLM, OpenAI-совместимый, Bearer; ключ на сервис). Оплата за GPU-час,
     // не за токены — стоимость в таблице 0, считать по времени работы сервиса (research/31).
-    ...selectelModel('qwen', 'SELECTEL_QWEN', 'Qwen3.6-35B-A3B (Selectel Dedicated Inference)', TIMEOUT_MS),
-    ...selectelModel('qwen2', 'SELECTEL_QWEN2', 'Вторая модель Selectel (по SELECTEL_QWEN2_MODEL)', TIMEOUT_MS),
+    ...selectelModel('qwen', 'SELECTEL_QWEN', 'qwen3-8-flash-next (Selectel)', TIMEOUT_MS),
+    ...selectelModel('qwen2', 'SELECTEL_QWEN2', 'qwen3-8-27b (Selectel)', TIMEOUT_MS),
+    ...selectelModel('qwen-big', 'SELECTEL_QWENBIG', 'qwen3-vl-235b-a22b (Selectel)', TIMEOUT_MS),
+    ...selectelModel('tpro', 'SELECTEL_TPRO', 't-pro-it-2-1 (Selectel)', TIMEOUT_MS),
   };
 }
 

@@ -5,6 +5,8 @@ import { SceneAside } from '@/components/consultant/SceneAside';
 import { candidateSteps, employerSteps } from '@/server/consultant/aside';
 import { CUSTOM_MAX, SKILLS } from '@/server/consultant/skills';
 
+// MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 afterEach(() => {
@@ -48,10 +50,11 @@ describe('InstructionsCard', () => {
 
 describe('SceneAside + карточка', () => {
   const hint = { title: 'x', text: 'y' };
-  it('у кандидата есть «Как мне работать», у работодателя нет', () => {
+  it('«Как мне работать» на панели консультанта нет ни у кандидата, ни у работодателя (перенесено в /settings)', () => {
     const steps = candidateSteps({ intro: false, introNote: '', confirmed: 0, category: null, invitations: 0 });
-    render(<SceneAside data={{ role: 'candidate', steps, docs: [], hint, instructions: { skills: [], custom: '' } }} />);
-    expect(screen.getByTestId('aside-instructions')).toBeTruthy();
+    render(<SceneAside data={{ role: 'candidate', steps, docs: [], hint, stepBlock: { step: 'onboarding' } }} />);
+    expect(screen.queryByTestId('aside-instructions')).toBeNull();
+    expect(screen.queryByText('Как мне работать')).toBeNull();
     cleanup();
     render(<SceneAside data={{ role: 'employer', steps: employerSteps({ intro: true, introNote: '', needs: 0, invitations: 0 }), docs: null, hint }} />);
     expect(screen.queryByTestId('aside-instructions')).toBeNull();

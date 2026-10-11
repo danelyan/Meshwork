@@ -1,6 +1,7 @@
 import { GET, PUT } from '@/app/api/consultant/settings/route';
 import { runTurn } from '@/server/agent/loop';
 import { loadCandidateAside } from '@/server/consultant/aside';
+import { loadConsultantSettings } from '@/server/consultant/settings';
 import type { CompleteRequest, LlmProvider } from '@/server/llm/types';
 import { signSession, signUserSession } from '@/server/session';
 
@@ -41,10 +42,11 @@ describe('/api/consultant/settings', () => {
     expect(await prisma.consultantSettings.count()).toBe(0);
   });
 
-  it('колонка кандидата отдаёт настройки', async () => {
+  it('настройки читает страница /settings; в колонке консультанта их больше нет', async () => {
     await put({ skills: ['test_prep'], custom: 'примеры на Go' });
+    expect(await loadConsultantSettings(A)).toEqual({ skills: ['test_prep'], custom: 'примеры на Go' });
     const aside = await loadCandidateAside(A, undefined);
-    expect(aside.instructions).toEqual({ skills: ['test_prep'], custom: 'примеры на Go' });
+    expect(aside).not.toHaveProperty('instructions');
   });
 
   it('ход консультанта получает блок предпочтений, инъекция внутри блока', async () => {

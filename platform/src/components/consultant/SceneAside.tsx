@@ -3,13 +3,12 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import type { AsideDoc, JourneyStep, MarketRow, SceneAsideData } from '@/server/consultant/aside';
+import type { AsideDoc, JourneyStep, MarketRow, SceneAsideData, StepBlock } from '@/server/consultant/aside';
 
 import { fieldVisibility } from '../onboarding/OnboardingDraft';
 import { useAsideData } from './aside-refresh';
 import { FilesCard } from './FilesCard';
 import { MemoryCard } from './MemoryCard';
-import { InstructionsCard } from './InstructionsCard';
 import styles from './SceneAside.module.css';
 
 const STATE_LABEL = { done: 'готово', now: 'сейчас', next: 'дальше' } as const;
@@ -124,6 +123,62 @@ function ProfileProgress({ progress, known }: { progress: NonNullable<SceneAside
   );
 }
 
+const plural = (n: number, one: string, few: string, many: string) => {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many;
+};
+const invitesWord = (n: number) => `${n} ${plural(n, 'приглашение', 'приглашения', 'приглашений')}`;
+const PROJECT_STATUS = { submitted: 'сдан, ждёт проверки', running: 'проверяется', checked: 'проверен', failed: 'проверка не прошла' } as const;
+
+/** Карточка шага: короткий текст и одна кнопка-ссылка. */
+function StepCard({ id, title, text, extra, href, cta }: { id: string; title: string; text: string; extra?: string; href: string; cta: string }) {
+  return (
+    <Card id={id} title={title}>
+      <p className={styles.muted}>{text}</p>
+      {extra && <p className={styles.stepExtra} data-testid={`${id}-extra`}>{extra}</p>}
+      <Link href={href} className={styles.cta}>{cta}</Link>
+    </Card>
+  );
+}
+
+/** Блок под текущий шаг пути кандидата (решение владельца 12.10: панель меняется по шагу). Нет данных — ничего не рисуем. */
+function StepBlockView({ block, market, docs, role }: { block: StepBlock; market: SceneAsideData['market']; docs: SceneAsideData['docs']; role: SceneAsideData['role'] }) {
+  switch (block.step) {
+    case 'onboarding':
+      return docs ? <Docs docs={docs} /> : null;
+    case 'test':
+      return (
+        <>
+          {market && market.rows.length > 0 && <Market market={market} role={role} />}
+          <StepCard id="step-test" title="Тест на грейд" text="Категорию даёт только тест: после него компании найдут тебя в подборке." href="/test" cta="Начать тест" />
+        </>
+      );
+    case 'call':
+      return <StepCard id="step-call" title="Квалифицирующий созвон" text="Короткий голосовой разговор по темам резюме. Итог - карта глубины, работодатель видит её до приглашения." href="/consultant?call=1" cta="Созвониться" />;
+    case 'project': {
+      const p = block.project;
+      return <StepCard id="step-project" title="Лента заданий" text="Возьми проект из ленты, сдай репозиторий и дождись проверки." extra={p ? `${p.title}: ${PROJECT_STATUS[p.status]}` : undefined} href={p && p.status !== 'checked' ? `/projects/${p.taskId}` : '/projects'} cta={p && p.status !== 'checked' ? 'Открыть задание' : 'Открыть ленту заданий'} />;
+    }
+    case 'ai_defense': {
+      const p = block.project;
+      if (!p) return null;
+      return <StepCard id="step-ai-defense" title="ИИ-защита проекта" text="ИИ задаёт вопросы по коду и коммитам. Нужна запись с согласием; работодатель до приглашения увидит только баллы и флаги." extra={p.title} href={`/projects/${p.taskId}`} cta="Защитить проект с ИИ" />;
+    }
+    case 'waiting':
+    case 'invitations': {
+      const inv = block.invitations;
+      if (!inv) return null;
+      const text = inv.pending > 0 ? `Ждут ответа: ${invitesWord(inv.pending)}.` : inv.total > 0 ? `Всего: ${invitesWord(inv.total)}.` : 'Приглашений пока нет: компании находят профиль сами.';
+      return <StepCard id="step-invitations" title={`Приглашения · ${inv.total}`} text={text} href="/invitations" cta="Открыть приглашения" />;
+    }
+    case 'live_defense':
+      return <StepCard id="step-live" title="Живая защита" text="Приглашение принято: работодатель предложит слоты, ты выберешь время. Защита идёт с записью." href="/invitations" cta="Выбрать слот" />;
+    case 'hired':
+      return block.hired ? <StepCard id="step-hired" title="Нанят" text={`Компания отметила найм: ${block.hired.company}.`} href="/invitations" cta="Открыть приглашения" /> : null;
+  }
+}
+
 /** Правая колонка под головой: роадмап с подсказкой по текущему шагу, что уже известно, рынок, документы (кандидат). */
 export function SceneAside({ data: initial, className }: { data: SceneAsideData; className?: string }) {
   const data = useAsideData() ?? initial;
@@ -142,12 +197,13 @@ export function SceneAside({ data: initial, className }: { data: SceneAsideData;
       <div className={styles.aside} data-role={data.role}>
         <Roadmap steps={data.steps} hint={data.hint} />
         <MemoryCard facts={data.known ?? []} role={data.role} pending={data.memoryPending} limit={data.memoryLimit} fill={data.fill} />
-        {data.market && <Market market={data.market} role={data.role} />}
-        {data.docs && <Docs docs={data.docs} />}
-        {data.role === 'candidate' && (
-          <Card id="instructions" title="Как мне работать">
-            <InstructionsCard initial={data.instructions} />
-          </Card>
+        {data.stepBlock ? (
+          <StepBlockView block={data.stepBlock} market={data.market} docs={data.docs} role={data.role} />
+        ) : (
+          <>
+            {data.market && <Market market={data.market} role={data.role} />}
+            {data.docs && <Docs docs={data.docs} />}
+          </>
         )}
       </div>
     </div>

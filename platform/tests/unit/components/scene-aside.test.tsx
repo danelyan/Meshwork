@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { SceneAside } from '@/components/consultant/SceneAside';
-import { candidateSteps, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
+import { type SceneAsideData, candidateSteps, employerSteps, guestAside, hintFor, knownFacts, markStates, marketRows, onboardingMode } from '@/server/consultant/aside';
 import type { OnboardingView } from '@/server/onboarding/types';
 
 // MemoryCard переходит к шагу знакомства мягким обновлением (useRouter) — в тестах роутера нет.
@@ -76,6 +76,63 @@ describe('SceneAside', () => {
   it('employer has no documents block', () => {
     render(<SceneAside data={{ ...data, role: 'employer', docs: null }} />);
     expect(screen.queryByTestId('aside-docs')).toBeNull();
+  });
+});
+
+describe('блок под текущий шаг', () => {
+  const hint = { title: 'x', text: 'y' };
+  const market = { total: 2, rows: [{ key: 'backend:middle', label: 'Backend · Middle', count: 2, mine: false }] };
+  const STEP_CARDS = ['aside-docs', 'aside-market', 'aside-step-test', 'aside-step-call', 'aside-step-project', 'aside-step-ai-defense', 'aside-step-invitations', 'aside-step-live', 'aside-step-hired'];
+  const project = { taskId: 't1', title: 'Сервис заметок', status: 'checked' as const };
+  const cases: { name: string; data: Partial<SceneAsideData>; shown: string[] }[] = [
+    { name: 'onboarding', data: { stepBlock: { step: 'onboarding' }, docs: [] }, shown: ['aside-docs'] },
+    { name: 'test', data: { stepBlock: { step: 'test' }, market }, shown: ['aside-market', 'aside-step-test'] },
+    { name: 'call', data: { stepBlock: { step: 'call' } }, shown: ['aside-step-call'] },
+    { name: 'project', data: { stepBlock: { step: 'project', project: null } }, shown: ['aside-step-project'] },
+    { name: 'ai_defense', data: { stepBlock: { step: 'ai_defense', project } }, shown: ['aside-step-ai-defense'] },
+    { name: 'waiting', data: { stepBlock: { step: 'waiting', invitations: { pending: 0, accepted: 0, total: 0 } } }, shown: ['aside-step-invitations'] },
+    { name: 'invitations', data: { stepBlock: { step: 'invitations', invitations: { pending: 2, accepted: 0, total: 3 } } }, shown: ['aside-step-invitations'] },
+    { name: 'live_defense', data: { stepBlock: { step: 'live_defense' } }, shown: ['aside-step-live'] },
+    { name: 'hired', data: { stepBlock: { step: 'hired', hired: { company: 'Северный Поток' } } }, shown: ['aside-step-hired'] },
+  ];
+  const base: SceneAsideData = { role: 'candidate', steps: candidateSteps({ intro: true, introNote: '', confirmed: 0, category: null, invitations: 0 }), docs: null, hint };
+
+  it.each(cases)('шаг $name: показан только свой блок; путь и «Что я о тебе знаю» на месте', ({ data, shown }) => {
+    render(<SceneAside data={{ ...base, ...data }} />);
+    for (const id of STEP_CARDS) expect(screen.queryByTestId(id) !== null, id).toBe(shown.includes(id));
+    expect(screen.getByRole('navigation', { name: 'Твой путь' })).toBeTruthy();
+    expect(screen.getByTestId('aside-known')).toBeTruthy();
+    expect(screen.queryByTestId('aside-instructions')).toBeNull();
+    expect(screen.queryByText('Как мне работать')).toBeNull();
+  });
+
+  it('ссылки блоков: тест, созвон, лента и задание, приглашения', () => {
+    const href = (data: Partial<SceneAsideData>, name: RegExp) => {
+      render(<SceneAside data={{ ...base, ...data }} />);
+      const h = screen.getByRole('link', { name }).getAttribute('href');
+      cleanup();
+      return h;
+    };
+    expect(href({ stepBlock: { step: 'test' } }, /Начать тест/)).toBe('/test');
+    expect(href({ stepBlock: { step: 'call' } }, /Созвониться/)).toBe('/consultant?call=1');
+    expect(href({ stepBlock: { step: 'project', project: null } }, /ленту заданий/)).toBe('/projects');
+    expect(href({ stepBlock: { step: 'project', project: { ...project, status: 'running' } } }, /Открыть задание/)).toBe('/projects/t1');
+    expect(href({ stepBlock: { step: 'ai_defense', project } }, /Защитить проект/)).toBe('/projects/t1');
+    expect(href({ stepBlock: { step: 'invitations', invitations: { pending: 1, accepted: 0, total: 1 } } }, /Открыть приглашения/)).toBe('/invitations');
+  });
+
+  it('нет данных для блока — карточки нет', () => {
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'ai_defense', project: null } }} />);
+    for (const id of STEP_CARDS) expect(screen.queryByTestId(id)).toBeNull();
+    cleanup();
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'test' }, market: { total: 0, rows: [] } }} />);
+    expect(screen.queryByTestId('aside-market')).toBeNull();
+    expect(screen.getByTestId('aside-step-test')).toBeTruthy();
+  });
+
+  it('счётчик приглашений в блоке', () => {
+    render(<SceneAside data={{ ...base, stepBlock: { step: 'invitations', invitations: { pending: 2, accepted: 0, total: 3 } } }} />);
+    expect(screen.getByTestId('aside-step-invitations').textContent).toMatch(/Ждут ответа: 2 приглашения/);
   });
 });
 

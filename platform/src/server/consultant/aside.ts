@@ -1,12 +1,10 @@
 import { SPEC_LABEL } from '@/lib/directions';
 import { gradeLabel } from '@/lib/grades';
 import { prisma } from '../db';
-import { journeyState } from '../agent/journey';
+import { journeyState, type JourneyStep as JourneyKey } from '../agent/journey';
 import { listVacancies, loadEmployerContext } from '../employer';
 import type { OnboardingView } from '../onboarding/types';
 import { listMemory, MEMORY_LIMIT, type MemoryItem, type MemoryOwner, memoryPending } from './memory';
-import { loadConsultantSettings } from './settings';
-import type { ConsultantSettingsData } from './skills';
 
 // Данные правой колонки экрана консультанта: «Твой путь», «Что я уже знаю», «Рынок», «Документы», «Подсказка».
 // Всё читается из существующих таблиц (опрос, утверждения, категория из теста, приглашения);
@@ -64,14 +62,12 @@ export interface SceneStat {
   note: string;
 }
 
-/** Сводка кандидата — только факты из базы, без оценок и прогнозов (F13: вероятность приглашения не считаем). */
-export function candidateStats(f: { confirmed: number; category: { specialization: string; grade: string } | null; vacancies: number; mine: number; invitations: number }): SceneStat[] {
+/** Сводка кандидата — только факты из базы, без оценок и прогнозов (F13: вероятность приглашения не считаем). Две плитки (решение владельца 12.10). */
+export function candidateStats(f: { confirmed: number; category: { specialization: string; grade: string } | null }): SceneStat[] {
   const cat = f.category;
   return [
     { label: 'Навыков подтверждено', value: String(f.confirmed), note: f.confirmed ? 'видны работодателям в карточке' : 'пришли резюме или ссылку' },
     { label: 'Категория', value: cat ? `${SPEC_LABEL[cat.specialization as keyof typeof SPEC_LABEL] ?? cat.specialization} · ${gradeLabel(cat.grade)}` : '—', note: cat ? 'по тесту платформы' : 'даёт только тест' },
-    { label: 'Вакансий на платформе', value: String(f.vacancies), note: cat ? `в твоей категории: ${f.mine}` : 'по всем направлениям' },
-    { label: 'Приглашений', value: String(f.invitations), note: f.invitations ? 'в разделе «Приглашения»' : 'компании пишут сами' },
   ];
 }
 
@@ -81,6 +77,17 @@ export interface MarketRow {
   label: string;
   count: number;
   mine: boolean;
+}
+
+/** Данные блока под текущий шаг пути кандидата. Нет данных — блок не рисуется. */
+export interface StepBlock {
+  step: JourneyKey;
+  /** waiting / invitations / live_defense: счётчики приглашений. */
+  invitations?: { pending: number; accepted: number; total: number };
+  /** project / ai_defense: сдача (последняя; для ИИ-защиты — последняя проверенная); null — сдач ещё нет. */
+  project?: { taskId: string; title: string; status: 'submitted' | 'running' | 'checked' | 'failed' } | null;
+  /** hired: компания, отметившая найм. */
+  hired?: { company: string } | null;
 }
 
 export interface SceneAsideData {
@@ -101,8 +108,8 @@ export interface SceneAsideData {
   /** Загруженное кандидатом; у работодателя null (блок не показывается). */
   docs: AsideDoc[] | null;
   hint: { title: string; text: string };
-  /** Кандидату — как работает его консультант (скиллы и свои инструкции); у работодателя нет. */
-  instructions?: ConsultantSettingsData;
+  /** Кандидату: блок под текущий шаг пути (journeyState.nextStep); у работодателя нет. */
+  stepBlock?: StepBlock;
   /** Идёт знакомство: колонка — только «Заполнение профиля» и «Что я о тебе знаю», остального нет. */
   onboarding?: { done: number; total: number; current: string | null };
 }
@@ -321,28 +328,55 @@ export async function loadCandidateDocs(candidateId: string): Promise<AsideDoc[]
   return [...files, ...links];
 }
 
+/** Последние сдачи проектов: заголовок задания берём из specJson.title. */
+async function loadLatestSubmissions(candidateId: string) {
+  const rows = await prisma.projectSubmission.findMany({ where: { candidateId }, orderBy: { submittedAt: 'desc' }, take: 10, select: { projectTaskId: true, status: true, projectTask: { select: { specJson: true } } } });
+  const view = (r: (typeof rows)[number]) => {
+    const title = (r.projectTask.specJson as { title?: unknown } | null)?.title;
+    return { taskId: r.projectTaskId, title: typeof title === 'string' && title ? title : 'Проект из ленты', status: r.status };
+  };
+  const latest = rows[0];
+  const checked = rows.find((r) => r.status === 'checked');
+  return { latest: latest ? view(latest) : null, checked: checked ? view(checked) : null };
+}
+
+/** Блок под текущий шаг: что нужно для отрисовки; проект — только там, где он нужен. */
+async function loadStepBlock(candidateId: string, journey: Awaited<ReturnType<typeof journeyState>>, invitations: number): Promise<StepBlock> {
+  const step = journey.nextStep;
+  if (step === 'project' || step === 'ai_defense') {
+    const subs = await loadLatestSubmissions(candidateId);
+    return { step, project: step === 'project' ? subs.latest : subs.checked ?? subs.latest };
+  }
+  if (step === 'waiting' || step === 'invitations' || step === 'live_defense') return { step, invitations: { pending: journey.counts.pendingInvitations, accepted: journey.counts.acceptedInvitations, total: invitations } };
+  if (step === 'hired') return { step, hired: journey.hired ? { company: journey.hired.company } : null };
+  return { step };
+}
+
 export async function loadCandidateAside(candidateId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {
   if (view && onboardingMode(view)) return onboardingAside('candidate', view, await knownWithMemory({ candidateId }, view));
-  const [profileClaims, category, invitations, docs, vacancies, known, instructions, hiredInv, journey] = await Promise.all([
+  const [profileClaims, category, invitations, hiredInv, known, journey] = await Promise.all([
     prisma.claim.count({ where: { candidateId, status: { in: ['confirmed', 'edited'] } } }),
     prisma.candidateCategory.findFirst({ where: { candidateId }, orderBy: { confirmedAt: 'desc' }, select: { specialization: true, grade: true } }),
     prisma.invitation.count({ where: { candidateId } }),
-    loadCandidateDocs(candidateId),
-    prisma.vacancy.findMany({ where: { archivedAt: null }, select: { specialization: true, grade: true } }),
-    knownWithMemory({ candidateId }, view),
-    loadConsultantSettings(candidateId),
     prisma.invitation.findFirst({ where: { candidateId, status: 'hired' }, orderBy: { hiredAt: 'desc' }, select: { company: { select: { name: true } }, vacancy: { select: { company: { select: { name: true } } } } } }),
+    knownWithMemory({ candidateId }, view),
     journeyState(candidateId),
+  ]);
+  const step = journey.nextStep;
+  // Блоки шага: файлы — на знакомстве, спрос компаний — на тесте; остальное — в stepBlock.
+  const [docs, vacancies, stepBlock] = await Promise.all([
+    step === 'onboarding' ? loadCandidateDocs(candidateId) : Promise.resolve(null),
+    step === 'test' ? prisma.vacancy.findMany({ where: { archivedAt: null }, select: { specialization: true, grade: true } }) : Promise.resolve(null),
+    loadStepBlock(candidateId, journey, invitations),
   ]);
   const intro = introDone(view);
   const hired = hiredInv ? { company: hiredInv.company?.name ?? hiredInv.vacancy?.company.name ?? 'компанию' } : null;
   const steps = candidateSteps({ intro, introNote: introNote(view, intro, false), confirmed: profileClaims, category, invitations, hired, call: journey.steps.call, project: journey.steps.project, aiDefense: journey.steps.ai_defense, accepted: journey.counts.acceptedInvitations });
-  const market = marketRows(vacancies, (spec, grade) => category?.specialization === spec && category.grade === grade);
-  const mine = vacancies.filter((v) => category?.specialization === v.specialization && category.grade === v.grade).length;
-  const stats = candidateStats({ confirmed: profileClaims, category, vacancies: vacancies.length, mine, invitations });
+  const market = vacancies ? marketRows(vacancies, (spec, grade) => category?.specialization === spec && category.grade === grade) : undefined;
+  const stats = candidateStats({ confirmed: profileClaims, category });
   // Следующий незаполненный вопрос анкеты — пункт «дополнить» в «Что я о тебе знаю» (только пока лента — разговор).
   const fill = view?.later && view.current.kind !== 'summary' ? { stepId: view.current.id, label: view.current.label } : undefined;
-  return { role: 'candidate', steps, ...known, market, docs, hint: hintFor('candidate', steps, view), instructions, stats, ...(fill ? { fill } : {}) };
+  return { role: 'candidate', steps, ...known, ...(market ? { market } : {}), docs, hint: hintFor('candidate', steps, view), stepBlock, stats, ...(fill ? { fill } : {}) };
 }
 
 export async function loadEmployerAside(employerProfileId: string, view: OnboardingView | undefined): Promise<SceneAsideData> {

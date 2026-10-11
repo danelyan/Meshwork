@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { getMe, logout, onboardingAct, type MeView } from '@/lib/api';
 import { setPrivacyApi } from '@/lib/employer-api';
+import type { ConsultantSettingsData } from '@/server/consultant/skills';
 import type { FspLinkView } from '@/server/fsp-id/link';
 import type { FspState } from '@/server/types';
 
 import { ContactForm } from '../employer/ContactForm';
 import { AccountErasure } from '../auth/AccountErasure';
+import { InstructionsCard } from '../consultant/InstructionsCard';
 import { ConsentsPanel } from '../consent/ConsentsPanel';
 import { ObjectionsList } from '../consent/ObjectionsList';
 import { Button, Kicker, Notice, Panel } from '../ui';
@@ -53,7 +55,7 @@ function FspIdCard({ fsp, result, provider, hint, onDialog, dialogBusy }: { fsp:
   </Panel>;
 }
 
-export function CandidateSettings({ hidden, contact, fspState, fsp, fspProvider = 'mock', fspHint = null, fspResult = null }: { hidden: boolean; contact: string | null; fspState: FspState; fsp?: FspLinkView; fspProvider?: 'external' | 'mock'; fspHint?: string | null; fspResult?: string | null }) {
+export function CandidateSettings({ hidden, contact, fspState, fsp, fspProvider = 'mock', fspHint = null, fspResult = null, instructions }: { hidden: boolean; contact: string | null; fspState: FspState; fsp?: FspLinkView; fspProvider?: 'external' | 'mock'; fspHint?: string | null; fspResult?: string | null; instructions?: ConsultantSettingsData }) {
   const [user, setUser] = useState<MeView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -93,6 +95,7 @@ export function CandidateSettings({ hidden, contact, fspState, fsp, fspProvider 
       <aside className={styles.stack}>
         <FspIdCard fsp={fsp ?? { state: fspState, subject: null, name: null, achievements: [] }} result={fspResult} provider={fspProvider} hint={fspHint} onDialog={() => void openFspStep()} dialogBusy={busy} />
         <Panel className={styles.card}><h2>Аккаунт</h2>{user ? <dl className={styles.accountFacts}><div><dt>Имя</dt><dd>{user.name}</dd></div><div><dt>Почта</dt><dd>{user.email ?? 'Не указана'}</dd></div><div><dt>Вход</dt><dd>{user.isDemo ? 'Демонстрационный аккаунт' : 'Личный аккаунт'}</dd></div></dl> : <p>Загружаем аккаунт…</p>}<Button loading={busy} onClick={() => void exit()}>Выйти</Button></Panel>
+        <Panel className={`${styles.card} ${styles.consultantPanel}`} data-testid="settings-consultant"><h2>Консультант</h2><p className={styles.fine}>Как мне работать: режимы консультанта и свои инструкции. Меняется стиль и фокус ответов, не подборка и не тест.</p><InstructionsCard initial={instructions} /></Panel>
         <ObjectionsList />
         <AccountErasure />
       </aside>

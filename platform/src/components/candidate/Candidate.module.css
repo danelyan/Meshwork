@@ -193,4 +193,10 @@
 .privacyFields dt { margin: 0; }.privacyFields dd { margin: 0; text-align: right; color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
 
 .gapCta { display: grid; gap: 6px; }
-.viewBar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+/* Панель «Консультант» в настройках: InstructionsCard написана на токенах сцены, здесь сводим их к токенам страницы */
+.consultantPanel {
+  --stage-text: var(--ink); --stage-text-soft: var(--text-soft); --stage-ink: var(--ink); --stage-ink-faint: var(--muted); --stage-ink-dim: var(--muted);
+  --stage-ring: var(--border-soft); --avatar-stage-line: var(--line); --stage-track: var(--surface-input);
+  --stage-accent: var(--blue); --stage-on-accent: var(--on-ink); --stage-btn: var(--ink);
+}

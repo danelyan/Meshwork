@@ -140,3 +140,9 @@
 .progressStats dt { font: 500 var(--fs-xs) var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--stage-ink-faint); }
 .progressStats dd { margin: 0; font-size: var(--fs-2xl); font-weight: 600; color: var(--stage-text); }
 
+
+/* Блок шага: пояснение, строка состояния и кнопка-ссылка */
+.stepExtra { margin: 8px 0 0; font-size: var(--fs-sm); line-height: 1.45; color: var(--stage-text-soft); }
+.cta { display: inline-block; margin-top: 10px; padding: 7px 14px; border-radius: 999px; background: var(--stage-accent); color: var(--stage-on-accent); font-size: var(--fs); font-weight: 600; text-decoration: none; }
+.cta:hover { filter: brightness(1.08); }
+.cta:focus-visible { outline: 2px solid var(--stage-ring); outline-offset: 2px; }

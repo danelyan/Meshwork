@@ -37,3 +37,10 @@ it('starts FSP ID linking via OIDC from settings', async () => {
   fireEvent.click(screen.getByRole('button', { name: /^Привязать ФСП ID/ }));
   await waitFor(() => expect(navigate).toHaveBeenCalledWith('/api/fsp-id/link'));
 });
+it('settings: панель «Консультант» с режимами и своими инструкциями', () => {
+  stub();
+  render(<CandidateSettings hidden={false} contact={null} fspState="not_linked" instructions={{ skills: [], custom: '' }} />);
+  const panel = screen.getByTestId('settings-consultant');
+  expect(panel.textContent).toContain('Консультант');
+  expect(panel.querySelector('textarea')).toBeTruthy();
+});

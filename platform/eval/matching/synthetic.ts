@@ -42,7 +42,9 @@ export interface SynVacancy {
 
 export type Archetype =
   | 'strong_proven' | 'strong_no_category' | 'strong_self_only' | 'strong_category_only' | 'weak_category_only'
-  | 'overclaimer' | 'adjacent_stack' | 'mid_average' | 'weak_junior' | 'fullstack' | 'no_spec';
+  | 'overclaimer' | 'adjacent_stack' | 'mid_average' | 'weak_junior' | 'fullstack' | 'no_spec'
+  /** Только в наборе с индексом честности (generateSynthetic(seed, { faked })): категорию получил с помощью. */
+  | 'category_faked';
 
 export const ARCHETYPE_LABEL: Record<Archetype, string> = {
   strong_proven: 'сильный, всё доказано, с категорией',
@@ -56,7 +58,12 @@ export const ARCHETYPE_LABEL: Record<Archetype, string> = {
   weak_junior: 'слабый джун',
   fullstack: 'две специализации (backend + frontend)',
   no_spec: 'без специализации (общие навыки)',
+  category_faked: 'категория списана (нейросеть, второе устройство, слитые ключи): слабый, категория Middle',
 };
+
+/** Как «списана» категория: подвиды читеров из симуляции теста (eval/test/integrity.ts). */
+export type CheatKind = 'copy_llm' | 'second_device' | 'leaked_keys';
+export type IntegrityLevel = 'low' | 'medium' | 'high';
 
 export interface SynProfile extends DemoProfile {
   archetype: Archetype;
@@ -66,6 +73,8 @@ export interface SynProfile extends DemoProfile {
   latent: Record<string, number>;
   /** Текст профиля для BM25: категория, стек, формулировки утверждений и пара их маркеров. */
   text: string;
+  /** Только у category_faked: подвид списывания. */
+  cheat?: CheatKind;
 }
 
 export interface SynSet {
@@ -135,6 +144,8 @@ interface ArchParams {
   /** вероятность, что есть категория из теста */
   category: number;
   noClaims?: boolean;
+  /** Категория всегда этого грейда (заявленный читером грейд), а не от латентного. */
+  categoryGrade?: SynGrade;
 }
 
 const PARAMS: Record<Archetype, ArchParams> = {
@@ -149,7 +160,18 @@ const PARAMS: Record<Archetype, ArchParams> = {
   weak_junior: { ability: [0.2, 0.42], declare: 0.5, proof: 0.3, over: 0.1, category: 0.2 },
   fullstack: { ability: [0.62, 0.85], declare: 0.7, proof: 0.5, over: 0.04, category: 0.4 },
   no_spec: { ability: [0.5, 0.85], declare: 0.7, proof: 0.5, over: 0.02, category: 0 },
+  // как слабый джун по навыкам и утверждениям, но с категорией Middle из теста: читеры в симуляции заявляют Middle
+  category_faked: { ability: [0.15, 0.4], declare: 0.5, proof: 0.3, over: 0.1, category: 1, categoryGrade: 'middle' },
 };
+
+/**
+ * Набор «категория списана» (11.10): count профилей, подвиды в долях mix (по умолчанию 60 % копирует условие в нейросеть,
+ * 25 % нейросеть на втором устройстве, 15 % слитые ключи — допущение агента, в живых данных не измерено).
+ * Генерируются отдельным ГПСЧ (seed + FAKED_SALT) после основного набора: прежние 247 профилей и вакансии не меняются.
+ */
+export interface FakedOptions { count: number; mix?: Record<CheatKind, number> }
+export const FAKED_SALT = 7_000_001;
+export const DEFAULT_CHEAT_MIX: Record<CheatKind, number> = { copy_llm: 0.6, second_device: 0.25, leaked_keys: 0.15 };
 
 function trueGradeFor(a: number, rnd: () => number): SynGrade {
   const x = a + (rnd() - 0.5) * 0.12;
@@ -163,8 +185,8 @@ function profFor(e: CatalogEntry, a: number, g: SynGrade, inFocus: boolean, rnd:
   return clamp01(p + (rnd() - 0.5) * 0.3);
 }
 
-export function generateSynthetic(seed = SYN_SEED): SynSet {
-  const rnd = mulberry32(seed);
+export function generateSynthetic(seed = SYN_SEED, opts: { faked?: FakedOptions } = {}): SynSet {
+  let rnd = mulberry32(seed);
   const pick = <T,>(xs: T[]) => xs[Math.floor(rnd() * xs.length)]!;
   const cat = catalogFromFile();
   const bySpec = new Map<string, CatalogEntry[]>();
@@ -212,9 +234,10 @@ export function generateSynthetic(seed = SYN_SEED): SynSet {
   const pickSpec = (): Spec => { let x = rnd(); for (const [s, w] of specWeights) { if ((x -= w) < 0) return s; } return 'backend'; };
   const profiles: SynProfile[] = [];
   let seq = 0;
-  for (const [archetype, count] of ARCH_PLAN) {
+  // Профиль строится из текущего rnd; основной набор — тот же порядок вызовов, что до 11.10 (набор воспроизводится).
+  const build = (archetype: Archetype, cheat?: CheatKind): SynProfile => {
     const P = PARAMS[archetype];
-    for (let n = 0; n < count; n++) {
+    {
       seq++;
       const spec: Spec | null = archetype === 'no_spec' ? null : archetype === 'fullstack' ? 'backend' : pickSpec();
       const ability = P.ability[0] + rnd() * (P.ability[1] - P.ability[0]);
@@ -264,7 +287,8 @@ export function generateSynthetic(seed = SYN_SEED): SynSet {
 
       // категория из теста: верная в ~80 % случаев, иначе на ступень в сторону; у «слабой категории без утверждений» завышена в 40 %
       let category: SynProfile['category'] = null;
-      if (spec && rnd() < P.category) {
+      if (spec && P.categoryGrade) category = { specialization: spec, grade: P.categoryGrade };
+      else if (spec && rnd() < P.category) {
         const r = GRADE_RANK[g];
         let cr = r;
         const x = rnd();
@@ -282,11 +306,22 @@ export function generateSynthetic(seed = SYN_SEED): SynSet {
         return `${e.statement} ${e.markers.slice(0, 2).join(' ')}`;
       });
       const text = [category ? `${SPEC_NAME[category.specialization]} ${GRADE_NAME[category.grade]}` : '', tags.join(' '), ...claimText].filter(Boolean).join('. ');
-      profiles.push({
+      return {
         id, name: `S${seq}`, specialization: spec, fspState, category, stack: tags, claims: claims.sort(([a], [b]) => a.localeCompare(b)),
-        archetype, trueGrade: g, latent, text,
-      });
+        archetype, trueGrade: g, latent, text, ...(cheat ? { cheat } : {}),
+      };
     }
+  };
+  for (const [archetype, count] of ARCH_PLAN) for (let n = 0; n < count; n++) profiles.push(build(archetype));
+  if (opts.faked && opts.faked.count > 0) {
+    rnd = mulberry32(seed + FAKED_SALT);
+    const mix = opts.faked.mix ?? DEFAULT_CHEAT_MIX;
+    const kinds = Object.keys(mix) as CheatKind[];
+    // подвиды раскладываются по долям детерминированно (наибольшие остатки), а не жребием: доли в малом наборе точнее
+    const quota = kinds.map((k) => ({ k, n: Math.floor(mix[k] * opts.faked!.count), r: (mix[k] * opts.faked!.count) % 1 }));
+    let left = opts.faked.count - quota.reduce((s, q) => s + q.n, 0);
+    for (const q of [...quota].sort((a, b) => b.r - a.r)) if (left-- > 0) q.n++;
+    for (const q of quota) for (let n = 0; n < q.n; n++) profiles.push(build('category_faked', q.k));
   }
 
   const relevance: SynSet['relevance'] = {};
@@ -296,4 +331,58 @@ export function generateSynthetic(seed = SYN_SEED): SynSet {
     relevance[v.id] = r;
   }
   return { vacancies, profiles, relevance };
+}
+
+// ---------------------------------------------------------------- индекс честности теста (11.10)
+/** Доли low/medium/high в процентах. */
+export type LevelShares = Record<IntegrityLevel, number>;
+
+/**
+ * Доли уровней индекса по персонам — из симуляции теста `eval/test/integrity-results.json` (боевой код integrity-v2,
+ * 4000 попыток на персону). Это модели персон, а не живые люди. copy_llm — по p подчинения ловушке (0,3 / 0,6 / 0,9).
+ */
+export interface IntegrityRates { honest: Record<SynGrade, LevelShares>; copy_llm: LevelShares; second_device: LevelShares; leaked_keys: LevelShares }
+
+export function integrityRatesFromSimulation(
+  results: { personas: { id: string; sharePct: { low: number; medium: number; high: number } }[] },
+  trapP: 0.3 | 0.6 | 0.9 = 0.6,
+): IntegrityRates {
+  const get = (id: string): LevelShares => {
+    const p = results.personas.find((x) => x.id === id);
+    if (!p) throw new Error(`integrity-results.json: нет персоны ${id}`);
+    return { low: p.sharePct.low, medium: p.sharePct.medium, high: p.sharePct.high };
+  };
+  return {
+    honest: { junior: get('honest-junior'), middle: get('honest-middle'), senior: get('honest-senior') },
+    copy_llm: get(`cheat-copy-p${Math.round(trapP * 100)}`),
+    second_device: get('cheat-second-device'),
+    leaked_keys: get('cheat-leaked-keys'),
+  };
+}
+
+/** Подменяет долю high у честных (чувствительность: «жёсткий шум»), остаток делит между low и medium в прежней пропорции. */
+export function withHonestHigh(r: IntegrityRates, highPct: Record<SynGrade, number>): IntegrityRates {
+  const honest = {} as Record<SynGrade, LevelShares>;
+  for (const g of ['junior', 'middle', 'senior'] as const) {
+    const s = r.honest[g];
+    const rest = s.low + s.medium;
+    const k = (100 - highPct[g]) / rest;
+    honest[g] = { low: s.low * k, medium: s.medium * k, high: highPct[g] };
+  }
+  return { ...r, honest };
+}
+
+/**
+ * Жребий уровня индекса для профилей с категорией из теста. Честный — по грейду своей категории; category_faked — по
+ * подвиду. Профиль без категории — нет записи (теста не было). rnd — отдельный ГПСЧ: набор профилей не меняется.
+ */
+export function drawIntegrity(profiles: SynProfile[], rates: IntegrityRates, rnd: () => number): Map<string, IntegrityLevel> {
+  const out = new Map<string, IntegrityLevel>();
+  for (const p of profiles) {
+    if (!p.category) continue;
+    const s = p.cheat ? rates[p.cheat] : rates.honest[p.category.grade];
+    const x = rnd() * (s.low + s.medium + s.high);
+    out.set(p.id, x < s.high ? 'high' : x < s.high + s.medium ? 'medium' : 'low');
+  }
+  return out;
 }

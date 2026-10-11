@@ -68,11 +68,38 @@ export interface CandidateEvidence {
    * Нет поля — список не загружен: прежняя плоская прибавка FSP_BOOST.
    */
   fspAchievements?: FspAchievementInput[];
+  /**
+   * Индекс честности попытки, давшей категорию (форма PublicTestIntegrity из test-integrity.ts). На порядок влияет только
+   * при RankOptions.integrityPenalty; без него — метка для работодателя, и только.
+   */
+  testIntegrity?: { level: 'low' | 'medium' | 'high'; confirmedAgain?: boolean } | null;
 }
+
+/**
+ * Вариант 2 из оценки «индекс честности в подборе» (eval/matching/integrity.ts, 11.10). ВЫКЛЮЧЕН по умолчанию.
+ * Действует на кандидата с категорией и индексом high, если категорию не выдал подтверждающий тест (confirmedAgain).
+ * - drop_category: категория из теста не учитывается — как будто теста не было (фильтры, база, множитель, специализация);
+ * - multiplier: итоговый положительный балл × factor (0 < factor ≤ 1).
+ * Чтобы включить в кабинете: в matching.ts `run` загрузить loadTestIntegrity для всего пула ДО rankCandidates (сейчас —
+ * только для выданного топа, после ранжирования), положить уровень в evidence.testIntegrity и передать opts.
+ */
+export type IntegrityPenalty = { mode: 'drop_category' } | { mode: 'multiplier'; factor: number };
 
 /** Параметры ранжирования. year — год отсчёта давности достижений ФСП (по умолчанию текущий; в тестах — явно). */
 export interface RankOptions {
   year?: number;
+  /** Вариант 2 индекса честности; нет поля — порядок не зависит от индекса (вариант 1, как сейчас). */
+  integrityPenalty?: IntegrityPenalty;
+}
+
+/** Индекс high у категории, не перепроверенной подтверждающим тестом, при включённом integrityPenalty. */
+export function integrityFlagged(c: CandidateEvidence, opts: RankOptions = {}): boolean {
+  return Boolean(opts.integrityPenalty && c.category && c.testIntegrity?.level === 'high' && !c.testIntegrity.confirmedAgain);
+}
+
+/** drop_category: кандидат без категории из теста; в остальных случаях — как есть. */
+export function applyIntegrity(c: CandidateEvidence, opts: RankOptions = {}): CandidateEvidence {
+  return integrityFlagged(c, opts) && opts.integrityPenalty?.mode === 'drop_category' ? { ...c, category: null } : c;
 }
 
 export interface MatchTarget {
@@ -234,6 +261,8 @@ export function scoreCandidate(
   catalog: Map<string, CatalogEntry>,
   opts: RankOptions = {},
 ): RankedCandidate | null {
+  const flagged = integrityFlagged(c, opts);
+  c = applyIntegrity(c, opts);
   const index = buildIndex(c.claims);
   const cov = computeCoverage(target.needs, catalog, index);
   const ownProject = pickOwnProject(c.projects, target.vacancyId);
@@ -241,7 +270,7 @@ export function scoreCandidate(
 
   let category = 0;
   let categoryMatch = false;
-  let categoryText = 'тест не пройден - категории нет';
+  let categoryText = flagged && opts.integrityPenalty?.mode === 'drop_category' ? 'категория из теста не учтена: замечания к честности теста' : 'тест не пройден - категории нет';
   if (c.category) {
     categoryText = `${categoryLabel(c.category)} (тест)`;
     if (c.category.specialization === target.specialization) {
@@ -314,9 +343,11 @@ export function scoreCandidate(
   const summary0 = stages ? `${base} ${stages[0]!.toUpperCase()}${stages.slice(1)}.` : base;
   const summary = `${summary0}${note}`;
 
+  const total = cov.score + category + fsp + stack + project + callsBonus - specPenalty;
+  const factor = flagged && opts.integrityPenalty?.mode === 'multiplier' && total > 0 ? opts.integrityPenalty.factor : 1;
   return {
     candidateId: c.id,
-    score: round(cov.score + category + fsp + stack + project + callsBonus - specPenalty),
+    score: round(total * factor),
     coverageScore: cov.score,
     covered: cov.covered,
     total: cov.total,
@@ -358,18 +389,20 @@ export function rankCandidates(
 ): RankedCandidate[] {
   const out: RankedCandidate[] = [];
   for (const c of candidates) {
-    if (!passesFilters(c, filters)) continue;
+    if (!passesFilters(applyIntegrity(c, opts), filters)) continue;
     const t = typeof target === 'function' ? target(c) : target;
     if (!t) continue;
     const r = scoreCandidate(c, t, catalog, opts);
     // Балл ≤ 0 (ничего не закрыто или другая специализация перевесила) — не подходит, не показываем.
     if (r && r.score > 0) out.push(r);
   }
-  out.sort(
-    (a, b) =>
-      FIT_ORDER[a.subcategoryFit] - FIT_ORDER[b.subcategoryFit] || b.score - a.score || b.covered - a.covered || b.provenCount - a.provenCount || a.candidateId.localeCompare(b.candidateId),
-  );
+  out.sort(compareRanked);
   return out;
+}
+
+/** Порядок выдачи: подкатегория (своя → соседняя → другое направление), балл, покрыто, доказано, id. */
+export function compareRanked(a: RankedCandidate, b: RankedCandidate): number {
+  return FIT_ORDER[a.subcategoryFit] - FIT_ORDER[b.subcategoryFit] || b.score - a.score || b.covered - a.covered || b.provenCount - a.provenCount || a.candidateId.localeCompare(b.candidateId);
 }
 
 /**
